@@ -3,19 +3,19 @@ import React from 'react';
 export default function VideoOverlay() {
   return (
     <>
-      {/* Dark Transparent Overlay to ensure high text contrast */}
+      {/* Light transparent tint for text contrast without blocking center image */}
       <div
         style={{
           position: 'fixed',
           inset: 0,
           zIndex: 1,
           pointerEvents: 'none',
-          background: 'rgba(3, 7, 18, 0.28)',
-          backdropFilter: 'contrast(1.02) brightness(1.02)'
+          background: 'rgba(3, 7, 18, 0.35)',
+          backdropFilter: 'contrast(1.02)'
         }}
       />
 
-      {/* Radial Vignette & Gradient for Cinematic Depth */}
+      {/* Cinematic Radial Vignette to preserve original dark edge framing */}
       <div
         style={{
           position: 'fixed',
@@ -23,8 +23,8 @@ export default function VideoOverlay() {
           zIndex: 1,
           pointerEvents: 'none',
           background: `
-            radial-gradient(circle at center, transparent 45%, rgba(3, 7, 18, 0.55) 85%, rgba(3, 7, 18, 0.88) 100%),
-            linear-gradient(180deg, rgba(3, 7, 18, 0.4) 0%, transparent 25%, transparent 75%, rgba(3, 7, 18, 0.5) 100%)
+            radial-gradient(circle at center, transparent 35%, rgba(3, 7, 18, 0.7) 80%, rgba(3, 7, 18, 0.95) 100%),
+            linear-gradient(180deg, rgba(3, 7, 18, 0.5) 0%, transparent 25%, transparent 75%, rgba(3, 7, 18, 0.6) 100%)
           `
         }}
       />
