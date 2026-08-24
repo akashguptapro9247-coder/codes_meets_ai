@@ -55,15 +55,15 @@ html, body, #root {
   z-index: 40;
   background: linear-gradient(
     rgba(18, 16, 16, 0) 50%, 
-    rgba(0, 0, 0, 0.25) 50%
+    rgba(0, 0, 0, 0.18) 50%
   ), linear-gradient(
     90deg,
-    rgba(255, 0, 0, 0.02),
-    rgba(0, 255, 0, 0.01),
-    rgba(0, 0, 255, 0.02)
+    rgba(255, 0, 0, 0.01),
+    rgba(0, 255, 0, 0.005),
+    rgba(0, 0, 255, 0.01)
   );
   background-size: 100% 3px, 6px 100%;
-  opacity: 0.7;
+  opacity: 0.20;
 }
 
 /* Vignette Shadow */
@@ -74,9 +74,9 @@ html, body, #root {
   z-index: 39;
   background: radial-gradient(
     circle at center,
-    transparent 50%,
-    rgba(3, 7, 18, 0.75) 85%,
-    rgba(3, 7, 18, 0.95) 100%
+    transparent 55%,
+    rgba(3, 7, 18, 0.45) 85%,
+    rgba(3, 7, 18, 0.75) 100%
   );
 }
 
@@ -124,7 +124,7 @@ html, body, #root {
 
 .main-title {
   font-family: var(--font-title);
-  font-size: clamp(2.8rem, 7.5vw, 6.5rem);
+  font-size: clamp(2.2rem, 5.2vw, 4.6rem);
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -154,7 +154,7 @@ html, body, #root {
   width: 100%;
   height: 100%;
   font-family: var(--font-title);
-  font-size: clamp(2.8rem, 7.5vw, 6.5rem);
+  font-size: clamp(2.2rem, 5.2vw, 4.6rem);
   font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -314,27 +314,29 @@ html, body, #root {
 }
 
 .cyber-btn:hover {
-  background: rgba(0, 243, 255, 0.15);
-  border-color: #ffffff;
+  background: rgba(0, 243, 255, 0.12);
+  border-color: #00f3ff;
   color: #ffffff;
   box-shadow: 
-    0 0 30px rgba(0, 243, 255, 0.6),
-    0 0 60px rgba(0, 243, 255, 0.3),
-    inset 0 0 20px rgba(0, 243, 255, 0.3);
-  transform: translateY(-2px) scale(1.02);
+    0 0 25px rgba(0, 243, 255, 0.5),
+    0 0 50px rgba(0, 243, 255, 0.25),
+    inset 0 0 15px rgba(0, 243, 255, 0.2);
+  transform: translateY(-2px) scale(1.03);
+  filter: brightness(1.1);
 }
 
 .cyber-btn:active {
   transform: translateY(1px) scale(0.98);
+  filter: brightness(0.95);
 }
 
 .cyber-btn-arrow {
   display: inline-block;
-  transition: transform 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cyber-btn:hover .cyber-btn-arrow {
-  transform: translateX(6px);
+  transform: translateX(8px);
 }
 
 /* Micro corner accents on button */
@@ -426,4 +428,18 @@ html, body, #root {
     0 0 20px var(--cyan-glow),
     0 0 40px var(--cyan-glow),
     0 0 80px #ffffff;
+}
+
+/* Reduced Motion Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .glitch-cyan,
+  .glitch-magenta,
+  .title-light-sweep,
+  .code-snippet-floating {
+    animation: none !important;
+  }
+
+  .cyber-btn {
+    transition: none !important;
+  }
 }

@@ -60,8 +60,9 @@ export default function HandshakeVideoBackground() {
           height: '100%',
           objectFit: 'cover',
           objectPosition: 'center 45%', // Keep handshake focused in center
-          transition: 'opacity 0.8s ease-in-out',
-          opacity: 0.95
+          transition: 'opacity 0.8s ease-in-out, filter 0.8s ease-in-out',
+          opacity: 1.0,
+          filter: 'brightness(1.08) contrast(1.04)'
         }}
       >
         <source src="/assets/code-meets-ai-handshake.mp4" type="video/mp4" />

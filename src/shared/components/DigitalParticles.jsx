@@ -25,13 +25,13 @@ export default function DigitalParticles() {
     window.addEventListener('resize', handleResize);
 
     // Generate lightweight particle array
-    const particles = Array.from({ length: 45 }, () => ({
+    const particles = Array.from({ length: 28 }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      speedY: -(Math.random() * 0.4 + 0.1),
-      speedX: (Math.random() - 0.5) * 0.2,
-      opacity: Math.random() * 0.5 + 0.1,
-      size: Math.random() * 2 + 1,
+      speedY: -(Math.random() * 0.3 + 0.1),
+      speedX: (Math.random() - 0.5) * 0.15,
+      opacity: Math.random() * 0.4 + 0.1,
+      size: Math.random() * 1.8 + 1,
       isCode: Math.random() > 0.65,
       text: CODE_FRAGMENTS[Math.floor(Math.random() * CODE_FRAGMENTS.length)]
     }));
@@ -79,7 +79,7 @@ export default function DigitalParticles() {
         inset: 0,
         pointerEvents: 'none',
         zIndex: 2,
-        opacity: 0.6
+        opacity: 0.35
       }}
     />
   );

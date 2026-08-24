@@ -117,7 +117,7 @@ export default function EventTitle({ currentStage, mousePosition }) {
       {/* Layer 3: Technical Sub-bar & Line Sweep under Title */}
       <motion.div
         className="title-tech-bar"
-        style={{ width: '100%', maxWidth: '580px' }}
+        style={{ width: '100%', maxWidth: '620px' }}
         initial={{ opacity: 0, width: '0%' }}
         animate={
           currentStage >= 4
@@ -127,8 +127,8 @@ export default function EventTitle({ currentStage, mousePosition }) {
         transition={{ duration: 0.8, delay: 0.3 }}
       >
         <div className="tech-line" />
-        <span style={{ fontSize: '0.7rem', color: 'rgba(0, 243, 255, 0.8)' }}>
-          PROTOCOL::AI_COMPETITION_ARENA
+        <span style={{ fontSize: '0.75rem', color: 'rgba(0, 243, 255, 0.9)', letterSpacing: '0.22em', fontWeight: 600 }}>
+          CYBERNETIC CODING &amp; AI COMPETITION
         </span>
         <div className="tech-line" />
       </motion.div>
