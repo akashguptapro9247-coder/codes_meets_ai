@@ -11,13 +11,28 @@ export default function HandshakeVideoBackground() {
     video.muted = true;
     video.volume = 0;
 
-    // Force autoplay on load
-    const playPromise = video.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((error) => {
-        console.warn('Autoplay prevented or failed:', error);
-      });
+    // Automatically freeze on the final frame when video ends
+    const handleEnded = () => {
+      video.pause();
+    };
+
+    video.addEventListener('ended', handleEnded);
+
+    // Play once from beginning if not ended
+    if (!video.ended) {
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn('Autoplay prevented or failed:', error);
+        });
+      }
+    } else {
+      video.pause();
     }
+
+    return () => {
+      video.removeEventListener('ended', handleEnded);
+    };
   }, []);
 
   return (
@@ -36,7 +51,6 @@ export default function HandshakeVideoBackground() {
         ref={videoRef}
         autoPlay
         muted
-        loop
         playsInline
         poster="/assets/handshake-bg.jpg"
         style={{
