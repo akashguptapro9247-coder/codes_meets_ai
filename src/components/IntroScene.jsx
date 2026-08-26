@@ -85,25 +85,11 @@ export default function IntroScene({ onBegin }) {
       {/* Laser Scan Transition Overlay */}
       {isTransitioning && <IntroTransition />}
 
-      {/* z-index 20: Unified Centered Hero Content Stack */}
-      <div
-        style={{
-          position: 'relative',
-          zIndex: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          width: '100%',
-          maxWidth: '96vw',
-          padding: '0 20px',
-          boxSizing: 'border-box'
-        }}
-      >
-        <EventTitle currentStage={stage} mousePosition={mousePosition} />
-        <BeginButton onClick={handleBegin} currentStage={stage} />
-      </div>
+      {/* z-index 20: Layered Animated Event Title */}
+      <EventTitle currentStage={stage} mousePosition={mousePosition} />
+
+      {/* z-index 30: Cyber Game CTA Button */}
+      <BeginButton onClick={handleBegin} currentStage={stage} />
     </div>
   );
 }

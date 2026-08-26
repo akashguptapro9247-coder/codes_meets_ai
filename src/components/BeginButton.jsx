@@ -25,12 +25,12 @@ export default function BeginButton({ onClick, currentStage }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={currentStage >= 4 ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 20, scale: 0.95 }}
-      transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
+      initial={{ opacity: 0, y: 30, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.7, delay: 0.5, ease: 'easeOut' }}
       style={{
-        position: 'relative',
-        marginTop: '28px',
+        position: 'absolute',
+        bottom: '85px',
         zIndex: 35,
         display: 'flex',
         flexDirection: 'column',

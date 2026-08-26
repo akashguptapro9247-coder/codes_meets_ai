@@ -11,28 +11,13 @@ export default function HandshakeVideoBackground() {
     video.muted = true;
     video.volume = 0;
 
-    // Automatically freeze on the final frame when video ends
-    const handleEnded = () => {
-      video.pause();
-    };
-
-    video.addEventListener('ended', handleEnded);
-
-    // Play once from beginning if not ended
-    if (!video.ended) {
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.warn('Autoplay prevented or failed:', error);
-        });
-      }
-    } else {
-      video.pause();
+    // Force autoplay on load
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        console.warn('Autoplay prevented or failed:', error);
+      });
     }
-
-    return () => {
-      video.removeEventListener('ended', handleEnded);
-    };
   }, []);
 
   return (
@@ -51,6 +36,7 @@ export default function HandshakeVideoBackground() {
         ref={videoRef}
         autoPlay
         muted
+        loop
         playsInline
         poster="/assets/handshake-bg.jpg"
         style={{
@@ -61,7 +47,7 @@ export default function HandshakeVideoBackground() {
           objectFit: 'cover',
           objectPosition: 'center 45%', // Keep handshake focused in center
           transition: 'opacity 0.8s ease-in-out',
-          opacity: 0.92
+          opacity: 0.95
         }}
       >
         <source src="/assets/code-meets-ai-handshake.mp4" type="video/mp4" />
