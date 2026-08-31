@@ -1,23 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Terminal, ShieldCheck, Volume2, VolumeX, Settings, Cpu } from 'lucide-react';
+import React from 'react';
+import { ShieldCheck, Settings, Cpu } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
 export default function ArenaHeader({ participant, onOpenAdmin }) {
-  const [muted, setMuted] = useState(soundEngine.isMuted());
-
-  useEffect(() => {
-    setMuted(soundEngine.isMuted());
-    const unsubscribe = soundEngine.subscribe((newMutedState) => {
-      setMuted(newMutedState);
-    });
-    return unsubscribe;
-  }, []);
-
-  const toggleSound = () => {
-    const isMuted = soundEngine.toggleMute();
-    if (!isMuted) soundEngine.playHover();
-  };
-
   // Mask roll number slightly to keep it clean (e.g. 23XXXXX)
   const formatRoll = (roll) => {
     if (!roll) return '23XXX';
@@ -40,7 +25,8 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
         background: 'rgba(3, 7, 18, 0.85)',
         backdropFilter: 'blur(12px)',
         borderBottom: '1px solid rgba(0, 243, 255, 0.25)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.8)'
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.8)',
+        pointerEvents: 'none'
       }}
     >
       {/* Animated Glowing Bottom Border Line */}
@@ -56,29 +42,8 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
         }}
       />
 
-      {/* LEFT: Branding Identity */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '4px 10px',
-            background: 'rgba(0, 243, 255, 0.08)',
-            border: '1px solid rgba(0, 243, 255, 0.3)',
-            borderRadius: '2px',
-            color: 'var(--cyan-glow)',
-            fontFamily: 'var(--font-title)',
-            fontSize: '0.85rem',
-            letterSpacing: '0.12em',
-            fontWeight: 800
-          }}
-        >
-          <Terminal size={15} />
-          <span>CODE MEETS AI</span>
-        </div>
-        <span className="status-beacon" />
-      </div>
+      {/* LEFT: Spacer to allow primary ScanOverlay CODE MEETS AI branding to display */}
+      <div style={{ width: '180px' }} />
 
       {/* CENTER: Event Arena Title */}
       <div
@@ -90,15 +55,16 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
           fontSize: '0.95rem',
           color: '#ffffff',
           letterSpacing: '0.2em',
-          textShadow: '0 0 12px var(--cyan-glow)'
+          textShadow: '0 0 12px var(--cyan-glow)',
+          pointerEvents: 'auto'
         }}
       >
         <Cpu size={16} color="var(--cyan-glow)" />
         <span>EVENT ARENA</span>
       </div>
 
-      {/* RIGHT: Participant Identity & Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* RIGHT: Participant Identity & Admin Control */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', pointerEvents: 'auto' }}>
         {/* Participant Info Tag */}
         <div
           style={{
@@ -122,28 +88,6 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
             ROLL: {formatRoll(participant?.rollNumber)}
           </span>
         </div>
-
-        {/* Audio Mute Toggle */}
-        <button
-          onClick={toggleSound}
-          onMouseEnter={() => soundEngine.playHover()}
-          style={{
-            background: 'transparent',
-            border: '1px solid rgba(0, 243, 255, 0.25)',
-            color: muted ? '#6b7280' : 'var(--cyan-glow)',
-            padding: '6px 10px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem'
-          }}
-          title="Toggle SFX"
-        >
-          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-          <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
-        </button>
 
         {/* Secret Admin Control Modal Trigger for Live Testing */}
         <button
