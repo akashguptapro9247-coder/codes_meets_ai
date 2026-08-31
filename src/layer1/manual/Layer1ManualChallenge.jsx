@@ -1,6 +1,11 @@
+<<<<<<< Updated upstream
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+=======
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+>>>>>>> Stashed changes
 import ManualHeader from './ManualHeader';
 import QuestionCard from './QuestionCard';
 import ManualTimer from './ManualTimer';
@@ -10,6 +15,7 @@ import ManualResultsScreen from './ManualResultsScreen';
 import InvalidRollNumberScreen from './InvalidRollNumberScreen';
 import DigitalParticles from '../../shared/components/DigitalParticles';
 import ScanOverlay from '../../shared/components/ScanOverlay';
+<<<<<<< Updated upstream
 import { SpiderManAnimation } from '../../animation/SpiderMan/SpiderManAnimation';
 import { WebShot } from '../../animation/SpiderMan/WebShot';
 import {
@@ -17,24 +23,39 @@ import {
   generateRandomQuestionSet,
   evaluateManualAnswers
 } from '../questions/layer1ManualQuestions';
+=======
+import { validateRollNumber } from '../questions/layer1ManualQuestions';
+>>>>>>> Stashed changes
 import { adminService } from '../../admin/services/adminService';
 import { eventStateService } from '../../shared/services/eventStateService';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 
+// ============================================================================
+// SECURITY HARDENING — SECURE RPC FLOW
+// ============================================================================
 // feedbackState machine:
 // 'idle'       → student can select an option
-// 'processing' → NEXT clicked, 2s delay (locked, no reveal yet)
+// 'processing' → NEXT clicked, server called, 2s wait (locked, no reveal yet)
 // 'revealed'   → 2s feedback shown (correct=green, wrong=red + correct=green)
 // auto-advance after revealed completes
+//
+// What changed vs old version:
+//   OLD: Questions (with correct_answer) lived in layer1ManualQuestions.js (bundled JS)
+//        Score computed client-side, timer trusted from localStorage
+//   NEW: Questions come from rpc_start_layer1_manual_session (NO correct_answer in payload)
+//        Each answer checked by rpc_submit_layer1_manual_answer (server returns is_correct + correct_answer for UI only)
+//        Final score computed by rpc_complete_layer1_manual_session (server authoritative)
+//        Timer is server-authoritative expires_at (not localStorage)
+// ============================================================================
 
 export default function Layer1ManualChallenge({
   participant,
   onBack
 }) {
-  const userId = participant?.userId || participant?.user_id;
+  const userId     = participant?.userId || participant?.user_id;
   const rollNumber = participant?.rollNumber || participant?.roll_number;
 
-  // Real-time lock listener: if admin locks Layer 1 or deactivates Manual track, exit immediately to Play Page
+  // ── Real-time lock listener: if admin locks Layer 1 or deactivates Manual track ──
   useEffect(() => {
     const unsubscribe = eventStateService.subscribeToEventState((state) => {
       if (!state.layer1?.active || state.layer1?.activeTrack !== 'manual') {
@@ -44,59 +65,31 @@ export default function Layer1ManualChallenge({
     return () => unsubscribe();
   }, [onBack]);
 
-  // 1. Validate Roll Number and detect 1st / 2nd Year Batch
+  // ── Roll number validation (client-side only for routing; batch/year from server) ──
   const validation = validateRollNumber(rollNumber);
 
-  // Storage key for state persistence across browser reload
-  const stateStorageKey = `cma_l1_manual_state_${userId || 'guest'}`;
+  // ── Secure session state ──
+  const [sessionLoading, setSessionLoading]   = useState(true);   // waiting for server session
+  const [sessionError,   setSessionError]     = useState(null);   // startup error message
+  const [attemptId,      setAttemptId]        = useState(null);   // server attempt UUID
+  const [expiresAt,      setExpiresAt]        = useState(null);   // ISO string from server
+  const [remainingSeconds, setRemainingSeconds] = useState(900);  // server-provided initial
 
-  // 2. Initialize or restore attempt state
-  const [questions, setQuestions] = useState(() => {
-    if (!validation.valid) return [];
-    try {
-      const saved = localStorage.getItem(stateStorageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.questions && parsed.questions.length === 15) {
-          return parsed.questions;
-        }
-      }
-    } catch (e) {
-      console.warn('Failed to parse saved questions state:', e);
-    }
-    return generateRandomQuestionSet(validation.batch);
-  });
+  // ── Questions from server (NO correct_answer field) ──
+  const [questions,    setQuestions]    = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    try {
-      const saved = localStorage.getItem(stateStorageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return typeof parsed.currentIndex === 'number' ? parsed.currentIndex : 0;
-      }
-    } catch (e) {}
-    return 0;
-  });
+  // ── Answer state ──
+  const [selectedAnswers,       setSelectedAnswers]       = useState({});   // { questionId: 'A'|'B'|'C'|'D' }
+  const [currentSelectedOption, setCurrentSelectedOption] = useState(null); // current UI pick
+  const [lastRevealData,        setLastRevealData]        = useState(null); // { is_correct, correct_answer }
 
-  const [selectedAnswers, setSelectedAnswers] = useState(() => {
-    try {
-      const saved = localStorage.getItem(stateStorageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return parsed.selectedAnswers || {};
-      }
-    } catch (e) {}
-    return {};
-  });
-
-  const [currentSelectedOption, setCurrentSelectedOption] = useState(null);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // ── Completion state ──
+  const [isCompleted,      setIsCompleted]      = useState(false);
+  const [isSubmitting,     setIsSubmitting]     = useState(false);
   const [evaluationResult, setEvaluationResult] = useState(null);
-  const [isCheckingSupabase, setIsCheckingSupabase] = useState(true);
 
-  // Feedback phase state machine
-  // 'idle' | 'processing' | 'revealed'
+  // ── Feedback phase state machine: 'idle' | 'processing' | 'revealed' ──
   const [feedbackState, setFeedbackState] = useState('idle');
   const feedbackTimers = useRef([]);
 
@@ -180,50 +173,59 @@ export default function Layer1ManualChallenge({
 
   // Cleanup timers on unmount
   useEffect(() => {
-    return () => {
-      feedbackTimers.current.forEach(clearTimeout);
-    };
+    return () => feedbackTimers.current.forEach(clearTimeout);
   }, []);
 
-  // Check if Supabase already has a completed attempt on mount
+  // ── STEP 1: Start or resume secure session on mount ──
   useEffect(() => {
     if (!userId || !validation.valid) {
-      setIsCheckingSupabase(false);
+      setSessionLoading(false);
       return;
     }
 
-    adminService.fetchLayer1ManualAttemptForUser(userId).then(({ data }) => {
-      if (data && data.status === 'completed') {
+    const initSession = async () => {
+      setSessionLoading(true);
+      setSessionError(null);
+
+      const { data, error } = await adminService.startLayer1ManualSession(userId, rollNumber);
+
+      if (error) {
+        setSessionError(error.message || 'Failed to start session. Please refresh.');
+        setSessionLoading(false);
+        return;
+      }
+
+      // Already completed — show results screen
+      if (data.already_completed) {
         setIsCompleted(true);
         setEvaluationResult({
-          score: data.score,
-          correctCount: data.correct_count,
-          totalQuestions: data.total_questions || 15
+          score:          data.score,
+          correctCount:   data.correct_count,
+          totalQuestions: 15
         });
+        setSessionLoading(false);
+        return;
       }
-      setIsCheckingSupabase(false);
-    });
-  }, [userId, validation.valid]);
 
-  // Persist ongoing state to localStorage on changes
-  useEffect(() => {
-    if (!validation.valid || isCompleted || questions.length === 0) return;
+      // Fresh or resumed session
+      setAttemptId(data.attempt_id);
+      setExpiresAt(data.expires_at);
+      setRemainingSeconds(data.remaining_seconds ?? 900);
+      setQuestions(data.questions ?? []);
 
-    try {
-      const stateToSave = {
-        questions,
-        currentIndex,
-        selectedAnswers,
-        isCompleted: false,
-        batch: validation.batch
-      };
-      localStorage.setItem(stateStorageKey, JSON.stringify(stateToSave));
-    } catch (e) {
-      console.warn('Failed to persist manual attempt state:', e);
-    }
-  }, [questions, currentIndex, selectedAnswers, validation.valid, isCompleted]);
+      // If resuming, restore answered questions count (questions already answered are in server log)
+      // For UX consistency: start from question 0 again (student sees fresh questions, server tracks answers)
+      setCurrentIndex(0);
+      setSelectedAnswers({});
+      setCurrentSelectedOption(null);
+      setSessionLoading(false);
+    };
 
-  // Load option for current question if previously selected
+    initSession();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, rollNumber, validation.valid]);
+
+  // Load previously selected option for current question
   useEffect(() => {
     const currentQ = questions[currentIndex];
     if (currentQ && selectedAnswers[currentQ.id]) {
@@ -231,101 +233,114 @@ export default function Layer1ManualChallenge({
     } else {
       setCurrentSelectedOption(null);
     }
+    setLastRevealData(null);
   }, [currentIndex, questions, selectedAnswers]);
 
-  // Handle final submission to Supabase and calculation
-  const handleFinalizeAttempt = async (finalAnswersMap) => {
+  // ── STEP 3: Finalize the attempt (timer expired or last question answered) ──
+  const handleFinalizeAttempt = async () => {
+    if (isSubmitting || isCompleted) return;
     setIsSubmitting(true);
-    const answersToEvaluate = finalAnswersMap || selectedAnswers;
-
-    const evaluation = evaluateManualAnswers(questions, answersToEvaluate);
-    setEvaluationResult(evaluation);
 
     try {
-      await adminService.submitLayer1ManualAttempt({
-        userId,
-        username: participant?.name || 'Participant',
-        rollNumber: rollNumber || '',
-        year: validation.yearName,
-        batch: validation.batch,
-        questionsPool: questions,
-        selectedAnswers: answersToEvaluate,
-        score: evaluation.score,
-        correctCount: evaluation.correctCount
-      });
+      const { data, error } = await adminService.completeLayer1ManualSession(attemptId, userId);
 
-      setIsCompleted(true);
-      soundEngine.playBoot();
-
-      // Clear localStorage cache for clean slate
-      try {
-        localStorage.removeItem(stateStorageKey);
-        localStorage.removeItem(`cma_l1_manual_timer_start_${userId}`);
-      } catch (e) {}
+      if (data && !error) {
+        setEvaluationResult({
+          score:          data.score          ?? 0,
+          correctCount:   data.correct_count  ?? 0,
+          totalQuestions: data.total_questions ?? 15,
+          accuracy:       data.accuracy       ?? 0
+        });
+        setIsCompleted(true);
+        soundEngine.playBoot();
+      } else {
+        // Fallback: show completion even if RPC fails (graceful UX)
+        console.error('[completeLayer1ManualSession] error:', error);
+        setIsCompleted(true);
+        setEvaluationResult({
+          score:          0,
+          correctCount:   0,
+          totalQuestions: 15
+        });
+      }
     } catch (err) {
-      console.error('Failed to submit manual attempt to Supabase:', err);
-      // Still show completed results on screen
+      console.error('[handleFinalizeAttempt] exception:', err);
       setIsCompleted(true);
+      setEvaluationResult({ score: 0, correctCount: 0, totalQuestions: 15 });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Advance to next question (or finalize on last question)
-  const advanceQuestion = (updatedAnswers) => {
+  // Advance to next question after feedback
+  const advanceQuestion = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       setCurrentSelectedOption(null);
       setFeedbackState('idle');
+      setLastRevealData(null);
     } else {
       // Last question — finalize
       setFeedbackState('idle');
-      handleFinalizeAttempt(updatedAnswers);
+      handleFinalizeAttempt();
     }
   };
 
-  // NEXT button handler — triggers the 2s wait → 2s reveal → auto-advance flow
-  const handleNextQuestion = () => {
+  // ── STEP 2: NEXT button — sends answer to server, gets back is_correct + correct_answer for UI feedback ──
+  const handleNextQuestion = async () => {
     const currentQ = questions[currentIndex];
     if (!currentQ || !currentSelectedOption || feedbackState !== 'idle') return;
+    if (!attemptId) return;
 
-    // Lock the answer immediately
+    // Lock answer in local state immediately
     const updatedAnswers = {
       ...selectedAnswers,
       [currentQ.id]: currentSelectedOption
     };
     setSelectedAnswers(updatedAnswers);
 
-    // Phase 1: processing — lock all inputs, no feedback yet (2 seconds)
+    // Phase 1: processing — lock all inputs, show spinner (2 seconds)
     setFeedbackState('processing');
-
-    // Clear any stale timers
     feedbackTimers.current.forEach(clearTimeout);
 
+    // Call server to record answer and get feedback
+    const { data: answerData, error: answerError } = await adminService.submitLayer1ManualAnswer(
+      attemptId,
+      userId,
+      currentQ.id,
+      currentSelectedOption
+    );
+
+    if (answerError) {
+      console.warn('[submitLayer1ManualAnswer] error:', answerError);
+    }
+
+    // Phase 2: revealed — show correct/wrong feedback for 2 seconds
     const t1 = setTimeout(() => {
-      // Phase 2: revealed — show correct/wrong feedback (2 seconds)
+      setLastRevealData(answerData ?? null);
       setFeedbackState('revealed');
 
       const t2 = setTimeout(() => {
-        // Phase 3: auto-advance to next question
-        advanceQuestion(updatedAnswers);
+        advanceQuestion();
       }, 2000);
-
       feedbackTimers.current = [t2];
     }, 2000);
 
     feedbackTimers.current = [t1];
   };
 
+<<<<<<< Updated upstream
   // Timer expired callback: immediately locks and submits current state
   const handleTimeUp = useCallback(() => {
+=======
+  // Timer expired callback: immediately locks and finalizes
+  const handleTimeUp = () => {
+>>>>>>> Stashed changes
     if (isCompleted) return;
-
-    // Cancel any pending feedback timers
     feedbackTimers.current.forEach(clearTimeout);
     setFeedbackState('idle');
-
     soundEngine.playClick();
+<<<<<<< Updated upstream
     const currentQ = questions[currentIndex];
     const updatedAnswers = { ...selectedAnswers };
     if (currentQ && currentSelectedOption) {
@@ -335,22 +350,21 @@ export default function Layer1ManualChallenge({
     handleFinalizeAttempt(updatedAnswers);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCompleted, questions, currentIndex, selectedAnswers, currentSelectedOption]);
+=======
+    handleFinalizeAttempt();
+  };
+>>>>>>> Stashed changes
 
-  // If roll number is invalid, render the validation error screen
+  // ── Invalid roll number screen ──
   if (!validation.valid) {
     return (
       <div
         style={{
-          position: 'fixed',
-          inset: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 80,
-          backgroundColor: '#020612',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          position: 'fixed', inset: 0,
+          width: '100vw', height: '100vh',
+          zIndex: 80, backgroundColor: '#020612',
+          overflow: 'hidden', display: 'flex',
+          alignItems: 'center', justifyContent: 'center'
         }}
       >
         <DigitalParticles />
@@ -364,21 +378,76 @@ export default function Layer1ManualChallenge({
     );
   }
 
+  // ── Session loading / error screen ──
+  if (sessionLoading || (!questions.length && !isCompleted)) {
+    return (
+      <div
+        style={{
+          position: 'fixed', inset: 0,
+          width: '100vw', height: '100vh',
+          zIndex: 80, backgroundColor: '#020612',
+          overflow: 'hidden', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+          flexDirection: 'column', gap: '16px'
+        }}
+      >
+        <DigitalParticles />
+        <ScanOverlay currentStage={1} />
+        {sessionError ? (
+          <div style={{
+            zIndex: 30, textAlign: 'center', padding: '32px',
+            background: 'rgba(4, 9, 24, 0.95)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '4px', maxWidth: '480px'
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-mono)', fontSize: '0.85rem',
+              color: '#ef4444', marginBottom: '16px'
+            }}>
+              ⚠ SESSION ERROR
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-mono)', fontSize: '0.75rem',
+              color: '#9ca3af', marginBottom: '20px'
+            }}>
+              {sessionError}
+            </p>
+            <button
+              onClick={onBack}
+              style={{
+                padding: '8px 20px', fontFamily: 'var(--font-mono)',
+                fontSize: '0.75rem', color: 'var(--cyan-glow)',
+                background: 'transparent',
+                border: '1px solid rgba(0, 243, 255, 0.4)',
+                borderRadius: '3px', cursor: 'pointer'
+              }}
+            >
+              ← BACK TO ARENA
+            </button>
+          </div>
+        ) : (
+          <div style={{
+            zIndex: 30,
+            fontFamily: 'var(--font-mono)', fontSize: '0.85rem',
+            color: 'var(--cyan-glow)', letterSpacing: '0.12em'
+          }}>
+            INITIALIZING SESSION...
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentIndex];
 
   return (
     <div
       style={{
-        position: 'fixed',
-        inset: 0,
-        width: '100vw',
-        height: '100vh',
-        zIndex: 80,
-        backgroundColor: '#020612',
-        overflow: 'hidden',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        position: 'fixed', inset: 0,
+        width: '100vw', height: '100vh',
+        zIndex: 80, backgroundColor: '#020612',
+        overflow: 'hidden', display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
         userSelect: 'none'
       }}
     >
@@ -440,10 +509,10 @@ export default function Layer1ManualChallenge({
         }}
       >
         {/* Four Sci-Fi HUD Corner Brackets */}
-        <div className="hud-corner hud-top-left" style={{ width: '16px', height: '16px', zIndex: 25 }} />
-        <div className="hud-corner hud-top-right" style={{ width: '16px', height: '16px', zIndex: 25 }} />
+        <div className="hud-corner hud-top-left"    style={{ width: '16px', height: '16px', zIndex: 25 }} />
+        <div className="hud-corner hud-top-right"   style={{ width: '16px', height: '16px', zIndex: 25 }} />
         <div className="hud-corner hud-bottom-left" style={{ width: '16px', height: '16px', zIndex: 25 }} />
-        <div className="hud-corner hud-bottom-right" style={{ width: '16px', height: '16px', zIndex: 25 }} />
+        <div className="hud-corner hud-bottom-right"style={{ width: '16px', height: '16px', zIndex: 25 }} />
 
         {/* 1. TOP HEADER */}
         <ManualHeader
@@ -497,10 +566,11 @@ export default function Layer1ManualChallenge({
                   selectedOption={currentSelectedOption}
                   answeredQuestionsMap={selectedAnswers}
                   feedbackState={feedbackState}
+                  revealData={lastRevealData}
                 />
               </div>
 
-              {/* Right Telemetry Column: 15-min Timer only (no internal HUD) */}
+              {/* Right Telemetry Column: Server-authoritative Timer + Progress */}
               <aside
                 style={{
                   display: 'flex',
@@ -510,11 +580,11 @@ export default function Layer1ManualChallenge({
                   justifyContent: 'flex-start'
                 }}
               >
-                {/* 15-Minute Countdown Timer */}
+                {/* 15-Minute Countdown Timer (server-authoritative expires_at) */}
                 <ManualTimer
-                  participantId={userId || 'guest'}
+                  expiresAt={expiresAt}
+                  initialRemainingSeconds={remainingSeconds}
                   onTimeUp={handleTimeUp}
-                  durationSeconds={900}
                 />
 
                 {/* Clean Question Progress Tracker */}

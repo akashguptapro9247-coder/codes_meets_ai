@@ -1,31 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, AlertTriangle } from 'lucide-react';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 
-export default function ManualTimer({ participantId = 'guest', onTimeUp, durationSeconds = 900 }) {
-  const timerStorageKey = `cma_l1_manual_timer_start_${participantId}`;
+/**
+ * ManualTimer — Server-authoritative countdown timer.
+ *
+ * Props:
+ *   expiresAt              {string} ISO timestamp from server (authoritative deadline)
+ *   initialRemainingSeconds {number} Server-provided remaining seconds at mount (used as fallback)
+ *   onTimeUp               {function} Callback when timer reaches 0
+ *
+ * Security: Timer is driven by (expiresAt - Date.now()), so tampering with
+ * localStorage has zero effect. The server independently enforces expires_at
+ * in rpc_submit_layer1_manual_answer and rejects late submissions.
+ */
+export default function ManualTimer({
+  expiresAt,
+  initialRemainingSeconds = 900,
+  onTimeUp
+}) {
+  const onTimeUpRef = useRef(onTimeUp);
+  useEffect(() => { onTimeUpRef.current = onTimeUp; }, [onTimeUp]);
 
-  const [timeLeft, setTimeLeft] = useState(() => {
-    try {
-      const savedStart = localStorage.getItem(timerStorageKey);
-      if (savedStart) {
-        const startTime = parseInt(savedStart, 10);
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const remaining = durationSeconds - elapsed;
-        return Math.max(0, remaining);
-      } else {
-        const now = Date.now();
-        localStorage.setItem(timerStorageKey, now.toString());
-        return durationSeconds;
-      }
-    } catch (e) {
-      return durationSeconds;
+  // Compute initial remaining from server expiresAt, or fall back to prop
+  const computeRemaining = () => {
+    if (expiresAt) {
+      const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
+      return Math.max(0, diff);
     }
-  });
+    return Math.max(0, initialRemainingSeconds);
+  };
+
+  const [timeLeft, setTimeLeft] = useState(computeRemaining);
+
+  useEffect(() => {
+    // Recalculate when expiresAt becomes available
+    setTimeLeft(computeRemaining());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt]);
 
   const onTimeUpRef = React.useRef(onTimeUp);
   useEffect(() => {
+<<<<<<< Updated upstream
     onTimeUpRef.current = onTimeUp;
   }, [onTimeUp]);
 
@@ -44,30 +60,53 @@ export default function ManualTimer({ participantId = 'guest', onTimeUp, duratio
           if (onTimeUpRef.current) onTimeUpRef.current();
           return 0;
         }
+=======
+    if (timeLeft <= 0) {
+      if (onTimeUpRef.current) onTimeUpRef.current();
+      return;
+    }
 
-        // Low time sound cues
-        if (prev === 300) soundEngine.playClick();
-        if (prev === 60) soundEngine.playClick();
+    const interval = setInterval(() => {
+      // Always re-derive from server expiresAt for drift correction
+      const remaining = expiresAt
+        ? Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)
+        : timeLeft - 1;
+>>>>>>> Stashed changes
 
-        return prev - 1;
-      });
+      const clamped = Math.max(0, remaining);
+
+      // Low time sound cues
+      if (clamped === 300) soundEngine.playClick();
+      if (clamped === 60)  soundEngine.playClick();
+
+      setTimeLeft(clamped);
+
+      if (clamped <= 0) {
+        clearInterval(interval);
+        if (onTimeUpRef.current) onTimeUpRef.current();
+      }
     }, 1000);
 
     return () => clearInterval(interval);
+<<<<<<< Updated upstream
   }, []);
+=======
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt, timeLeft > 0]);
+>>>>>>> Stashed changes
 
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
+  const minutes  = Math.floor(timeLeft / 60);
+  const seconds  = timeLeft % 60;
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-  const progress = timeLeft / durationSeconds;
-  const radius = 24;
+  const totalDuration = initialRemainingSeconds || 900;
+  const progress      = timeLeft / totalDuration;
+  const radius        = 24;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - progress * circumference;
 
-  // Dynamic theme colors based on remaining time
-  const isUrgent = timeLeft <= 120; // <= 2 mins
-  const isWarning = timeLeft <= 300 && !isUrgent; // <= 5 mins
+  const isUrgent  = timeLeft <= 120;
+  const isWarning = timeLeft <= 300 && !isUrgent;
 
   const themeColor = isUrgent
     ? '#ef4444'
@@ -92,17 +131,12 @@ export default function ManualTimer({ participantId = 'guest', onTimeUp, duratio
       <div style={{ position: 'relative', width: '56px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg width="56" height="56" style={{ transform: 'rotate(-90deg)' }}>
           <circle
-            cx="28"
-            cy="28"
-            r={radius}
+            cx="28" cy="28" r={radius}
             stroke="rgba(255, 255, 255, 0.1)"
-            strokeWidth="3"
-            fill="transparent"
+            strokeWidth="3" fill="transparent"
           />
           <circle
-            cx="28"
-            cy="28"
-            r={radius}
+            cx="28" cy="28" r={radius}
             stroke={themeColor}
             strokeWidth="3.5"
             strokeDasharray={circumference}
@@ -112,7 +146,6 @@ export default function ManualTimer({ participantId = 'guest', onTimeUp, duratio
             style={{ transition: 'stroke-dashoffset 1s linear, stroke 0.5s ease' }}
           />
         </svg>
-
         <div style={{ position: 'absolute', color: themeColor }}>
           {isUrgent ? <AlertTriangle size={18} /> : <Clock size={18} />}
         </div>
@@ -134,7 +167,6 @@ export default function ManualTimer({ participantId = 'guest', onTimeUp, duratio
             {formattedTime}
           </span>
         </div>
-
         <span
           style={{
             fontFamily: 'var(--font-mono)',

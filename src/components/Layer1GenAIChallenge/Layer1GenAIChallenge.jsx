@@ -127,12 +127,27 @@ export default function Layer1GenAIChallenge({
 
     if (!prompt.trim()) {
       soundEngine.playClick();
-      setValidationError('MISSION INPUT REQUIRED // Please formulate your prompt before submitting.');
+      setValidationError('Please formulate your prompt before submitting.');
+      return;
+    }
+
+    if (!images || images.length === 0) {
+      soundEngine.playClick();
+      setValidationError('Please upload your generated image before submitting.');
       return;
     }
 
     setValidationError(null);
     setIsSubmitting(true);
+
+    // Calculate actual time taken using the session timer
+    const timerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
+    const storedStart = localStorage.getItem(timerKey);
+    const startTime = storedStart ? parseInt(storedStart, 10) : Date.now();
+    const elapsedSeconds = Math.max(0, Math.min(900, Math.floor((Date.now() - startTime) / 1000)));
+    const mins = Math.floor(elapsedSeconds / 60);
+    const secs = elapsedSeconds % 60;
+    const timeTakenFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
     try {
       const { data, error } = await adminService.submitLayer1GenAi({
@@ -140,7 +155,9 @@ export default function Layer1GenAIChallenge({
         username: participant?.name || 'Participant',
         rollNumber: participant?.rollNumber || participant?.roll_number || '',
         prompt: prompt.trim(),
-        imageItems: images
+        imageItems: images,
+        timeTaken: timeTakenFormatted,
+        timeTakenSeconds: elapsedSeconds
       });
 
       if (error) {
@@ -150,6 +167,16 @@ export default function Layer1GenAIChallenge({
         setExistingSubmission(data);
         setSubmissionSuccess(true);
         soundEngine.playBoot();
+
+        // Clear local timer on successful submission
+        try {
+          localStorage.removeItem(timerKey);
+        } catch (e) {}
+
+        // Short success delay, then automatically navigate back to the Event Arena (/play)
+        setTimeout(() => {
+          if (onBack) onBack();
+        }, 1500);
       }
     } catch (err) {
       console.error('Submission exception:', err);

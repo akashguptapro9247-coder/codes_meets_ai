@@ -272,9 +272,9 @@ export const adminService = {
   /**
    * Participant Submits GenAI Prompt & Image Assets (Single Submission Only)
    */
-  async submitLayer1GenAi({ userId, username, rollNumber, prompt, imageItems = [] }) {
+  async submitLayer1GenAi({ userId, username, rollNumber, prompt, imageItems, timeTaken, timeTakenSeconds }) {
     if (!isSupabaseConfigured() || !supabase) {
-      return { error: { message: 'Supabase not configured' } };
+      return { error: { message: 'Database client not initialized' } };
     }
 
     if (!userId) {
@@ -324,16 +324,30 @@ export const adminService = {
         image_urls: imageUrls,
         image_file_ids: imageFileIds,
         image_paths: imagePaths,
+        time_taken: timeTaken || '00:00',
         status: 'pending',
         submitted_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('layer_1_genai_submissions')
         .insert([payload])
         .select()
         .single();
+
+      // Graceful fallback if time_taken column does not exist yet on remote table
+      if (error && (error.code === '42703' || error.message?.includes('time_taken'))) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.time_taken;
+        const fallbackRes = await supabase
+          .from('layer_1_genai_submissions')
+          .insert([fallbackPayload])
+          .select()
+          .single();
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
 
       if (error) {
         if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
@@ -509,8 +523,102 @@ export const adminService = {
     }
   },
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // SECURE RPC: Layer 1 Manual — server-side session, answer checking, scoring
+  // ─────────────────────────────────────────────────────────────────────────
+
   /**
-   * Submits finished Manual Coding attempt and updates Layer 1 score
+   * Start (or resume) a Layer 1 Manual session.
+   * Server selects questions, starts 15-min timer, returns safe questions (no correct_answer).
+   * @returns {{ attempt_id, expires_at, remaining_seconds, questions, batch, year_name, already_completed?, resumed? }}
+   */
+  async startLayer1ManualSession(userId, rollNumber) {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { data: null, error: { message: 'Supabase not configured' } };
+    }
+    if (!userId || !rollNumber) {
+      return { data: null, error: { message: 'userId and rollNumber are required.' } };
+    }
+    try {
+      const { data, error } = await supabase.rpc('rpc_start_layer1_manual_session', {
+        p_user_id:    userId,
+        p_roll_number: rollNumber
+      });
+      if (error) {
+        console.error('[RPC::startLayer1ManualSession] Error:', error);
+        return { data: null, error };
+      }
+      if (data?.error) {
+        return { data: null, error: { message: data.error } };
+      }
+      return { data, error: null };
+    } catch (err) {
+      console.error('[RPC::startLayer1ManualSession] Exception:', err);
+      return { data: null, error: err };
+    }
+  },
+
+  /**
+   * Submit a single answer for a question. Server validates timer and computes correctness.
+   * @returns {{ is_correct: boolean, correct_answer: 'A'|'B'|'C'|'D' }}
+   */
+  async submitLayer1ManualAnswer(attemptId, userId, questionId, selectedOption) {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { data: null, error: { message: 'Supabase not configured' } };
+    }
+    try {
+      const { data, error } = await supabase.rpc('rpc_submit_layer1_manual_answer', {
+        p_attempt_id:      attemptId,
+        p_user_id:         userId,
+        p_question_id:     questionId,
+        p_selected_option: selectedOption
+      });
+      if (error) {
+        console.error('[RPC::submitLayer1ManualAnswer] Error:', error);
+        return { data: null, error };
+      }
+      if (data?.error) {
+        return { data: null, error: { message: data.error } };
+      }
+      return { data, error: null };
+    } catch (err) {
+      console.error('[RPC::submitLayer1ManualAnswer] Exception:', err);
+      return { data: null, error: err };
+    }
+  },
+
+  /**
+   * Finalize the session. Server recalculates authoritative score and syncs to layer_1 table.
+   * @returns {{ score, correct_count, total_questions, max_score, accuracy }}
+   */
+  async completeLayer1ManualSession(attemptId, userId) {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { data: null, error: { message: 'Supabase not configured' } };
+    }
+    try {
+      const { data, error } = await supabase.rpc('rpc_complete_layer1_manual_session', {
+        p_attempt_id: attemptId,
+        p_user_id:    userId
+      });
+      if (error) {
+        console.error('[RPC::completeLayer1ManualSession] Error:', error);
+        return { data: null, error };
+      }
+      if (data?.error) {
+        return { data: null, error: { message: data.error } };
+      }
+      return { data, error: null };
+    } catch (err) {
+      console.error('[RPC::completeLayer1ManualSession] Exception:', err);
+      return { data: null, error: err };
+    }
+  },
+
+  /**
+   * Submits finished Manual Coding attempt and updates Layer 1 score.
+   * @deprecated — kept for admin override and legacy fallback only.
+   *              Student flow now uses startLayer1ManualSession / submitLayer1ManualAnswer /
+   *              completeLayer1ManualSession RPC calls above.
    */
   async submitLayer1ManualAttempt({
     userId,

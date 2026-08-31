@@ -11,13 +11,16 @@ export default function QuestionCard({
   onSelectOption,
   answeredQuestionsMap,
   disabled = false,
-  feedbackState = 'idle' // 'idle' | 'processing' | 'revealed'
+  feedbackState = 'idle', // 'idle' | 'processing' | 'revealed'
+  revealData = null        // { is_correct: bool, correct_answer: 'A'|'B'|'C'|'D' } — from server RPC
 }) {
   if (!question) return null;
 
-  const isRevealed = feedbackState === 'revealed';
-  const isProcessing = feedbackState === 'processing';
-  const isCorrectAnswer = isRevealed && selectedOption === question.correct_answer;
+  const isRevealed    = feedbackState === 'revealed';
+  const isProcessing  = feedbackState === 'processing';
+  // correct_answer comes from server revealData (never from question object)
+  const serverCorrect    = isRevealed ? (revealData?.correct_answer ?? null) : null;
+  const isCorrectAnswer  = isRevealed && revealData?.is_correct === true;
 
   return (
     <motion.div
@@ -214,7 +217,7 @@ export default function QuestionCard({
           onSelectOption={onSelectOption}
           disabled={disabled || isProcessing || isRevealed}
           feedbackState={feedbackState}
-          correctAnswer={question.correct_answer}
+          correctAnswer={serverCorrect}
         />
       </div>
     </motion.div>

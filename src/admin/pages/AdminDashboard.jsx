@@ -1672,9 +1672,10 @@ export default function AdminDashboard({ onClose }) {
                         <th style={{ padding: '12px 14px', width: '40px' }}>#</th>
                         <th style={{ padding: '12px 14px' }}>PLAYER</th>
                         <th style={{ padding: '12px 14px' }}>ROLL NO</th>
-                        <th style={{ padding: '12px 14px', width: '28%' }}>PROMPT</th>
-                        <th style={{ padding: '12px 14px', width: '16%' }}>IMAGES</th>
-                        <th style={{ padding: '12px 14px', width: '120px' }}>GENAI MARKS</th>
+                        <th style={{ padding: '12px 14px', width: '26%' }}>PROMPT</th>
+                        <th style={{ padding: '12px 14px', width: '15%' }}>IMAGES</th>
+                        <th style={{ padding: '12px 14px' }}>TIME TAKEN</th>
+                        <th style={{ padding: '12px 14px', width: '110px' }}>GENAI MARKS</th>
                         <th style={{ padding: '12px 14px' }}>STATUS</th>
                         <th style={{ padding: '12px 14px', textAlign: 'right' }}>SAVE</th>
                         <th style={{ padding: '12px 14px', textAlign: 'right' }}>DELETE</th>
@@ -1683,7 +1684,7 @@ export default function AdminDashboard({ onClose }) {
                     <tbody>
                       {layer1SubmissionsList.length === 0 ? (
                         <tr>
-                          <td colSpan={8} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>
+                          <td colSpan={10} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>
                             NO GENAI SUBMISSIONS RECEIVED YET // WAITING FOR PLAYERS TO SUBMIT
                           </td>
                         </tr>
@@ -1789,6 +1790,16 @@ export default function AdminDashboard({ onClose }) {
                                   ) : (
                                     <span style={{ color: '#6b7280', fontSize: '0.7rem' }}>[ NO IMAGES ]</span>
                                   )}
+                                </td>
+
+                                {/* Time Taken Column */}
+                                <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', color: 'var(--cyan-glow)', fontWeight: 700 }}>
+                                  {sub.time_taken || (sub.submitted_at && sub.created_at ? (() => {
+                                    const diff = Math.max(0, Math.floor((new Date(sub.submitted_at) - new Date(sub.created_at)) / 1000));
+                                    const m = Math.floor(diff / 60);
+                                    const s = diff % 60;
+                                    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                                  })() : 'N/A')}
                                 </td>
 
                                 {/* GenAI Marks Input */}
