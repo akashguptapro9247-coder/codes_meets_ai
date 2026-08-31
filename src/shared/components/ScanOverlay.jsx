@@ -44,7 +44,7 @@ export default function ScanOverlay({ currentStage, isLandingPage = false, showV
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 30,
+          zIndex: 50,
           fontFamily: 'var(--font-mono)',
           fontSize: '0.8rem',
           pointerEvents: 'none'
