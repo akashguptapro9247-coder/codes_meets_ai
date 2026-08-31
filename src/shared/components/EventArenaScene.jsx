@@ -109,7 +109,7 @@ export default function EventArenaScene({ participant, initialRound = null, onNa
       <DigitalParticles />
 
       {/* CRT Scanline & Telemetry Overlay */}
-      <ScanOverlay currentStage={4} />
+      <ScanOverlay currentStage={4} hideHeader={true} />
 
       {/* Compact Top Arena Header */}
       <ArenaHeader
