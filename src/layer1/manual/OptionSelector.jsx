@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Circle } from 'lucide-react';
 import { soundEngine } from '../../shared/utils/SoundEngine';
+import { OptionWebOverlay } from '../../animation/SpiderMan/OptionWebOverlay';
 
 export default function OptionSelector({
   options,
@@ -9,17 +10,33 @@ export default function OptionSelector({
   onSelectOption,
   disabled = false,
   feedbackState = 'idle', // 'idle' | 'processing' | 'revealed'
-  correctAnswer = null
+  correctAnswer = null,
+  spiderState
 }) {
   const optionKeys = ['A', 'B', 'C', 'D'];
   const isRevealed = feedbackState === 'revealed';
   const isProcessing = feedbackState === 'processing';
 
+  // Latch the web hit so it persists after IMPACT
+  const [hitKey, setHitKey] = React.useState(null);
+
+  React.useEffect(() => {
+    if (spiderState === 'IMPACT' && selectedOption) {
+      setHitKey(selectedOption);
+    }
+  }, [spiderState, selectedOption]);
+
+  React.useEffect(() => {
+    if (feedbackState === 'idle') {
+      setHitKey(null);
+    }
+  }, [feedbackState]);
+
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
         gap: '14px',
         width: '100%'
       }}
@@ -89,10 +106,11 @@ export default function OptionSelector({
             disabled={!isClickable}
             whileHover={isClickable ? { scale: 1.015, y: -2 } : {}}
             whileTap={isClickable ? { scale: 0.985 } : {}}
-            onClick={() => {
+            onClick={(e) => {
               if (!isClickable) return;
               soundEngine.playClick();
-              onSelectOption(key);
+              const rect = e.currentTarget.getBoundingClientRect();
+              onSelectOption(key, rect);
             }}
             style={{
               display: 'flex',
@@ -199,6 +217,9 @@ export default function OptionSelector({
                 />
               </>
             )}
+
+            {/* Spider-Man Web Overlay (Finalized Implementation) */}
+            <OptionWebOverlay isVisible={hitKey === key} />
           </motion.button>
         );
       })}

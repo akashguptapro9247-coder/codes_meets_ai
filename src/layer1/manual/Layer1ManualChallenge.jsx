@@ -1,13 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ManualHeader from './ManualHeader';
 import QuestionCard from './QuestionCard';
 import ManualTimer from './ManualTimer';
 import ManualControls from './ManualControls';
+import OptionSelector from './OptionSelector';
 import ManualResultsScreen from './ManualResultsScreen';
 import InvalidRollNumberScreen from './InvalidRollNumberScreen';
 import DigitalParticles from '../../shared/components/DigitalParticles';
 import ScanOverlay from '../../shared/components/ScanOverlay';
+import { SpiderManAnimation } from '../../animation/SpiderMan/SpiderManAnimation';
+import { WebShot } from '../../animation/SpiderMan/WebShot';
 import {
   validateRollNumber,
   generateRandomQuestionSet,
@@ -95,6 +99,84 @@ export default function Layer1ManualChallenge({
   // 'idle' | 'processing' | 'revealed'
   const [feedbackState, setFeedbackState] = useState('idle');
   const feedbackTimers = useRef([]);
+
+  // ==========================================
+  // SPIDER-MAN TEMPORARY INTEGRATION STATE
+  // ==========================================
+  const [spiderState, setSpiderState] = useState('IDLE');
+  const [spiderTarget, setSpiderTarget] = useState(null);
+  const handPosRef = useRef(null);
+  const [webStartPoint, setWebStartPoint] = useState(null);
+  const spiderTimerRef = useRef(null);
+  // Ref to the Spider-Man container div — allows imperative opacity reveal
+  // without triggering a React re-render during the warm-up transition.
+  const spiderContainerRef = useRef(null);
+
+  // Warm-up phase: keep Spider-Man hidden (opacity: 0) for 500ms to allow
+  // WebGL shader and shadow-map compilation to complete on invisible frames.
+  // After 500ms, imperatively reveal the container then start ENTRANCE so
+  // the user only ever sees Spider-Man starting from above the viewport.
+  useEffect(() => {
+    if (!validation.valid || isCompleted) return;
+
+    let raf1, raf2;
+
+    const warmup = setTimeout(() => {
+      flushSync(() => {
+        setSpiderState('ENTRANCE');
+      });
+
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          if (spiderContainerRef.current) {
+            spiderContainerRef.current.style.opacity = '1';
+          }
+        });
+      });
+    }, 500);
+
+    const toIdle = setTimeout(() => setSpiderState('IDLE'), 500 + 1600);
+
+    return () => {
+      clearTimeout(warmup);
+      clearTimeout(toIdle);
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [validation.valid, isCompleted]);
+
+  // Clean up Spider-Man timers
+  useEffect(() => {
+    return () => {
+      if (spiderTimerRef.current) clearTimeout(spiderTimerRef.current);
+    };
+  }, []);
+
+  // Handle option selection with targeting coordinates
+  const handleOptionSelect = (key, rect) => {
+    setCurrentSelectedOption(key);
+    
+    // Trigger Spider-Man shooting animation
+    if (rect) {
+      // Target the center of the clicked option
+      setSpiderTarget({
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      });
+      setWebStartPoint(handPosRef.current);
+      setSpiderState('SHOOTING');
+      
+      if (spiderTimerRef.current) clearTimeout(spiderTimerRef.current);
+      
+      // Exact timing from finalized demo: 400ms shoot -> IMPACT -> 600ms -> IDLE
+      spiderTimerRef.current = setTimeout(() => {
+        setSpiderState('IMPACT');
+        spiderTimerRef.current = setTimeout(() => {
+          setSpiderState('IDLE');
+        }, 600);
+      }, 400);
+    }
+  };
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -236,7 +318,7 @@ export default function Layer1ManualChallenge({
   };
 
   // Timer expired callback: immediately locks and submits current state
-  const handleTimeUp = () => {
+  const handleTimeUp = useCallback(() => {
     if (isCompleted) return;
 
     // Cancel any pending feedback timers
@@ -251,7 +333,8 @@ export default function Layer1ManualChallenge({
     }
 
     handleFinalizeAttempt(updatedAnswers);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCompleted, questions, currentIndex, selectedAnswers, currentSelectedOption]);
 
   // If roll number is invalid, render the validation error screen
   if (!validation.valid) {
@@ -304,6 +387,31 @@ export default function Layer1ManualChallenge({
 
       {/* CRT Scanline & HUD Telemetry Overlay */}
       <ScanOverlay currentStage={1} />
+
+      {/* ==========================================
+          SPIDER-MAN TEMPORARY INTEGRATION 
+          Mounted exactly between ScanOverlay and cyber-card.
+          Initially opacity: 0 — revealed imperatively after warm-up.
+          ========================================== */}
+      {!isCompleted && validation.valid && (
+        <div
+          ref={spiderContainerRef}
+          style={{ position: 'absolute', inset: 0, zIndex: 30, pointerEvents: 'none', opacity: 0 }}
+        >
+          <SpiderManAnimation 
+            state={spiderState} 
+            targetPoint={spiderTarget}
+            onHandPosChange={(pos) => {
+              handPosRef.current = pos;
+            }}
+          />
+          <WebShot 
+            startPoint={webStartPoint} 
+            endPoint={spiderTarget} 
+            animState={spiderState} 
+          />
+        </div>
+      )}
 
       {/* FLOATING MAIN MANUAL CHALLENGE PANEL */}
       <motion.div
@@ -374,21 +482,20 @@ export default function Layer1ManualChallenge({
                 flex: 1,
                 display: 'grid',
                 gridTemplateColumns: '1fr 260px',
+                gridTemplateRows: '1fr auto',
                 gap: '20px',
                 height: '100%',
                 overflow: 'hidden'
               }}
             >
-              {/* Left Main Column: Active Question + 4 Options */}
+              {/* Left Main Column: Active Question (options moved to full-width row below) */}
               <div style={{ height: '100%', overflow: 'hidden' }}>
                 <QuestionCard
                   question={currentQuestion}
                   currentIndex={currentIndex}
                   totalQuestions={questions.length}
                   selectedOption={currentSelectedOption}
-                  onSelectOption={setCurrentSelectedOption}
                   answeredQuestionsMap={selectedAnswers}
-                  disabled={isSubmitting}
                   feedbackState={feedbackState}
                 />
               </div>
@@ -493,6 +600,21 @@ export default function Layer1ManualChallenge({
                   </div>
                 </div>
               </aside>
+
+              {/* Full-width Options Row — grid-column: 1/-1 spans both columns */}
+              {currentQuestion && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <OptionSelector
+                    options={currentQuestion.options}
+                    selectedOption={currentSelectedOption}
+                    onSelectOption={handleOptionSelect}
+                    disabled={isSubmitting || feedbackState === 'processing' || feedbackState === 'revealed'}
+                    feedbackState={feedbackState}
+                    correctAnswer={currentQuestion.correct_answer}
+                    spiderState={spiderState}
+                  />
+                </div>
+              )}
             </div>
           )}
         </main>

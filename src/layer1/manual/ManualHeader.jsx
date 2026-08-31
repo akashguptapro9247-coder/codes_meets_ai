@@ -50,24 +50,25 @@ export default function ManualHeader({ participant, batchInfo, currentQuestion, 
             >
               LAYER 01 // TECHNICAL CODING ASSESSMENT
             </span>
-            <span
-              className="cyber-badge"
-              style={{
-                fontSize: '0.64rem',
-                padding: '2px 8px',
-                background: isFirstYear ? 'rgba(0, 243, 255, 0.15)' : 'rgba(224, 38, 255, 0.15)',
-                borderColor: isFirstYear ? 'var(--cyan-glow)' : 'var(--magenta-glow)',
-                color: isFirstYear ? 'var(--cyan-glow)' : 'var(--magenta-glow)'
-              }}
-            >
-              {isFirstYear ? '1ST YEAR ASSESSMENT' : '2ND YEAR ASSESSMENT'}
-            </span>
           </div>
         </div>
       </div>
 
       {/* Right: Operator Identity & Status */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <span
+          className="cyber-badge"
+          style={{
+            fontSize: '0.64rem',
+            padding: '2px 8px',
+            background: isFirstYear ? 'rgba(0, 243, 255, 0.15)' : 'rgba(224, 38, 255, 0.15)',
+            borderColor: isFirstYear ? 'var(--cyan-glow)' : 'var(--magenta-glow)',
+            color: isFirstYear ? 'var(--cyan-glow)' : 'var(--magenta-glow)'
+          }}
+        >
+          {isFirstYear ? '1ST YEAR ASSESSMENT' : '2ND YEAR ASSESSMENT'}
+        </span>
+
         <div
           style={{
             display: 'flex',

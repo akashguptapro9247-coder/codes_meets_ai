@@ -24,17 +24,24 @@ export default function ManualTimer({ participantId = 'guest', onTimeUp, duratio
     }
   });
 
+  const onTimeUpRef = React.useRef(onTimeUp);
   useEffect(() => {
-    if (timeLeft <= 0) {
-      if (onTimeUp) onTimeUp();
-      return;
-    }
+    onTimeUpRef.current = onTimeUp;
+  }, [onTimeUp]);
+
+  useEffect(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 0) {
+        if (onTimeUpRef.current) onTimeUpRef.current();
+      }
+      return prev;
+    });
 
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          if (onTimeUp) onTimeUp();
+          if (onTimeUpRef.current) onTimeUpRef.current();
           return 0;
         }
 
@@ -47,7 +54,7 @@ export default function ManualTimer({ participantId = 'guest', onTimeUp, duratio
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timeLeft, onTimeUp]);
+  }, []);
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;

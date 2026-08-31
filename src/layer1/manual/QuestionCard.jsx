@@ -1,17 +1,14 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
-import OptionSelector from './OptionSelector';
 
 export default function QuestionCard({
   question,
   currentIndex,
   totalQuestions,
   selectedOption,
-  onSelectOption,
   answeredQuestionsMap,
-  disabled = false,
-  feedbackState = 'idle' // 'idle' | 'processing' | 'revealed'
+  feedbackState = 'idle', // 'idle' | 'processing' | 'revealed'
 }) {
   if (!question) return null;
 
@@ -206,17 +203,6 @@ export default function QuestionCard({
         )}
       </div>
 
-      {/* 4 Options Selector */}
-      <div style={{ flexShrink: 0 }}>
-        <OptionSelector
-          options={question.options}
-          selectedOption={selectedOption}
-          onSelectOption={onSelectOption}
-          disabled={disabled || isProcessing || isRevealed}
-          feedbackState={feedbackState}
-          correctAnswer={question.correct_answer}
-        />
-      </div>
     </motion.div>
   );
 }
