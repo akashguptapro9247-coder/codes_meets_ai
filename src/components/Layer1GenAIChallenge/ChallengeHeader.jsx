@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Terminal, Activity, ArrowLeft, Shield, Volume2, VolumeX } from 'lucide-react';
+import { Sparkles, ArrowLeft, Shield, Volume2, VolumeX, Settings } from 'lucide-react';
 import { soundEngine } from '../../utils/SoundEngine';
 
-export default function ChallengeHeader({ participant, onBack }) {
+export default function ChallengeHeader({ participant, onBack, onOpenAdmin }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
   useEffect(() => {
@@ -116,38 +116,37 @@ export default function ChallengeHeader({ participant, onBack }) {
         <span>CHALLENGE ACTIVE // RECONSTRUCTION TRACK</span>
       </div>
 
-      {/* Right: Operator Identity Badge & SFX Toggle */}
+      {/* Right: Operator Identity, SFX Toggle & Admin Panel Button */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '14px',
+          gap: '12px',
           fontFamily: 'var(--font-mono)',
           fontSize: '0.72rem'
         }}
       >
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ color: '#ffffff', fontWeight: 700, letterSpacing: '0.08em' }}>
-            {participant?.name || 'PARTICIPANT'}
-          </div>
-          <div style={{ color: 'var(--cyan-glow)', fontSize: '0.65rem' }}>
-            ROLL: {participant?.rollNumber || participant?.roll_number || '23-XXX'}
-          </div>
-        </div>
+        {/* Operator Info Tag */}
         <div
           style={{
-            width: '28px',
-            height: '28px',
-            borderRadius: '3px',
-            background: 'rgba(0, 243, 255, 0.1)',
-            border: '1px solid rgba(0, 243, 255, 0.4)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--cyan-glow)'
+            gap: '8px',
+            padding: '5px 10px',
+            background: 'rgba(5, 12, 28, 0.9)',
+            border: '1px solid rgba(0, 243, 255, 0.2)',
+            borderRadius: '2px',
+            color: '#d1d5db'
           }}
         >
-          <Shield size={14} />
+          <Shield size={13} color="var(--lime-accent)" />
+          <span>
+            OPERATOR: <strong style={{ color: '#ffffff' }}>{(participant?.name || 'PARTICIPANT').toUpperCase()}</strong>
+          </span>
+          <span style={{ color: 'rgba(0, 243, 255, 0.4)' }}>|</span>
+          <span style={{ color: 'var(--cyan-glow)' }}>
+            ROLL: {participant?.rollNumber || participant?.roll_number || '23-XXX'}
+          </span>
         </div>
 
         {/* Audio Mute Toggle */}
@@ -155,21 +154,58 @@ export default function ChallengeHeader({ participant, onBack }) {
           onClick={toggleSound}
           onMouseEnter={() => soundEngine.playHover()}
           style={{
-            background: 'transparent',
-            border: '1px solid rgba(0, 243, 255, 0.25)',
-            color: muted ? '#6b7280' : 'var(--cyan-glow)',
-            padding: '6px 10px',
-            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            background: 'rgba(5, 10, 24, 0.8)',
+            border: '1px solid rgba(0, 243, 255, 0.3)',
+            color: muted ? '#6b7280' : 'var(--cyan-glow)',
+            padding: '6px 12px',
+            cursor: 'pointer',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem'
+            fontSize: '0.72rem',
+            letterSpacing: '0.08em',
+            borderRadius: '2px',
+            transition: 'all 0.2s ease'
           }}
           title="Toggle SFX"
         >
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
           <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
+        </button>
+
+        {/* Admin Panel Trigger Button */}
+        <button
+          onClick={() => {
+            soundEngine.playClick();
+            if (window.history.pushState) {
+              window.history.pushState({}, '', '/admin-panel');
+              window.dispatchEvent(new Event('popstate'));
+            } else {
+              window.location.hash = '#admin-panel';
+            }
+            if (onOpenAdmin) onOpenAdmin();
+          }}
+          onMouseEnter={() => soundEngine.playHover()}
+          style={{
+            background: 'rgba(224, 38, 255, 0.12)',
+            border: '1px solid var(--magenta-glow)',
+            color: 'var(--magenta-glow)',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.72rem',
+            letterSpacing: '0.08em',
+            borderRadius: '2px',
+            boxShadow: '0 0 10px rgba(224, 38, 255, 0.2)'
+          }}
+          title="Open Admin Control Panel (/admin-panel)"
+        >
+          <Settings size={14} />
+          <span>ADMIN PANEL</span>
         </button>
       </div>
     </header>

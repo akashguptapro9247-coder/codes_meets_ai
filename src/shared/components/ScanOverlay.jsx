@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, Terminal } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function ScanOverlay({ currentStage, isLandingPage = false, showVignette = false }) {
+export default function ScanOverlay({ currentStage, isLandingPage = false, showVignette = false, hideHeader = false }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
   const shouldRenderVignette = isLandingPage || showVignette;
 
@@ -34,7 +34,8 @@ export default function ScanOverlay({ currentStage, isLandingPage = false, showV
       <div className="hud-corner hud-bottom-right" />
 
       {/* TOP HEADER BAR */}
-      <header
+      {!hideHeader && (
+        <header
         style={{
           position: 'absolute',
           top: 0,
@@ -100,6 +101,7 @@ export default function ScanOverlay({ currentStage, isLandingPage = false, showV
           </button>
         </div>
       </header>
+      )}
 
       {/* BOTTOM EVENT FOOTER */}
       <footer

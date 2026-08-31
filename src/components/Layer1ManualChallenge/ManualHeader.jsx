@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Shield, Cpu, Activity, Volume2, VolumeX } from 'lucide-react';
+import { Terminal, Shield, Volume2, VolumeX, Settings } from 'lucide-react';
 import { soundEngine } from '../../utils/SoundEngine';
 
-export default function ManualHeader({ participant, batchInfo, currentQuestion, totalQuestions }) {
+export default function ManualHeader({ participant, batchInfo, currentQuestion, totalQuestions, onOpenAdmin }) {
   const isFirstYear = batchInfo?.batch === '26';
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
@@ -81,20 +81,20 @@ export default function ManualHeader({ participant, batchInfo, currentQuestion, 
         </div>
       </div>
 
-      {/* Right: Operator Identity & Status */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      {/* Right: Operator Identity, SFX Toggle & Admin Panel Button */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '5px 12px',
+            padding: '5px 10px',
             background: 'rgba(0, 243, 255, 0.06)',
             border: '1px solid rgba(0, 243, 255, 0.25)',
             borderRadius: '2px'
           }}
         >
-          <Shield size={13} color="var(--cyan-glow)" />
+          <Shield size={13} color="var(--lime-accent)" />
           <span style={{ fontSize: '0.74rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>
             OPERATOR:
           </span>
@@ -106,8 +106,9 @@ export default function ManualHeader({ participant, batchInfo, currentQuestion, 
               fontFamily: 'var(--font-mono)'
             }}
           >
-            {participant?.name || 'Participant'}
+            {(participant?.name || 'PARTICIPANT').toUpperCase()}
           </span>
+          <span style={{ color: 'rgba(0, 243, 255, 0.4)' }}>|</span>
           <span
             style={{
               fontSize: '0.72rem',
@@ -115,31 +116,7 @@ export default function ManualHeader({ participant, batchInfo, currentQuestion, 
               fontFamily: 'var(--font-mono)'
             }}
           >
-            [{participant?.rollNumber || participant?.roll_number || 'N/A'}]
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--lime-accent)',
-              boxShadow: '0 0 8px var(--lime-accent)',
-              animation: 'pulse 1.8s infinite'
-            }}
-          />
-          <span
-            style={{
-              fontSize: '0.68rem',
-              fontFamily: 'var(--font-mono)',
-              fontWeight: 700,
-              color: 'var(--lime-accent)',
-              letterSpacing: '0.08em'
-            }}
-          >
-            SESSION ACTIVE
+            ROLL: {participant?.rollNumber || participant?.roll_number || '23-XXX'}
           </span>
         </div>
 
@@ -148,21 +125,58 @@ export default function ManualHeader({ participant, batchInfo, currentQuestion, 
           onClick={toggleSound}
           onMouseEnter={() => soundEngine.playHover()}
           style={{
-            background: 'transparent',
-            border: '1px solid rgba(0, 243, 255, 0.25)',
-            color: muted ? '#6b7280' : 'var(--cyan-glow)',
-            padding: '6px 10px',
-            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
+            background: 'rgba(5, 10, 24, 0.8)',
+            border: '1px solid rgba(0, 243, 255, 0.3)',
+            color: muted ? '#6b7280' : 'var(--cyan-glow)',
+            padding: '6px 12px',
+            cursor: 'pointer',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem'
+            fontSize: '0.72rem',
+            letterSpacing: '0.08em',
+            borderRadius: '2px',
+            transition: 'all 0.2s ease'
           }}
           title="Toggle SFX"
         >
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
           <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
+        </button>
+
+        {/* Admin Panel Trigger Button */}
+        <button
+          onClick={() => {
+            soundEngine.playClick();
+            if (window.history.pushState) {
+              window.history.pushState({}, '', '/admin-panel');
+              window.dispatchEvent(new Event('popstate'));
+            } else {
+              window.location.hash = '#admin-panel';
+            }
+            if (onOpenAdmin) onOpenAdmin();
+          }}
+          onMouseEnter={() => soundEngine.playHover()}
+          style={{
+            background: 'rgba(224, 38, 255, 0.12)',
+            border: '1px solid var(--magenta-glow)',
+            color: 'var(--magenta-glow)',
+            padding: '6px 12px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.72rem',
+            letterSpacing: '0.08em',
+            borderRadius: '2px',
+            boxShadow: '0 0 10px rgba(224, 38, 255, 0.2)'
+          }}
+          title="Open Admin Control Panel (/admin-panel)"
+        >
+          <Settings size={14} />
+          <span>ADMIN PANEL</span>
         </button>
       </div>
     </header>

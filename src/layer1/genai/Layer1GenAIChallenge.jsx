@@ -179,7 +179,7 @@ export default function Layer1GenAIChallenge({
       <DigitalParticles />
 
       {/* CRT Scanline & HUD Telemetry Overlay */}
-      <ScanOverlay currentStage={1} />
+      <ScanOverlay currentStage={1} hideHeader={true} />
 
       {/* FLOATING MAIN CHALLENGE PANEL (4-6vw horizontal margin, 3-5vh vertical margin) */}
       <motion.div
