@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function SelectField({
+const SelectField = forwardRef(function SelectField({
   label,
   value,
   onChange,
   options = [],
   placeholder = 'Select option',
   error,
-  icon: Icon
-}) {
+  icon: Icon,
+  onKeyDown
+}, ref) {
   const [isFocused, setIsFocused] = useState(false);
   const isValid = Boolean(value && String(value).trim().length > 0 && !error);
 
@@ -105,10 +106,12 @@ export default function SelectField({
         }}
       >
         <select
+          ref={ref}
           value={value}
           onChange={onChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={onKeyDown}
           style={{
             width: '100%',
             padding: '11px 36px 11px 14px',
@@ -153,4 +156,6 @@ export default function SelectField({
       </div>
     </div>
   );
-}
+});
+
+export default SelectField;

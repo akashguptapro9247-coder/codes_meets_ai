@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { Check } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function InputField({
+const InputField = forwardRef(function InputField({
   label,
   value,
   onChange,
   placeholder,
   error,
   type = 'text',
-  icon: Icon
-}) {
+  icon: Icon,
+  onKeyDown
+}, ref) {
   const [isFocused, setIsFocused] = useState(false);
   const isValid = Boolean(value && String(value).trim().length > 0 && !error);
 
@@ -121,11 +122,13 @@ export default function InputField({
         )}
 
         <input
+          ref={ref}
           type={type}
           value={value}
           onChange={onChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
           style={{
             width: '100%',
@@ -158,4 +161,6 @@ export default function InputField({
       </div>
     </div>
   );
-}
+});
+
+export default InputField;

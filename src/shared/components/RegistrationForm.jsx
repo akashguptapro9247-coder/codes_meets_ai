@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Hash, GitBranch, Calendar, Grid } from 'lucide-react';
 import InputField from './InputField';
@@ -41,6 +41,55 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
   const [globalError, setGlobalError] = useState('');
   const [tickerIndex, setTickerIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Field Refs for Sequential Keyboard Focus Flow
+  const nameRef = useRef(null);
+  const rollRef = useRef(null);
+  const branchRef = useRef(null);
+  const yearRef = useRef(null);
+  const sectionRef = useRef(null);
+  const buttonRef = useRef(null);
+
+  // Auto-focus Full Name field on component mount
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
+
+  // Keyboard Navigation Event Handlers
+  const handleNameKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      rollRef.current?.focus();
+    }
+  };
+
+  const handleRollKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      branchRef.current?.focus();
+    }
+  };
+
+  const handleBranchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      yearRef.current?.focus();
+    }
+  };
+
+  const handleYearKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sectionRef.current?.focus();
+    }
+  };
+
+  const handleSectionKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      buttonRef.current?.focus();
+    }
+  };
 
   // Rotate subtle technical status messages
   useEffect(() => {
@@ -332,30 +381,36 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {/* Field 1: Full Name */}
           <InputField
+            ref={nameRef}
             label="FULL NAME"
             placeholder="Enter your name"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
+            onKeyDown={handleNameKeyDown}
             error={errors.name}
             icon={User}
           />
 
           {/* Field 2: Roll Number */}
           <InputField
+            ref={rollRef}
             label="ROLL NUMBER"
             placeholder="Enter roll number"
             value={formData.rollNumber}
             onChange={(e) => handleChange('rollNumber', e.target.value)}
+            onKeyDown={handleRollKeyDown}
             error={errors.rollNumber}
             icon={Hash}
           />
 
           {/* Field 3: Branch Dropdown */}
           <SelectField
+            ref={branchRef}
             label="BRANCH"
             placeholder="Select Branch"
             value={formData.branch}
             onChange={(e) => handleChange('branch', e.target.value)}
+            onKeyDown={handleBranchKeyDown}
             options={BRANCH_OPTIONS}
             error={errors.branch}
             icon={GitBranch}
@@ -365,10 +420,12 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             {/* Field 4: Year Dropdown */}
             <SelectField
+              ref={yearRef}
               label="YEAR"
               placeholder="Select Year"
               value={formData.year}
               onChange={(e) => handleChange('year', e.target.value)}
+              onKeyDown={handleYearKeyDown}
               options={YEAR_OPTIONS}
               error={errors.year}
               icon={Calendar}
@@ -376,10 +433,12 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
 
             {/* Field 5: Section Dropdown */}
             <SelectField
+              ref={sectionRef}
               label="SECTION"
               placeholder="Select Section"
               value={formData.section}
               onChange={(e) => handleChange('section', e.target.value)}
+              onKeyDown={handleSectionKeyDown}
               options={SECTION_OPTIONS}
               error={errors.section}
               icon={Grid}
@@ -409,7 +468,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
         </div>
 
         {/* Main CTA Button: LET'S PLAY */}
-        <LetsPlayButton onClick={handleValidationAndSubmit} isComplete={isFormFullyComplete} />
+        <LetsPlayButton ref={buttonRef} onClick={handleValidationAndSubmit} isComplete={isFormFullyComplete} />
       </div>
     </div>
   );
