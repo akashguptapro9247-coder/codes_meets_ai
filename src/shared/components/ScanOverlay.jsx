@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Volume2, VolumeX, Terminal } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function ScanOverlay({ currentStage }) {
+export default function ScanOverlay({ currentStage, isLandingPage = false, showVignette = false }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
+  const shouldRenderVignette = isLandingPage || showVignette;
 
   const toggleSound = () => {
     const isNowMuted = soundEngine.toggleMute();
@@ -17,7 +18,7 @@ export default function ScanOverlay({ currentStage }) {
     <>
       {/* CRT Scanline & Vignette Effects */}
       <div className="crt-scanlines" />
-      <div className="cyber-vignette" />
+      {shouldRenderVignette && <div className="cyber-vignette" />}
 
       {/* Cyber Corner HUD Brackets */}
       <div className="hud-corner hud-top-left" />

@@ -80,7 +80,7 @@ export default function IntroScene({ onBegin }) {
       <DigitalParticles />
 
       {/* z-index 10: HUD Scanner & Telemetry Overlay */}
-      <ScanOverlay currentStage={stage} />
+      <ScanOverlay currentStage={stage} isLandingPage={true} />
 
       {/* Laser Scan Transition Overlay */}
       {isTransitioning && <IntroTransition />}
