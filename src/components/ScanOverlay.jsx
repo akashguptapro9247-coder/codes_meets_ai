@@ -6,9 +6,16 @@ export default function ScanOverlay({ currentStage, isLandingPage = false, showV
   const [muted, setMuted] = useState(soundEngine.isMuted());
   const shouldRenderVignette = isLandingPage || showVignette;
 
+  useEffect(() => {
+    setMuted(soundEngine.isMuted());
+    const unsubscribe = soundEngine.subscribe((newMutedState) => {
+      setMuted(newMutedState);
+    });
+    return unsubscribe;
+  }, []);
+
   const toggleSound = () => {
     const isNowMuted = soundEngine.toggleMute();
-    setMuted(isNowMuted);
     if (!isNowMuted) {
       soundEngine.playHover();
     }

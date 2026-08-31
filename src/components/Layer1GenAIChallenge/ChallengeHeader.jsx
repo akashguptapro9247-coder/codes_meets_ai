@@ -1,8 +1,23 @@
-import React from 'react';
-import { Sparkles, Terminal, Activity, ArrowLeft, Shield } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Terminal, Activity, ArrowLeft, Shield, Volume2, VolumeX } from 'lucide-react';
 import { soundEngine } from '../../utils/SoundEngine';
 
 export default function ChallengeHeader({ participant, onBack }) {
+  const [muted, setMuted] = useState(soundEngine.isMuted());
+
+  useEffect(() => {
+    setMuted(soundEngine.isMuted());
+    const unsubscribe = soundEngine.subscribe((newMutedState) => {
+      setMuted(newMutedState);
+    });
+    return unsubscribe;
+  }, []);
+
+  const toggleSound = () => {
+    const isNowMuted = soundEngine.toggleMute();
+    if (!isNowMuted) soundEngine.playHover();
+  };
+
   return (
     <header
       style={{
@@ -101,12 +116,12 @@ export default function ChallengeHeader({ participant, onBack }) {
         <span>CHALLENGE ACTIVE // RECONSTRUCTION TRACK</span>
       </div>
 
-      {/* Right: Operator Identity Badge */}
+      {/* Right: Operator Identity Badge & SFX Toggle */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '14px',
           fontFamily: 'var(--font-mono)',
           fontSize: '0.72rem'
         }}
@@ -134,6 +149,28 @@ export default function ChallengeHeader({ participant, onBack }) {
         >
           <Shield size={14} />
         </div>
+
+        {/* Audio Mute Toggle */}
+        <button
+          onClick={toggleSound}
+          onMouseEnter={() => soundEngine.playHover()}
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(0, 243, 255, 0.25)',
+            color: muted ? '#6b7280' : 'var(--cyan-glow)',
+            padding: '6px 10px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.72rem'
+          }}
+          title="Toggle SFX"
+        >
+          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
+        </button>
       </div>
     </header>
   );

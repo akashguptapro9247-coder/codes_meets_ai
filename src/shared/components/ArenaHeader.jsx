@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Terminal, ShieldCheck, Volume2, VolumeX, Settings, Cpu } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
 export default function ArenaHeader({ participant, onOpenAdmin }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
+  useEffect(() => {
+    setMuted(soundEngine.isMuted());
+    const unsubscribe = soundEngine.subscribe((newMutedState) => {
+      setMuted(newMutedState);
+    });
+    return unsubscribe;
+  }, []);
+
   const toggleSound = () => {
     const isMuted = soundEngine.toggleMute();
-    setMuted(isMuted);
     if (!isMuted) soundEngine.playHover();
   };
 
@@ -135,6 +142,7 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
           title="Toggle SFX"
         >
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
         </button>
 
         {/* Secret Admin Control Modal Trigger for Live Testing */}

@@ -5,7 +5,57 @@
 class CyberSoundEngine {
   constructor() {
     this.ctx = null;
-    this.muted = false;
+    this.listeners = new Set();
+
+    let initialMute = false;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const saved = localStorage.getItem('cma_sfx_muted');
+        if (saved !== null) {
+          initialMute = saved === 'true';
+        }
+      }
+    } catch (e) {
+      console.warn('localStorage read error for SFX state:', e);
+    }
+
+    this.muted = initialMute;
+  }
+
+  subscribe(listener) {
+    if (typeof listener === 'function') {
+      this.listeners.add(listener);
+    }
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  notify() {
+    this.listeners.forEach((listener) => {
+      try {
+        listener(this.muted);
+      } catch (e) {}
+    });
+  }
+
+  setMuted(mutedState) {
+    this.muted = Boolean(mutedState);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('cma_sfx_muted', String(this.muted));
+      }
+    } catch (e) {}
+    this.notify();
+    return this.muted;
+  }
+
+  toggleMute() {
+    return this.setMuted(!this.muted);
+  }
+
+  isMuted() {
+    return this.muted;
   }
 
   init() {
@@ -18,15 +68,6 @@ class CyberSoundEngine {
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
-  }
-
-  toggleMute() {
-    this.muted = !this.muted;
-    return this.muted;
-  }
-
-  isMuted() {
-    return this.muted;
   }
 
   // Futuristic Boot Power-Up Chime

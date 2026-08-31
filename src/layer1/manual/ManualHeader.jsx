@@ -1,8 +1,23 @@
-import React from 'react';
-import { Terminal, Shield, Cpu, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Terminal, Shield, Cpu, Activity, Volume2, VolumeX } from 'lucide-react';
+import { soundEngine } from '../../utils/SoundEngine';
 
 export default function ManualHeader({ participant, batchInfo, currentQuestion, totalQuestions }) {
   const isFirstYear = batchInfo?.batch === '26';
+  const [muted, setMuted] = useState(soundEngine.isMuted());
+
+  useEffect(() => {
+    setMuted(soundEngine.isMuted());
+    const unsubscribe = soundEngine.subscribe((newMutedState) => {
+      setMuted(newMutedState);
+    });
+    return unsubscribe;
+  }, []);
+
+  const toggleSound = () => {
+    const isNowMuted = soundEngine.toggleMute();
+    if (!isNowMuted) soundEngine.playHover();
+  };
 
   return (
     <header
@@ -127,6 +142,28 @@ export default function ManualHeader({ participant, batchInfo, currentQuestion, 
             SESSION ACTIVE
           </span>
         </div>
+
+        {/* Audio Mute Toggle */}
+        <button
+          onClick={toggleSound}
+          onMouseEnter={() => soundEngine.playHover()}
+          style={{
+            background: 'transparent',
+            border: '1px solid rgba(0, 243, 255, 0.25)',
+            color: muted ? '#6b7280' : 'var(--cyan-glow)',
+            padding: '6px 10px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.72rem'
+          }}
+          title="Toggle SFX"
+        >
+          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
+        </button>
       </div>
     </header>
   );
