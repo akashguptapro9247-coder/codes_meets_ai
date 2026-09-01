@@ -10,6 +10,7 @@ const InputField = forwardRef(function InputField({
   error,
   successMessage,
   type = 'text',
+  maxLength,
   icon: Icon,
   onKeyDown
 }, ref) {
@@ -145,6 +146,7 @@ const InputField = forwardRef(function InputField({
           onBlur={handleBlur}
           onKeyDown={onKeyDown}
           placeholder={placeholder}
+          maxLength={maxLength}
           style={{
             width: '100%',
             padding: '11px 36px 11px 14px',

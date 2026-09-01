@@ -197,7 +197,8 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
   }, []);
 
   const handleChange = (field, value) => {
-    const updated = { ...formData, [field]: value };
+    const finalValue = field === 'rollNumber' ? value.slice(0, 10) : value;
+    const updated = { ...formData, [field]: finalValue };
     setFormData(updated);
     if (field === 'rollNumber') {
       setRollVerified(false);
@@ -371,6 +372,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
             onKeyDown={handleRollKeyDown}
             error={errors.rollNumber}
             successMessage={rollSuccessMessage}
+            maxLength={10}
             icon={Hash}
           />
 
