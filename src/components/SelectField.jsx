@@ -9,6 +9,7 @@ const SelectField = forwardRef(function SelectField({
   options = [],
   placeholder = 'Select option',
   error,
+  disabled = false,
   icon: Icon,
   onKeyDown,
   onConfirmNext
@@ -29,10 +30,12 @@ const SelectField = forwardRef(function SelectField({
   // Expose focus and control methods via ref
   useImperativeHandle(ref, () => ({
     focus: () => {
+      if (disabled) return;
       buttonRef.current?.focus();
       setIsOpen(true);
     },
     open: () => {
+      if (disabled) return;
       setIsOpen(true);
     },
     close: () => {
@@ -62,6 +65,10 @@ const SelectField = forwardRef(function SelectField({
   }, []);
 
   const handleFocus = () => {
+    if (disabled) {
+      buttonRef.current?.blur();
+      return;
+    }
     lastFocusTimeRef.current = Date.now();
     setIsFocused(true);
     soundEngine.playHover();
@@ -77,6 +84,7 @@ const SelectField = forwardRef(function SelectField({
 
   const handleTriggerClick = (e) => {
     e.stopPropagation();
+    if (disabled) return;
     // If focus was just gained within 250ms (e.g. mouse click on unfocused field), keep open instead of toggling closed
     if (Date.now() - lastFocusTimeRef.current < 250) {
       setIsOpen(true);
@@ -86,6 +94,7 @@ const SelectField = forwardRef(function SelectField({
   };
 
   const selectOption = (optValue, advanceKeyboard = false) => {
+    if (disabled) return;
     if (onChange) {
       onChange({ target: { value: optValue } });
     }
@@ -98,6 +107,8 @@ const SelectField = forwardRef(function SelectField({
   };
 
   const handleKeyDownInternal = (e) => {
+    if (disabled) return;
+
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (!isOpen) {
@@ -161,7 +172,13 @@ const SelectField = forwardRef(function SelectField({
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '0.72rem',
-            color: isFocused ? 'var(--cyan-glow)' : isValid ? '#ffffff' : 'rgba(0, 243, 255, 0.7)',
+            color: disabled
+              ? 'rgba(0, 243, 255, 0.45)'
+              : isFocused
+              ? 'var(--cyan-glow)'
+              : isValid
+              ? '#ffffff'
+              : 'rgba(0, 243, 255, 0.7)',
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
             display: 'flex',
@@ -170,7 +187,7 @@ const SelectField = forwardRef(function SelectField({
             transition: 'color 0.25s ease'
           }}
         >
-          {Icon && <Icon size={13} color={isFocused ? 'var(--cyan-glow)' : isValid ? 'var(--lime-accent)' : '#6b7280'} />}
+          {Icon && <Icon size={13} color={disabled ? '#4b5563' : isFocused ? 'var(--cyan-glow)' : isValid ? 'var(--lime-accent)' : '#6b7280'} />}
           {label}
         </label>
 
@@ -205,11 +222,14 @@ const SelectField = forwardRef(function SelectField({
       {/* Cyber Select Trigger Field */}
       <div
         ref={buttonRef}
-        tabIndex={0}
+        tabIndex={disabled ? -1 : 0}
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDownInternal}
         onClick={handleTriggerClick}
+        onMouseDown={(e) => {
+          if (disabled) e.preventDefault();
+        }}
         style={{
           position: 'relative',
           display: 'flex',
@@ -233,7 +253,8 @@ const SelectField = forwardRef(function SelectField({
             : 'none',
           transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
           clipPath: 'polygon(6px 0%, 100% 0%, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0% 100%, 0% 6px)',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.7 : 1,
           outline: 'none'
         }}
       >
@@ -242,7 +263,7 @@ const SelectField = forwardRef(function SelectField({
             fontFamily: 'var(--font-mono)',
             fontSize: '0.85rem',
             letterSpacing: '0.05em',
-            color: value ? '#ffffff' : '#6b7280'
+            color: disabled ? '#4b5563' : value ? '#ffffff' : '#6b7280'
           }}
         >
           {selectedOptionObj ? selectedOptionObj.label : placeholder}
@@ -250,7 +271,7 @@ const SelectField = forwardRef(function SelectField({
 
         <div
           style={{
-            color: isFocused ? 'var(--cyan-glow)' : isValid ? 'var(--lime-accent)' : 'rgba(0, 243, 255, 0.6)',
+            color: disabled ? '#4b5563' : isFocused ? 'var(--cyan-glow)' : isValid ? 'var(--lime-accent)' : 'rgba(0, 243, 255, 0.6)',
             transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
             transition: 'transform 0.2s ease, color 0.25s ease'
           }}
@@ -260,7 +281,7 @@ const SelectField = forwardRef(function SelectField({
       </div>
 
       {/* Cyber Option Dropdown Menu Overlay */}
-      {isOpen && (
+      {!disabled && isOpen && (
         <div
           style={{
             position: 'absolute',

@@ -386,6 +386,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
             onConfirmNext={handleBranchConfirmNext}
             options={BRANCH_OPTIONS}
             error={errors.branch}
+            disabled={!rollVerified}
             icon={GitBranch}
           />
 
@@ -401,6 +402,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
               onConfirmNext={handleYearConfirmNext}
               options={YEAR_OPTIONS}
               error={errors.year}
+              disabled={!rollVerified}
               icon={Calendar}
             />
 
@@ -414,6 +416,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
               onConfirmNext={handleSectionConfirmNext}
               options={SECTION_OPTIONS}
               error={errors.section}
+              disabled={!rollVerified}
               icon={Grid}
             />
           </div>
