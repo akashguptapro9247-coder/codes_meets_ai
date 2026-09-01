@@ -55,6 +55,21 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     nameRef.current?.focus();
   }, []);
 
+  // Helper to focus and visually open a dropdown picker
+  const focusAndOpenSelect = (selectRef) => {
+    if (!selectRef.current) return;
+    selectRef.current.focus();
+    setTimeout(() => {
+      try {
+        if (typeof selectRef.current?.showPicker === 'function') {
+          selectRef.current.showPicker();
+        }
+      } catch (err) {
+        // Fallback gracefully if browser restricts gesture
+      }
+    }, 20);
+  };
+
   // Keyboard Navigation Event Handlers
   const handleNameKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -66,27 +81,36 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
   const handleRollKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      branchRef.current?.focus();
+      focusAndOpenSelect(branchRef);
     }
   };
 
   const handleBranchKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      yearRef.current?.focus();
+      if (!formData.branch && BRANCH_OPTIONS.length > 0) {
+        handleChange('branch', BRANCH_OPTIONS[0]);
+      }
+      focusAndOpenSelect(yearRef);
     }
   };
 
   const handleYearKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      sectionRef.current?.focus();
+      if (!formData.year && YEAR_OPTIONS.length > 0) {
+        handleChange('year', YEAR_OPTIONS[0]);
+      }
+      focusAndOpenSelect(sectionRef);
     }
   };
 
   const handleSectionKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (!formData.section && SECTION_OPTIONS.length > 0) {
+        handleChange('section', SECTION_OPTIONS[0]);
+      }
       buttonRef.current?.focus();
     }
   };

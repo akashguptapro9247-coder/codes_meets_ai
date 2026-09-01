@@ -15,9 +15,19 @@ const SelectField = forwardRef(function SelectField({
   const [isFocused, setIsFocused] = useState(false);
   const isValid = Boolean(value && String(value).trim().length > 0 && !error);
 
-  const handleFocus = () => {
+  const handleFocus = (e) => {
     setIsFocused(true);
     soundEngine.playHover();
+    const target = e.target;
+    setTimeout(() => {
+      try {
+        if (typeof target?.showPicker === 'function') {
+          target.showPicker();
+        }
+      } catch (err) {
+        // Ignore browser security gesture restrictions if triggered without user gesture
+      }
+    }, 20);
   };
 
   const handleBlur = () => {
