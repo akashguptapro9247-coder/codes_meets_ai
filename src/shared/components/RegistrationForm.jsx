@@ -55,21 +55,6 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     nameRef.current?.focus();
   }, []);
 
-  // Helper to focus and visually open a dropdown picker
-  const focusAndOpenSelect = (selectRef) => {
-    if (!selectRef.current) return;
-    selectRef.current.focus();
-    setTimeout(() => {
-      try {
-        if (typeof selectRef.current?.showPicker === 'function') {
-          selectRef.current.showPicker();
-        }
-      } catch (err) {
-        // Fallback gracefully if browser restricts gesture
-      }
-    }, 20);
-  };
-
   // Keyboard Navigation Event Handlers
   const handleNameKeyDown = (e) => {
     if (e.key === 'Enter') {
@@ -81,38 +66,20 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
   const handleRollKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      focusAndOpenSelect(branchRef);
+      branchRef.current?.focus();
     }
   };
 
-  const handleBranchKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (!formData.branch && BRANCH_OPTIONS.length > 0) {
-        handleChange('branch', BRANCH_OPTIONS[0]);
-      }
-      focusAndOpenSelect(yearRef);
-    }
+  const handleBranchConfirmNext = () => {
+    yearRef.current?.focus();
   };
 
-  const handleYearKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (!formData.year && YEAR_OPTIONS.length > 0) {
-        handleChange('year', YEAR_OPTIONS[0]);
-      }
-      focusAndOpenSelect(sectionRef);
-    }
+  const handleYearConfirmNext = () => {
+    sectionRef.current?.focus();
   };
 
-  const handleSectionKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (!formData.section && SECTION_OPTIONS.length > 0) {
-        handleChange('section', SECTION_OPTIONS[0]);
-      }
-      buttonRef.current?.focus();
-    }
+  const handleSectionConfirmNext = () => {
+    buttonRef.current?.focus();
   };
 
   // Rotate subtle technical status messages
@@ -434,7 +401,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
             placeholder="Select Branch"
             value={formData.branch}
             onChange={(e) => handleChange('branch', e.target.value)}
-            onKeyDown={handleBranchKeyDown}
+            onConfirmNext={handleBranchConfirmNext}
             options={BRANCH_OPTIONS}
             error={errors.branch}
             icon={GitBranch}
@@ -449,7 +416,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
               placeholder="Select Year"
               value={formData.year}
               onChange={(e) => handleChange('year', e.target.value)}
-              onKeyDown={handleYearKeyDown}
+              onConfirmNext={handleYearConfirmNext}
               options={YEAR_OPTIONS}
               error={errors.year}
               icon={Calendar}
@@ -462,7 +429,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
               placeholder="Select Section"
               value={formData.section}
               onChange={(e) => handleChange('section', e.target.value)}
-              onKeyDown={handleSectionKeyDown}
+              onConfirmNext={handleSectionConfirmNext}
               options={SECTION_OPTIONS}
               error={errors.section}
               icon={Grid}
