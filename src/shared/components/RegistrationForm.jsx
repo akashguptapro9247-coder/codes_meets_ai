@@ -12,7 +12,7 @@ const BRANCH_OPTIONS = [
 ];
 
 const YEAR_OPTIONS = [
-  '1st Year', '2nd Year', '3rd Year', '4th Year'
+  '1st Year', '2nd Year'
 ];
 
 const SECTION_OPTIONS = [
