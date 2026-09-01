@@ -19,6 +19,7 @@ const SelectField = forwardRef(function SelectField({
 
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
+  const lastFocusTimeRef = useRef(0);
 
   // Normalize options into objects: { value, label }
   const normalizedOptions = options.map((opt) =>
@@ -61,6 +62,7 @@ const SelectField = forwardRef(function SelectField({
   }, []);
 
   const handleFocus = () => {
+    lastFocusTimeRef.current = Date.now();
     setIsFocused(true);
     soundEngine.playHover();
     setIsOpen(true);
@@ -73,12 +75,22 @@ const SelectField = forwardRef(function SelectField({
     }
   };
 
-  const selectOption = (optValue) => {
+  const handleTriggerClick = (e) => {
+    e.stopPropagation();
+    // If focus was just gained within 250ms (e.g. mouse click on unfocused field), keep open instead of toggling closed
+    if (Date.now() - lastFocusTimeRef.current < 250) {
+      setIsOpen(true);
+    } else {
+      setIsOpen((prev) => !prev);
+    }
+  };
+
+  const selectOption = (optValue, advanceKeyboard = false) => {
     if (onChange) {
       onChange({ target: { value: optValue } });
     }
     setIsOpen(false);
-    if (onConfirmNext) {
+    if (advanceKeyboard && onConfirmNext) {
       setTimeout(() => {
         onConfirmNext();
       }, 10);
@@ -111,7 +123,7 @@ const SelectField = forwardRef(function SelectField({
       e.stopPropagation();
       if (isOpen && normalizedOptions.length > 0) {
         const selectedOpt = normalizedOptions[highlightedIndex] || normalizedOptions[0];
-        selectOption(selectedOpt.value);
+        selectOption(selectedOpt.value, true);
       } else if (onConfirmNext) {
         onConfirmNext();
       } else if (onKeyDown) {
@@ -197,7 +209,7 @@ const SelectField = forwardRef(function SelectField({
         onFocus={handleFocus}
         onBlur={handleBlur}
         onKeyDown={handleKeyDownInternal}
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={handleTriggerClick}
         style={{
           position: 'relative',
           display: 'flex',
@@ -272,9 +284,12 @@ const SelectField = forwardRef(function SelectField({
             return (
               <div
                 key={opt.value}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // Prevent trigger blur before click resolves
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  selectOption(opt.value);
+                  selectOption(opt.value, false);
                 }}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 style={{
