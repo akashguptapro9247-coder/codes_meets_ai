@@ -1,54 +1,85 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useRef } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowLeft, Terminal, Play } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 import { eventStateService } from '../services/eventStateService';
 import Layer1GenAIChallenge from '../../layer1/genai/Layer1GenAIChallenge';
 import Layer1ManualChallenge from '../../layer1/manual/Layer1ManualChallenge';
+import Layer2ManualRoute from '../../layer2/manual/Layer2ManualRoute';
+import Layer2GenAIRoute from '../../layer2/genai/Layer2GenAIRoute';
 
-export default function RoundPlaceholder({ roundPath, roundTitle, participant, onBackToArena }) {
+// NOTE: `isChallengeOpen` and `onLaunchChallenge` are LIFTED to EventArenaScene
+// so the challenge-launched state survives re-renders of this component.
+export default function RoundPlaceholder({
+  roundPath,
+  roundTitle,
+  participant,
+  isChallengeOpen,
+  onLaunchChallenge,
+  onBackToArena
+}) {
   const isManualLayer1 =
-    roundPath?.toLowerCase().includes('manual') ||
-    roundTitle?.toLowerCase().includes('manual');
+    (roundPath?.toLowerCase().includes('manual') ||
+    roundTitle?.toLowerCase().includes('manual')) &&
+    (roundPath?.includes('layer1') || roundPath?.includes('layer/1') || roundPath?.includes('layer-1') ||
+     roundTitle?.toLowerCase().includes('layer 01') || roundTitle?.toLowerCase().includes('layer 1'));
+
+  const isManualLayer2 =
+    (roundPath?.toLowerCase().includes('manual') ||
+    roundTitle?.toLowerCase().includes('manual')) &&
+    (roundPath?.includes('layer2') || roundPath?.includes('layer/2') || roundPath?.includes('layer-2') ||
+     roundTitle?.toLowerCase().includes('layer 02') || roundTitle?.toLowerCase().includes('layer 2'));
 
   const isGenAiLayer1 =
-    !isManualLayer1 && (
-      roundPath?.toLowerCase().includes('gen-ai') ||
+    !isManualLayer1 && !isManualLayer2 && (
+      (roundPath?.toLowerCase().includes('gen-ai') ||
       roundPath?.toLowerCase().includes('genai') ||
       roundTitle?.toLowerCase().includes('gen ai') ||
       roundTitle?.toLowerCase().includes('genai') ||
-      roundTitle?.toLowerCase().includes('prompt') ||
-      roundPath === '/layer/1' ||
-      roundPath === '/layer1'
+      roundTitle?.toLowerCase().includes('prompt')) &&
+      (roundPath?.includes('layer1') || roundPath?.includes('layer/1') || roundPath?.includes('layer-1') ||
+       roundTitle?.toLowerCase().includes('layer 01') || roundTitle?.toLowerCase().includes('layer 1'))
     );
 
-  const [isWorkspaceLaunched, setIsWorkspaceLaunched] = useState(false);
+  const isGenAiLayer2 =
+    !isManualLayer1 && !isManualLayer2 && !isGenAiLayer1 && (
+      (roundPath?.toLowerCase().includes('gen-ai') ||
+      roundPath?.toLowerCase().includes('genai') ||
+      roundTitle?.toLowerCase().includes('gen ai') ||
+      roundTitle?.toLowerCase().includes('genai')) &&
+      (roundPath?.includes('layer2') || roundPath?.includes('layer/2') || roundPath?.includes('layer-2') ||
+       roundTitle?.toLowerCase().includes('layer 02') || roundTitle?.toLowerCase().includes('layer 2'))
+    );
 
-  // Real-time lock listener on placeholder screen
-  useEffect(() => {
+  // Real-time lock listener — only act if admin CHANGES state from active → inactive
+  const prevStateRef = useRef(null);
+  React.useEffect(() => {
     const unsubscribe = eventStateService.subscribeToEventState((state) => {
-      const isLayer1 = roundPath?.includes('1') || roundTitle?.includes('1') || roundTitle?.includes('01');
-      const isLayer2 = roundPath?.includes('2') || roundTitle?.includes('2') || roundTitle?.includes('02');
+      const prev = prevStateRef.current;
+      prevStateRef.current = state;
+      if (!prev) return; // Skip first call
+
+      const isLayer1 = roundPath?.includes('layer1') || roundPath?.includes('layer/1') || roundPath?.includes('layer-1') || roundTitle?.toLowerCase().includes('layer 01');
+      const isLayer2 = roundPath?.includes('layer2') || roundPath?.includes('layer/2') || roundPath?.includes('layer-2') || roundTitle?.toLowerCase().includes('layer 02');
 
       if (isLayer1) {
-        if (!state.layer1?.active) {
-          if (onBackToArena) onBackToArena();
-        } else if (isManualLayer1 && state.layer1?.activeTrack !== 'manual') {
-          if (onBackToArena) onBackToArena();
-        } else if (isGenAiLayer1 && state.layer1?.activeTrack !== 'gen-ai') {
-          if (onBackToArena) onBackToArena();
-        }
+        const wasActive = prev.layer1?.active;
+        if (wasActive && !state.layer1?.active) { if (onBackToArena) onBackToArena(); return; }
+        if (wasActive && isManualLayer1 && prev.layer1?.activeTrack === 'manual' && state.layer1?.activeTrack !== 'manual') { if (onBackToArena) onBackToArena(); return; }
+        if (wasActive && isGenAiLayer1 && prev.layer1?.activeTrack === 'gen-ai' && state.layer1?.activeTrack !== 'gen-ai') { if (onBackToArena) onBackToArena(); return; }
       } else if (isLayer2) {
-        if (!state.layer2?.active) {
-          if (onBackToArena) onBackToArena();
-        }
+        const wasActive = prev.layer2?.active;
+        if (wasActive && !state.layer2?.active) { if (onBackToArena) onBackToArena(); return; }
+        if (wasActive && isManualLayer2 && prev.layer2?.activeTrack === 'manual' && state.layer2?.activeTrack !== 'manual') { if (onBackToArena) onBackToArena(); return; }
+        if (wasActive && isGenAiLayer2 && prev.layer2?.activeTrack === 'gen-ai' && state.layer2?.activeTrack !== 'gen-ai') { if (onBackToArena) onBackToArena(); return; }
       }
     });
     return () => unsubscribe();
-  }, [roundPath, roundTitle, isManualLayer1, isGenAiLayer1, onBackToArena]);
+  }, [roundPath, roundTitle, isManualLayer1, isManualLayer2, isGenAiLayer1, isGenAiLayer2, onBackToArena]);
 
-  // If Manual workspace is launched, render the complete Manual Coding MCQ challenge interface
-  if (isWorkspaceLaunched && isManualLayer1) {
+  // ─── Challenge screens (rendered when isChallengeOpen=true) ───────────────
+
+  if (isChallengeOpen && isManualLayer1) {
     return (
       <Layer1ManualChallenge
         participant={participant}
@@ -57,8 +88,17 @@ export default function RoundPlaceholder({ roundPath, roundTitle, participant, o
     );
   }
 
-  // If GenAI workspace is launched, render the complete GenAI challenge interface
-  if (isWorkspaceLaunched && isGenAiLayer1) {
+  if (isChallengeOpen && isManualLayer2) {
+    return (
+      <Layer2ManualRoute
+        participant={participant}
+        onBack={onBackToArena}
+        skipIntro={true}
+      />
+    );
+  }
+
+  if (isChallengeOpen && isGenAiLayer1) {
     return (
       <Layer1GenAIChallenge
         participant={participant}
@@ -69,13 +109,59 @@ export default function RoundPlaceholder({ roundPath, roundTitle, participant, o
     );
   }
 
-  // Description based on track type — clean, student-facing language
-  const challengeDescription = isManualLayer1
-    ? 'Answer a set of technical coding questions. Choose your answer carefully — answers are final and cannot be changed once submitted.'
-    : 'Reconstruct the target scene using AI prompts. Observe the reference scene, formulate your prompt, and upload your output.';
+  if (isChallengeOpen && isGenAiLayer2) {
+    return (
+      <Layer2GenAIRoute
+        participant={participant}
+        onBack={onBackToArena}
+      />
+    );
+  }
 
-  const launchLabel = 'BEGIN CHALLENGE';
-  const trackLabel = isManualLayer1 ? 'CODING ASSESSMENT' : 'AI PROMPT CHALLENGE';
+
+  // ─── Intro / entry panel ──────────────────────────────────────────────────
+
+  let challengeDescription = '';
+  let trackLabel = '';
+  let rules = [];
+
+  if (isManualLayer1) {
+    challengeDescription = 'Answer a set of technical coding questions. Choose your answer carefully — answers are final and cannot be changed once submitted.';
+    trackLabel = 'CODING ASSESSMENT';
+    rules = [
+      { label: '15 MIN', desc: 'Time Limit' },
+      { label: '15 QUESTIONS', desc: 'Total Questions' },
+      { label: 'FINAL', desc: 'Answers Locked' }
+    ];
+  } else if (isManualLayer2) {
+    challengeDescription = 'Solve a set of coding challenges — jumbled syntax, missing lines, short logic problems and more. Choose your language and complete as many questions as you can within the time limit.';
+    trackLabel = 'JUMBLED CODE CHALLENGE';
+    rules = [
+      { label: '30 MIN', desc: 'Time Limit' },
+      { label: '5 QUESTIONS', desc: 'Total Questions' },
+      { label: '3 ATTEMPTS', desc: 'Per Question' }
+    ];
+  } else if (isGenAiLayer1) {
+    challengeDescription = 'Reconstruct the target scene using AI prompts. Observe the reference scene, formulate your prompt, and upload your output.';
+    trackLabel = 'AI PROMPT CHALLENGE';
+    rules = [
+      { label: '15 MIN', desc: 'Time Limit' },
+      { label: '1 SUBMISSION', desc: 'One Attempt' },
+      { label: 'FINAL', desc: 'Answers Locked' }
+    ];
+  } else if (isGenAiLayer2) {
+    challengeDescription = 'Build a complete project using AI tools and explain your development process. You will be assigned a project topic. Zip your project and submit it along with a detailed explanation of what you built and how AI helped you.';
+    trackLabel = 'WEBSITE BUILDING CHALLENGE';
+    rules = [
+      { label: '30 MIN', desc: 'Time Limit' },
+      { label: '1 SUBMISSION', desc: 'One Attempt' },
+      { label: 'EXPLANATION', desc: 'Required' }
+    ];
+  } else {
+    challengeDescription = 'Select a round to begin your challenge.';
+    trackLabel = 'CHALLENGE';
+    rules = [];
+  }
 
   return (
     <motion.div
@@ -213,18 +299,8 @@ export default function RoundPlaceholder({ roundPath, roundTitle, participant, o
         </div>
 
         {/* Rules at-a-glance */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            flexWrap: 'wrap'
-          }}
-        >
-          {[
-            { label: '15 MIN', desc: 'Time Limit' },
-            { label: isManualLayer1 ? '15 QUESTIONS' : '1 SUBMISSION', desc: isManualLayer1 ? 'Total Questions' : 'One Attempt' },
-            { label: 'FINAL', desc: 'Answers Locked' }
-          ].map((item) => (
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {rules.map((item) => (
             <div
               key={item.label}
               style={{
@@ -251,7 +327,7 @@ export default function RoundPlaceholder({ roundPath, roundTitle, participant, o
           <button
             onClick={() => {
               soundEngine.playBoot();
-              setIsWorkspaceLaunched(true);
+              onLaunchChallenge();
             }}
             className="cyber-btn"
             style={{
@@ -263,7 +339,7 @@ export default function RoundPlaceholder({ roundPath, roundTitle, participant, o
             }}
           >
             <Play size={16} />
-            <span>{launchLabel}</span>
+            <span>BEGIN CHALLENGE</span>
           </button>
         </div>
       </div>

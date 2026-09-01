@@ -1,3 +1,5 @@
+import { ConfirmModal, PromptModal } from '../../shared/components/Modals';
+import { toast } from '../../shared/components/Toast';
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -28,7 +30,8 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
-  Image as ImageIcon
+  Image as ImageIcon,
+  FileText
 } from 'lucide-react';
 import { adminService } from '../services/adminService';
 import { eventStateService } from '../../shared/services/eventStateService';
@@ -46,6 +49,12 @@ export default function AdminDashboard({ onClose }) {
   const [activeTab, setActiveTab] = useState('overview');
 
   // Supabase Connection state
+  
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [promptModal, setPromptModal] = useState({ isOpen: false, title: '', message: '', defaultValue: '', onConfirm: null });
+  const [readingExplanation, setReadingExplanation] = useState({ isOpen: false, title: '', message: '' });
+  
+  const [viewingManualDetails, setViewingManualDetails] = useState(null);
   const [connStatus, setConnStatus] = useState({ connected: false, configured: false, message: 'CHECKING...' });
 
   // Database Data States
@@ -54,6 +63,8 @@ export default function AdminDashboard({ onClose }) {
   const [layer1SubmissionsList, setLayer1SubmissionsList] = useState([]);
   const [layer1ManualAttemptsList, setLayer1ManualAttemptsList] = useState([]);
   const [layer2List, setLayer2List] = useState([]);
+  const [layer2ManualAttemptsList, setLayer2ManualAttemptsList] = useState([]);
+  const [layer2GenAiSubmissionsList, setLayer2GenAiSubmissionsList] = useState([]);
   const [duosList, setDuosList] = useState([]);
   const [eventSettings, setEventSettings] = useState({
     layer_1_locked: true,
@@ -81,6 +92,7 @@ export default function AdminDashboard({ onClose }) {
   const [layer1Search, setLayer1Search] = useState('');
   const [layer1YearFilter, setLayer1YearFilter] = useState('ALL'); // 'ALL' | '1' | '2'
 
+  const [layer2ActiveSubTab, setLayer2ActiveSubTab] = useState('manual');
   const [layer2Search, setLayer2Search] = useState('');
   const [layer2YearFilter, setLayer2YearFilter] = useState('ALL'); // 'ALL' | '1' | '2'
 
@@ -146,12 +158,14 @@ export default function AdminDashboard({ onClose }) {
       const conn = await checkSupabaseConnection();
       setConnStatus(conn);
 
-      const [usersRes, l1Res, l1SubRes, l1ManRes, l2Res, duosRes, settingsRes] = await Promise.all([
+      const [usersRes, l1Res, l1SubRes, l1ManRes, l2Res, l2ManRes, l2GenAiRes, duosRes, settingsRes] = await Promise.all([
         adminService.fetchUsers(),
         adminService.fetchLayer1Results(),
         adminService.fetchLayer1Submissions(),
         adminService.fetchLayer1ManualAttempts(),
         adminService.fetchLayer2Results(),
+        adminService.fetchAllLayer2ManualAttempts(),
+        adminService.fetchLayer2GenAiSubmissions(),
         adminService.fetchDuos(),
         adminService.fetchEventSettings()
       ]);
@@ -161,6 +175,8 @@ export default function AdminDashboard({ onClose }) {
       if (l1SubRes?.data) setLayer1SubmissionsList(l1SubRes.data);
       if (l1ManRes?.data) setLayer1ManualAttemptsList(l1ManRes.data);
       if (l2Res?.data) setLayer2List(l2Res.data);
+      if (l2ManRes?.data) setLayer2ManualAttemptsList(l2ManRes.data);
+      if (l2GenAiRes?.data) setLayer2GenAiSubmissionsList(l2GenAiRes.data);
       if (duosRes?.data) setDuosList(duosRes.data);
       if (settingsRes?.data) setEventSettings(settingsRes.data);
     } catch (err) {
@@ -813,7 +829,64 @@ export default function AdminDashboard({ onClose }) {
   }
 
   return (
-    <div
+    <>
+
+  {/* Modals for Gen AI actions */}
+  
+  {viewingManualDetails && (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="cyber-card" style={{ background: 'rgba(2, 6, 18, 0.95)', padding: '24px', maxWidth: '800px', width: '90%', maxHeight: '80vh', overflowY: 'auto', border: '1px solid var(--magenta-glow)', boxShadow: '0 0 20px rgba(255, 0, 255, 0.15)' }}>
+        <h3 style={{ color: 'var(--magenta-glow)', marginTop: 0, fontFamily: 'var(--font-title)' }}>ATTEMPTS: {viewingManualDetails.username || viewingManualDetails.name}</h3>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}>
+          <thead style={{ background: 'rgba(0,0,0,0.6)', color: '#f59e0b', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
+            <tr><th style={{ padding: '8px' }}>QUESTION</th><th style={{ padding: '8px' }}>ATTEMPT #</th><th style={{ padding: '8px' }}>RESULT</th><th style={{ padding: '8px' }}>TIMESTAMP</th></tr>
+          </thead>
+          <tbody>
+            {Object.entries(viewingManualDetails.question_states || {}).map(([qId, qState]) => (
+              (qState.history || []).map((hist, idx) => (
+                <tr key={qId + idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <td style={{ padding: '8px', color: '#d1d5db' }}>{qId}</td>
+                  <td style={{ padding: '8px', color: '#d1d5db' }}>{hist.attempt}</td>
+                  <td style={{ padding: '8px' }}><span style={{ color: hist.result === 'CORRECT' ? '#10b981' : hist.result === 'COMPILE_ERROR' ? '#ef4444' : '#f59e0b' }}>{hist.result}</span></td>
+                  <td style={{ padding: '8px', color: '#9ca3af' }}>{hist.timestamp ? new Date(hist.timestamp).toLocaleString() : '\u2014'}</td>
+                </tr>
+              ))
+            ))}
+          </tbody>
+        </table>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+          <button className="cyber-btn" onClick={() => setViewingManualDetails(null)} style={{ padding: '8px 16px', fontSize: '0.8rem', borderColor: '#4b5563', color: '#9ca3af' }}>CLOSE</button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <ConfirmModal
+    isOpen={confirmModal.isOpen}
+    title={confirmModal.title}
+    message={confirmModal.message}
+    onConfirm={confirmModal.onConfirm}
+    onCancel={() => setConfirmModal({ isOpen: false })}
+  />
+  <PromptModal
+    isOpen={promptModal.isOpen}
+    title={promptModal.title}
+    message={promptModal.message}
+    defaultValue={promptModal.defaultValue}
+    onConfirm={promptModal.onConfirm}
+    onCancel={() => setPromptModal({ isOpen: false })}
+  />
+  <ConfirmModal
+    isOpen={readingExplanation.isOpen}
+    title={readingExplanation.title}
+    message={readingExplanation.message}
+    onConfirm={() => setReadingExplanation({ isOpen: false })}
+    onCancel={() => setReadingExplanation({ isOpen: false })}
+    confirmText="CLOSE"
+    cancelText=""
+  />
+
+<div
       style={{
         position: 'fixed',
         inset: 0,
@@ -2085,193 +2158,155 @@ export default function AdminDashboard({ onClose }) {
           </div>
         )}
 
-        {/* TAB 4: LAYER 02 RANKED RESULTS */}
+        {/* TAB 4: LAYER 02 RESULTS */}
         {activeTab === 'layer2' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Search & Year Filter Controls Bar */}
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
-                <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                <input
-                  type="text"
-                  placeholder="Search Layer 2 by Name, Roll Number, UUID, Branch..."
-                  value={layer2Search}
-                  onChange={(e) => setLayer2Search(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px 8px 34px',
-                    background: 'rgba(2, 6, 18, 0.9)',
-                    border: '1px solid rgba(0, 243, 255, 0.25)',
-                    color: '#ffffff',
-                    fontSize: '0.78rem',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-
-              {/* Year Filter Buttons */}
-              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', marginRight: '4px' }}>
-                  YEAR FILTER:
-                </span>
-                {[
-                  { id: 'ALL', label: 'ALL' },
-                  { id: '1', label: 'FIRST YEAR (26...)' },
-                  { id: '2', label: 'SECOND YEAR (25...)' }
-                ].map((yf) => (
-                  <button
-                    key={yf.id}
-                    onClick={() => {
-                      soundEngine.playClick();
-                      setLayer2YearFilter(yf.id);
-                    }}
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: '0.72rem',
-                      fontFamily: 'var(--font-mono)',
-                      background: layer2YearFilter === yf.id ? 'rgba(0, 243, 255, 0.2)' : 'rgba(2, 6, 18, 0.8)',
-                      border: layer2YearFilter === yf.id ? '1px solid var(--cyan-glow)' : '1px solid rgba(255, 255, 255, 0.1)',
-                      color: layer2YearFilter === yf.id ? 'var(--cyan-glow)' : '#9ca3af',
-                      cursor: 'pointer',
-                      borderRadius: '2px',
-                      fontWeight: layer2YearFilter === yf.id ? 700 : 400
-                    }}
-                  >
-                    {yf.label}
-                  </button>
-                ))}
-              </div>
+            {/* ── SUB-NAV ── */}
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px', flexWrap: 'wrap' }}>
+              <button onClick={() => setLayer2ActiveSubTab('results')} style={{ padding: '8px 16px', background: layer2ActiveSubTab === 'results' ? 'rgba(0,243,255,0.2)' : 'transparent', border: '1px solid', borderColor: layer2ActiveSubTab === 'results' ? 'var(--cyan-glow)' : 'rgba(255,255,255,0.15)', color: layer2ActiveSubTab === 'results' ? 'var(--cyan-glow)' : '#9ca3af', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Trophy size={14} /> RANKED RESULTS ({rankedLayer2Results.length})
+              </button>
+              <button onClick={() => setLayer2ActiveSubTab('genai')} style={{ padding: '8px 16px', background: layer2ActiveSubTab === 'genai' ? 'rgba(0,243,255,0.2)' : 'transparent', border: '1px solid', borderColor: layer2ActiveSubTab === 'genai' ? 'var(--cyan-glow)' : 'rgba(255,255,255,0.15)', color: layer2ActiveSubTab === 'genai' ? 'var(--cyan-glow)' : '#9ca3af', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={14} /> GEN AI SUBMISSIONS ({layer2GenAiSubmissionsList.length})
+              </button>
+              <button onClick={() => setLayer2ActiveSubTab('manual')} style={{ padding: '8px 16px', background: layer2ActiveSubTab === 'manual' ? 'rgba(245,158,11,0.2)' : 'transparent', border: '1px solid', borderColor: layer2ActiveSubTab === 'manual' ? '#f59e0b' : 'rgba(255,255,255,0.15)', color: layer2ActiveSubTab === 'manual' ? '#f59e0b' : '#9ca3af', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Code2 size={14} /> MANUAL ATTEMPTS ({layer2ManualAttemptsList.length})
+              </button>
             </div>
 
-            {/* Ranked Table */}
-            <div className="cyber-card" style={{ overflowX: 'auto', padding: 0, background: 'rgba(3, 7, 20, 0.9)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.78rem' }}>
-                <thead>
-                  <tr style={{ background: 'rgba(0, 243, 255, 0.08)', borderBottom: '1px solid rgba(0, 243, 255, 0.2)' }}>
-                    <th style={{ padding: '12px 14px', width: '110px' }}>RANK</th>
-                    <th style={{ padding: '12px 14px' }}>PLAYER</th>
-                    <th style={{ padding: '12px 14px' }}>ROLL NO</th>
-                    <th style={{ padding: '12px 14px' }}>YEAR (PREFIX)</th>
-                    <th style={{ padding: '12px 14px' }}>BRANCH / SEC</th>
-                    <th style={{ padding: '12px 14px' }}>GENAI MARKS</th>
-                    <th style={{ padding: '12px 14px' }}>MANUAL MARKS</th>
-                    <th style={{ padding: '12px 14px' }} title="Formula: (GenAI + Manual) / 2">
-                      LAYER 2 AVERAGE
-                    </th>
-                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>ACTIONS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rankedLayer2Results.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>
-                        NO PARTICIPANTS FOUND MATCHING FILTER // RECORD SCORES OR CLEAR FILTERS
-                      </td>
+            {/* ── RESULTS ── */}
+            {layer2ActiveSubTab === 'results' && (<>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+                  <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                  <input type="text" placeholder="Search by Name / Roll / UUID / Branch..." value={layer2Search} onChange={(e) => setLayer2Search(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px 8px 34px', background: 'rgba(2,6,18,0.9)', border: '1px solid rgba(0,243,255,0.25)', color: '#fff', fontSize: '0.78rem', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', marginRight: '4px' }}>YEAR:</span>
+                  {[{ id: 'ALL', label: 'ALL' }, { id: '1', label: '1st Year (26...)' }, { id: '2', label: '2nd Year (25...)' }].map(yf => (
+                    <button key={yf.id} onClick={() => { soundEngine.playClick(); setLayer2YearFilter(yf.id); }} style={{ padding: '6px 12px', fontSize: '0.72rem', fontFamily: 'var(--font-mono)', background: layer2YearFilter === yf.id ? 'rgba(0,243,255,0.2)' : 'rgba(2,6,18,0.8)', border: layer2YearFilter === yf.id ? '1px solid var(--cyan-glow)' : '1px solid rgba(255,255,255,0.1)', color: layer2YearFilter === yf.id ? 'var(--cyan-glow)' : '#9ca3af', cursor: 'pointer', borderRadius: '2px', fontWeight: layer2YearFilter === yf.id ? 700 : 400 }}>
+                      {yf.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="cyber-card" style={{ overflowX: 'auto', padding: 0, background: 'rgba(3,7,20,0.9)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.78rem' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(0,243,255,0.08)', borderBottom: '1px solid rgba(0,243,255,0.2)' }}>
+                      <th style={{ padding: '12px 14px' }}>RANK</th><th style={{ padding: '12px 14px' }}>PLAYER</th><th style={{ padding: '12px 14px' }}>ROLL NO</th><th style={{ padding: '12px 14px' }}>YEAR</th><th style={{ padding: '12px 14px' }}>BRANCH/SEC</th><th style={{ padding: '12px 14px' }}>GENAI</th><th style={{ padding: '12px 14px' }}>MANUAL</th><th style={{ padding: '12px 14px' }}>L2 AVG</th><th style={{ padding: '12px 14px', textAlign: 'right' }}>ACTIONS</th>
                     </tr>
-                  ) : (
-                    rankedLayer2Results.map((item, idx) => {
-                      const u = item.user;
-                      const rank = idx + 1;
-                      const is1st = item.yearCode === '1';
-
+                  </thead>
+                  <tbody>
+                    {rankedLayer2Results.length === 0 ? (
+                      <tr><td colSpan={9} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>NO DATA — RECORD SCORES OR CLEAR FILTERS</td></tr>
+                    ) : rankedLayer2Results.map((item, idx) => {
+                      const u = item.user; const rank = idx + 1; const is1st = item.yearCode === '1';
                       return (
-                        <tr
-                          key={u.user_id}
-                          style={{
-                            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                            background: rank === 1 ? 'rgba(251, 191, 36, 0.05)' : rank === 2 ? 'rgba(148, 163, 184, 0.04)' : rank === 3 ? 'rgba(217, 119, 6, 0.04)' : 'transparent'
-                          }}
-                        >
-                          <td style={{ padding: '12px 14px' }}>
-                            {renderRankBadge(rank)}
-                          </td>
-                          <td style={{ padding: '12px 14px' }}>
-                            <div style={{ fontWeight: 700, color: '#ffffff' }}>{u.name}</div>
-                          </td>
-                          <td style={{ padding: '12px 14px', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)' }}>
-                            {u.roll_number}
-                          </td>
-                          <td style={{ padding: '12px 14px' }}>
-                            <span
-                              className="cyber-badge"
-                              style={{
-                                fontSize: '0.66rem',
-                                borderColor: is1st ? 'var(--cyan-glow)' : 'var(--magenta-glow)',
-                                color: is1st ? 'var(--cyan-glow)' : 'var(--magenta-glow)'
-                              }}
-                            >
-                              {getPlayerYearLabel(u.roll_number, u.year)}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px 14px', color: '#d1d5db' }}>
-                            {u.branch || 'N/A'} / {u.section || 'A'}
-                          </td>
-                          <td style={{ padding: '12px 14px', color: '#38bdf8', fontWeight: 700 }}>
-                            {item.genAi.toFixed(1)}
-                          </td>
-                          <td style={{ padding: '12px 14px', color: '#c084fc', fontWeight: 700 }}>
-                            {item.manual.toFixed(1)}
-                          </td>
-                          <td style={{ padding: '12px 14px' }}>
-                            <span
-                              style={{
-                                fontFamily: 'var(--font-mono)',
-                                fontSize: '0.88rem',
-                                fontWeight: 800,
-                                color: 'var(--lime-accent)',
-                                textShadow: '0 0 10px rgba(57, 255, 20, 0.3)'
-                              }}
-                            >
-                              {item.average.toFixed(2)}
-                            </span>
-                          </td>
+                        <tr key={u.user_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: rank === 1 ? 'rgba(251,191,36,0.05)' : rank === 2 ? 'rgba(148,163,184,0.04)' : rank === 3 ? 'rgba(217,119,6,0.04)' : 'transparent' }}>
+                          <td style={{ padding: '12px 14px' }}>{renderRankBadge(rank)}</td>
+                          <td style={{ padding: '12px 14px', fontWeight: 700, color: '#fff' }}>{u.name}</td>
+                          <td style={{ padding: '12px 14px', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)' }}>{u.roll_number}</td>
+                          <td style={{ padding: '12px 14px' }}><span className="cyber-badge" style={{ fontSize: '0.66rem', borderColor: is1st ? 'var(--cyan-glow)' : 'var(--magenta-glow)', color: is1st ? 'var(--cyan-glow)' : 'var(--magenta-glow)' }}>{getPlayerYearLabel(u.roll_number, u.year)}</span></td>
+                          <td style={{ padding: '12px 14px', color: '#d1d5db' }}>{u.branch || 'N/A'} / {u.section || 'A'}</td>
+                          <td style={{ padding: '12px 14px', color: '#38bdf8', fontWeight: 700 }}>{item.genAi.toFixed(1)}</td>
+                          <td style={{ padding: '12px 14px', color: '#c084fc', fontWeight: 700 }}>{item.manual.toFixed(1)}</td>
+                          <td style={{ padding: '12px 14px' }}><span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.88rem', fontWeight: 800, color: 'var(--lime-accent)' }}>{item.average.toFixed(2)}</span></td>
                           <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                              <button
-                                onClick={() =>
-                                  setEditingLayer2Marks({
-                                    user_id: u.user_id,
-                                    name: u.name,
-                                    roll_number: u.roll_number,
-                                    layer_2_gen_ai_marks: item.genAi,
-                                    layer_2_manual_marks: item.manual
-                                  })
-                                }
-                                className="cyber-btn"
-                                style={{ padding: '4px 10px', fontSize: '0.7rem', borderColor: 'var(--magenta-glow)' }}
-                                title="Edit Layer 2 GenAI & Manual Marks"
-                              >
-                                <Edit2 size={11} /> SCORE L2
-                              </button>
-                              {item.l2Record.id && (
-                                <button
-                                  onClick={() => setDeletingLayerResult({ layer: 2, rowId: item.l2Record.id, userName: u.name })}
-                                  style={{
-                                    padding: '4px 8px',
-                                    background: 'rgba(239, 68, 68, 0.1)',
-                                    border: '1px solid #ef4444',
-                                    color: '#ef4444',
-                                    cursor: 'pointer',
-                                    borderRadius: '2px'
-                                  }}
-                                  title="Reset Layer 2 marks"
-                                >
-                                  <Trash2 size={11} />
-                                </button>
-                              )}
+                              <button onClick={() => setEditingLayer2Marks({ user_id: u.user_id, name: u.name, roll_number: u.roll_number, layer_2_gen_ai_marks: item.genAi, layer_2_manual_marks: item.manual })} className="cyber-btn" style={{ padding: '4px 10px', fontSize: '0.7rem', borderColor: 'var(--magenta-glow)' }}><Edit2 size={11} /> SCORE L2</button>
+                              {item.l2Record.id && (<button onClick={() => setDeletingLayerResult({ layer: 2, rowId: item.l2Record.id, userName: u.name })} style={{ padding: '4px 8px', background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#ef4444', cursor: 'pointer', borderRadius: '2px' }}><Trash2 size={11} /></button>)}
                             </div>
                           </td>
                         </tr>
                       );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>)}
 
-        {/* TAB 5: DUO ARENA (LAYER 3 & LAYER 4 / FINAL RESULTS) */}
+            {/* ── GEN AI SUBMISSIONS ── */}
+            {layer2ActiveSubTab === 'genai' && (
+              <div style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                  <thead style={{ background: 'rgba(0,0,0,0.6)', color: 'var(--cyan-glow)', borderBottom: '1px solid rgba(0,243,255,0.2)' }}>
+                    <tr><th style={{ padding: '12px 14px' }}>PARTICIPANT</th><th style={{ padding: '12px 14px' }}>QUESTION</th><th style={{ padding: '12px 14px' }}>STATUS</th><th style={{ padding: '12px 14px' }}>MARKS</th><th style={{ padding: '12px 14px', textAlign: 'right' }}>ACTIONS</th></tr>
+                  </thead>
+                  <tbody>
+                    {layer2GenAiSubmissionsList.length === 0 ? (
+                      <tr><td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No Gen AI submissions yet. Run schema/migrations/002_layer2_genai_submissions.sql if table is missing.</td></tr>
+                    ) : layer2GenAiSubmissionsList.map(sub => (
+                      <tr key={sub.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td style={{ padding: '12px 14px' }}><div style={{ fontWeight: 'bold', color: '#fff' }}>{sub.username || 'Unknown'}</div><div style={{ color: '#9ca3af', fontSize: '0.75rem' }}>{sub.roll_number}</div></td>
+                        <td style={{ padding: '12px 14px', color: '#d1d5db' }}>{sub.question_id}</td>
+                        <td style={{ padding: '12px 14px' }}><span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', background: sub.status === 'reviewed' ? 'rgba(16,185,129,0.1)' : sub.status === 'completed' ? 'rgba(245,158,11,0.1)' : 'rgba(156,163,175,0.1)', color: sub.status === 'reviewed' ? '#10b981' : sub.status === 'completed' ? '#f59e0b' : '#9ca3af' }}>{(sub.status || 'in_progress').replace('_', ' ').toUpperCase()}</span></td>
+                        <td style={{ padding: '12px 14px', color: '#e5e7eb', fontWeight: 'bold' }}>{sub.admin_marks !== null && sub.admin_marks !== undefined ? sub.admin_marks : '—'}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            <button className="cyber-btn" style={{ padding: '4px 10px', fontSize: '0.72rem' }} onClick={() => { setPromptModal({ isOpen: true, title: 'Marks for ' + (sub.username || 'participant'), message: 'Enter marks:', defaultValue: sub.admin_marks || '0', onConfirm: (m) => { setPromptModal({ isOpen: false }); setPromptModal({ isOpen: true, title: 'Remarks', message: 'Remarks (optional):', defaultValue: sub.admin_remarks || '', onConfirm: (r) => { setPromptModal({ isOpen: false }); adminService.updateLayer2GenAiMarks(sub.id, sub.user_id, parseFloat(m) || 0, r).then(() => { loadAllDatabaseData(); toast.success('Marks updated'); }); } }); } }); }}>GRADE</button>
+                            {sub.explanation && (<button className="cyber-btn" style={{ padding: '4px 10px', fontSize: '0.72rem' }} onClick={() => { setReadingExplanation({ isOpen: true, title: 'EXPLANATION FOR ' + sub.username, message: sub.explanation }); }}>READ</button>)}
+                            <button className="cyber-btn" style={{ padding: '4px 10px', fontSize: '0.72rem', color: '#f59e0b', borderColor: '#f59e0b' }} onClick={() => { setPromptModal({ isOpen: true, title: 'Reassign Question', message: 'New question ID (GENAI-Q1 to GENAI-Q6):', defaultValue: sub.question_id, onConfirm: (q) => { setPromptModal({ isOpen: false }); if (q && q !== sub.question_id) adminService.overrideLayer2GenAiQuestion(sub.user_id, q).then(() => { loadAllDatabaseData(); toast.success('Question reassigned'); }); } }); }}>REASSIGN</button>
+                            <button style={{ padding: '4px 8px', background: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', color: '#ef4444', cursor: 'pointer', borderRadius: '2px' }} onClick={() => { setConfirmModal({ isOpen: true, title: 'Delete Submission', message: 'Delete Gen AI submission for ' + sub.username + '?', onConfirm: () => { setConfirmModal({ isOpen: false }); adminService.deleteLayer2GenAiSubmission(sub.id, sub.user_id).then(() => { loadAllDatabaseData(); toast.success('Submission deleted'); }); } }); }}><Trash2 size={11} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── MANUAL ATTEMPTS ── */}
+            {layer2ActiveSubTab === 'manual' && (
+                <div style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                    <thead style={{ background: 'rgba(0,0,0,0.6)', color: '#f59e0b', borderBottom: '1px solid rgba(245,158,11,0.2)' }}>
+                      <tr>
+                        <th style={{ padding: '12px 14px' }}>PARTICIPANT</th>
+                        <th style={{ padding: '12px 14px' }}>LANGUAGE</th>
+                        <th style={{ padding: '12px 14px' }}>STATS (Q/C/W)</th>
+                        <th style={{ padding: '12px 14px' }}>AUTO / OVERRIDE</th>
+                        <th style={{ padding: '12px 14px' }}>STATUS</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'right' }}>ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {layer2ManualAttemptsList.length === 0 ? (
+                        <tr><td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: '#6b7280' }}>No manual attempts recorded yet.</td></tr>
+                      ) : layer2ManualAttemptsList.map(attempt => {
+                        const states = attempt.question_states || {};
+                        const attemptedCount = Object.keys(states).length;
+                        const correctCount = Object.values(states).filter(s => s.status === 'correct').length;
+                        const wrongCount = Object.values(states).filter(s => s.status === 'exhausted' || s.status === 'skipped').length;
+                        
+                        return (
+                        <tr key={attempt.id || attempt.user_id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td style={{ padding: '12px 14px' }}><div style={{ fontWeight: 'bold', color: '#fff' }}>{attempt.username || attempt.name || 'Unknown'}</div><div style={{ color: '#9ca3af', fontSize: '0.75rem' }}>{attempt.roll_number}</div></td>
+                          <td style={{ padding: '12px 14px', color: '#d1d5db' }}>{attempt.language || '\u2014'}</td>
+                          <td style={{ padding: '12px 14px', color: '#d1d5db' }}>{attemptedCount} Att / <span style={{ color: '#10b981' }}>{correctCount} Cor</span> / <span style={{ color: '#ef4444' }}>{wrongCount} Wr</span></td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span style={{ color: 'var(--lime-accent)', fontWeight: 'bold', marginRight: '8px' }}>{attempt.automatic_marks ?? attempt.score ?? '\u2014'}</span>
+                            <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>{attempt.admin_override_marks ?? '\u2014'}</span>
+                          </td>
+                          <td style={{ padding: '12px 14px' }}><span style={{ padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', background: attempt.status === 'completed' ? 'rgba(16,185,129,0.1)' : 'rgba(156,163,175,0.1)', color: attempt.status === 'completed' ? '#10b981' : '#9ca3af' }}>{(attempt.status || 'pending').toUpperCase()}</span></td>
+                          <td style={{ padding: '12px 14px', textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                            <button className="cyber-btn" style={{ padding: '4px 10px', fontSize: '0.72rem', borderColor: 'var(--cyan-glow)', color: 'var(--cyan-glow)' }} onClick={() => setViewingManualDetails(attempt)}>DETAILS</button>
+                            <button className="cyber-btn" style={{ padding: '4px 10px', fontSize: '0.72rem', borderColor: '#f59e0b', color: '#f59e0b' }} onClick={() => { setPromptModal({ isOpen: true, title: 'Override Score', message: 'Override score for ' + (attempt.username || attempt.name) + ' (0-25):', defaultValue: attempt.admin_override_marks ?? attempt.score ?? '0', onConfirm: (s) => { setPromptModal({ isOpen: false }); const p = parseFloat(s); if (!isNaN(p) && p >= 0 && p <= 25) adminService.overrideLayer2ManualScore(attempt.user_id, p).then(() => { loadAllDatabaseData(); toast.success('Score overridden'); }); else toast.error('Must be 0-25.'); } }); }}>SCORE</button>
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* TAB 5: DUO ARENA (LAYER 3 & LAYER 4 / FINAL RESULTS) */}
         {activeTab === 'duos' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -3803,5 +3838,6 @@ export default function AdminDashboard({ onClose }) {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }

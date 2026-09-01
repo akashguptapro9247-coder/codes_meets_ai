@@ -1,0 +1,359 @@
+{
+  "layer": 2,
+  "track": "Manual",
+  "language": "Python",
+  "year": "2nd Year",
+  "difficulty": "Medium to Hard",
+  "questionPools": {
+    "q1": {
+      "type": "jumbled-code",
+      "title": "Jumbled Code",
+      "instruction": "Arrange the shuffled lines of Python code into the correct order to form a valid program.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-2y-q1-1",
+          "title": "Remove Duplicate Elements",
+          "jumbledCode": [
+            "        unique_items.append(item)",
+            "items = [1, 2, 2, 3, 4, 4, 5]",
+            "unique_items = []",
+            "    if item not in unique_items:",
+            "for item in items:",
+            "print(\"Unique:\", unique_items)"
+          ],
+          "correctCode": "items = [1, 2, 2, 3, 4, 4, 5]\nunique_items = []\nfor item in items:\n    if item not in unique_items:\n        unique_items.append(item)\nprint(\"Unique:\", unique_items)",
+          "expectedOutput": "Unique: [1, 2, 3, 4, 5]",
+          "explanation": "Goal: Remove Duplicate Elements. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-2y-q1-2",
+          "title": "2D Matrix Row Sums",
+          "jumbledCode": [
+            "matrix = [[1, 2], [3, 4], [5, 6]]",
+            "    row_sum = sum(row)",
+            "    row_sums.append(row_sum)",
+            "row_sums = []",
+            "for row in matrix:",
+            "print(\"Row Sums:\", row_sums)"
+          ],
+          "correctCode": "matrix = [[1, 2], [3, 4], [5, 6]]\nrow_sums = []\nfor row in matrix:\n    row_sum = sum(row)\n    row_sums.append(row_sum)\nprint(\"Row Sums:\", row_sums)",
+          "expectedOutput": "Row Sums: [3, 7, 11]",
+          "explanation": "Goal: 2D Matrix Row Sums. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-2y-q1-3",
+          "title": "Linear Search Function",
+          "jumbledCode": [
+            "def search(arr, target):",
+            "        if arr[i] == target:",
+            "            return i",
+            "    for i in range(len(arr)):",
+            "    return -1",
+            "print(\"Index:\", search([10, 20, 30], 20))"
+          ],
+          "correctCode": "def search(arr, target):\n    for i in range(len(arr)):\n        if arr[i] == target:\n            return i\n    return -1\nprint(\"Index:\", search([10, 20, 30], 20))",
+          "expectedOutput": "Index: 1",
+          "explanation": "Goal: Linear Search Function. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-2y-q1-4",
+          "title": "Filter Words by Length",
+          "jumbledCode": [
+            "    if len(word) > min_len:",
+            "words = [\"apple\", \"cat\", \"banana\", \"dog\"]",
+            "        filtered.append(word)",
+            "filtered = []",
+            "min_len = 3",
+            "for word in words:",
+            "print(\"Filtered:\", filtered)"
+          ],
+          "correctCode": "words = [\"apple\", \"cat\", \"banana\", \"dog\"]\nmin_len = 3\nfiltered = []\nfor word in words:\n    if len(word) > min_len:\n        filtered.append(word)\nprint(\"Filtered:\", filtered)",
+          "expectedOutput": "Filtered: ['apple', 'banana']",
+          "explanation": "Goal: Filter Words by Length. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-2y-q1-5",
+          "title": "Flatten 2D List",
+          "jumbledCode": [
+            "        flat.append(val)",
+            "grid = [[1, 2], [3, 4]]",
+            "for row in grid:",
+            "    for val in row:",
+            "flat = []",
+            "print(\"Flat:\", flat)"
+          ],
+          "correctCode": "grid = [[1, 2], [3, 4]]\nflat = []\nfor row in grid:\n    for val in row:\n        flat.append(val)\nprint(\"Flat:\", flat)",
+          "expectedOutput": "Flat: [1, 2, 3, 4]",
+          "explanation": "Goal: Flatten 2D List. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        }
+      ]
+    },
+    "q2": {
+      "type": "syntax-errors",
+      "title": "Syntax Error Challenge",
+      "instruction": "Identify and fix all syntax errors in the given Python program so that it runs successfully.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-2y-q2-1",
+          "title": "Palindrome String Checker Fix",
+          "code": "def is_palindrome(s\n    cleaned = s.lower(\n    rev = cleaned[::-1\n    if cleaned == rev\n        return True\n    else\n        return False\nword = \"Radar\nres = is_palindrome(word\nprint(\"Is Palindrome:\" res",
+          "correctCode": "def is_palindrome(s):\n    cleaned = s.lower()\n    rev = cleaned[::-1]\n    if cleaned == rev:\n        return True\n    else:\n        return False\nword = \"Radar\"\nres = is_palindrome(word)\nprint(\"Is Palindrome:\", res)",
+          "expectedOutput": "Is Palindrome: True",
+          "codeLineCount": 10,
+          "intendedErrorCount": 10,
+          "explanation": "Goal: Palindrome String Checker Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-2y-q2-2",
+          "title": "Character Frequency Builder Fix",
+          "code": "text = \"programming\nfreq = {}\nfor char in text\n    if char in freq\n        freq[char] += 1\n    else\n        freq[char] = 1\nkeys = list(freq.keys(\nprint(\"Keys:\" keys",
+          "correctCode": "text = \"programming\"\nfreq = {}\nfor char in text:\n    if char in freq:\n        freq[char] += 1\n    else:\n        freq[char] = 1\nkeys = list(freq.keys())\nprint(\"Keys:\", keys)",
+          "expectedOutput": "Keys: ['p', 'r', 'o', 'g', 'a', 'm', 'i', 'n']",
+          "codeLineCount": 9,
+          "intendedErrorCount": 8,
+          "explanation": "Goal: Character Frequency Builder Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-2y-q2-3",
+          "title": "Bubble Sort Pass Fix",
+          "code": "nums = [5, 2, 8, 1, 3\nfor i in range(len(nums) - 1\n    for j in range(len(nums) - 1 - i\n        if nums[j] > nums[j + 1\n            temp = nums[j]\n            nums[j] = nums[j + 1]\n            nums[j + 1] = temp\nprint(\"Sorted:\" nums",
+          "correctCode": "nums = [5, 2, 8, 1, 3]\nfor i in range(len(nums) - 1):\n    for j in range(len(nums) - 1 - i):\n        if nums[j] > nums[j + 1]:\n            temp = nums[j]\n            nums[j] = nums[j + 1]\n            nums[j + 1] = temp\nprint(\"Sorted:\", nums)",
+          "expectedOutput": "Sorted: [1, 2, 3, 5, 8]",
+          "codeLineCount": 8,
+          "intendedErrorCount": 9,
+          "explanation": "Goal: Bubble Sort Pass Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-2y-q2-4",
+          "title": "Matrix Diagonal Sum Fix",
+          "code": "matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]\ndiag_sum = 0\nfor i in range(len(matrix)\n    for j in range(len(matrix[i]\n        if i == j\n            diag_sum += matrix[i][j]\nprint(\"Diagonal Sum:\" diag_sum",
+          "correctCode": "matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]\ndiag_sum = 0\nfor i in range(len(matrix)):\n    for j in range(len(matrix[i])):\n        if i == j:\n            diag_sum += matrix[i][j]\nprint(\"Diagonal Sum:\", diag_sum)",
+          "expectedOutput": "Diagonal Sum: 15",
+          "codeLineCount": 7,
+          "intendedErrorCount": 9,
+          "explanation": "Goal: Matrix Diagonal Sum Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-2y-q2-5",
+          "title": "List Intersection Fix",
+          "code": "l1 = [1, 2, 3, 4, 5\nl2 = [3, 4, 5, 6, 7\ncommon = [\nfor x in l1\n    if x in l2\n        common.append(x\nprint(\"Common:\" common",
+          "correctCode": "l1 = [1, 2, 3, 4, 5]\nl2 = [3, 4, 5, 6, 7]\ncommon = []\nfor x in l1:\n    if x in l2:\n        common.append(x)\nprint(\"Common:\", common)",
+          "expectedOutput": "Common: [3, 4, 5]",
+          "codeLineCount": 7,
+          "intendedErrorCount": 8,
+          "explanation": "Goal: List Intersection Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        }
+      ]
+    },
+    "q3": {
+      "type": "jumbled-and-syntax-errors",
+      "title": "Jumbled + Syntax Errors",
+      "instruction": "Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-2y-q3-1",
+          "title": "Factorial Calculation Function",
+          "jumbledCode": [
+            "    fact = 1",
+            "    for i in range(1, n + 1",
+            "            fact *= i",
+            "print(\"Fact:\" compute_fact(5",
+            "def compute_fact(n",
+            "    return fact"
+          ],
+          "correctCode": "def compute_fact(n):\n    fact = 1\n    for i in range(1, n + 1):\n        fact *= i\n    return fact\nprint(\"Fact:\", compute_fact(5))",
+          "expectedOutput": "Fact: 120",
+          "explanation": "Goal: Factorial Calculation Function. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-2y-q3-2",
+          "title": "Find Second Largest Element",
+          "jumbledCode": [
+            "        elif num > second and num != largest",
+            "for num in numbers",
+            "largest = second = -1",
+            "numbers = [12, 45, 2, 45, 34, 23",
+            "    if num > largest",
+            "            second = num",
+            "print(\"Second:\" second",
+            "        second = largest",
+            "        largest = num"
+          ],
+          "correctCode": "numbers = [12, 45, 2, 45, 34, 23]\nlargest = second = -1\nfor num in numbers:\n    if num > largest:\n        second = largest\n        largest = num\n    elif num > second and num != largest:\n        second = num\nprint(\"Second:\", second)",
+          "expectedOutput": "Second: 34",
+          "explanation": "Goal: Find Second Largest Element. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-2y-q3-3",
+          "title": "Count Vowels and Consonants",
+          "jumbledCode": [
+            "    if ch.isalpha(",
+            "            vowels += 1",
+            "        if ch in \"aeiou\"",
+            "            consonants += 1",
+            "        else",
+            "vowels = consonants = 0",
+            "for ch in text.lower(",
+            "text = \"Hello World",
+            "print(vowels, consonants"
+          ],
+          "correctCode": "text = \"Hello World\"\nvowels = consonants = 0\nfor ch in text.lower():\n    if ch.isalpha():\n        if ch in \"aeiou\":\n            vowels += 1\n        else:\n            consonants += 1\nprint(vowels, consonants)",
+          "expectedOutput": "3 7",
+          "explanation": "Goal: Count Vowels and Consonants. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-2y-q3-4",
+          "title": "Subarray Sum Equals Target",
+          "jumbledCode": [
+            "            if arr[i] + arr[j] == target",
+            "target = 10",
+            "arr = [2, 4, 6, 8]",
+            "                count += 1",
+            "count = 0",
+            "for i in range(len(arr)",
+            "    for j in range(i + 1, len(arr)",
+            "print(\"Pairs:\" count"
+          ],
+          "correctCode": "arr = [2, 4, 6, 8]\ntarget = 10\ncount = 0\nfor i in range(len(arr)):\n    for j in range(i + 1, len(arr)):\n        if arr[i] + arr[j] == target:\n            count += 1\nprint(\"Pairs:\", count)",
+          "expectedOutput": "Pairs: 2",
+          "explanation": "Goal: Subarray Sum Equals Target. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-2y-q3-5",
+          "title": "Reverse Words in Sentence",
+          "jumbledCode": [
+            "reversed_words = []",
+            "for word in words",
+            "sentence = \"python is fun",
+            "    reversed_words.append(word[::-1]",
+            "words = sentence.split(",
+            "print(\"Result:\" \" \".join(reversed_words"
+          ],
+          "correctCode": "sentence = \"python is fun\"\nwords = sentence.split()\nreversed_words = []\nfor word in words:\n    reversed_words.append(word[::-1])\nprint(\"Result:\", \" \".join(reversed_words))",
+          "expectedOutput": "Result: nohtyp si nuf",
+          "explanation": "Goal: Reverse Words in Sentence. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        }
+      ]
+    },
+    "q4": {
+      "type": "missing-lines",
+      "title": "Two Missing Lines",
+      "instruction": "Identify the two missing lines of code required to make the program complete and correct.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-2y-q4-1",
+          "title": "Find Second Largest Number",
+          "code": "numbers = [10, 40, 20, 50, 30]\nlargest = numbers[0]\nsecond_largest = numbers[0]\n\nfor num in numbers:\n    if num > largest:\n        # MISSING LINE 1\n        # MISSING LINE 2\n    elif num > second_largest and num != largest:\n        second_largest = num\n\nprint(\"Second Largest =\", second_largest)",
+          "missingLines": [
+            "second_largest = largest",
+            "largest = num"
+          ],
+          "expectedOutput": "Second Largest = 40",
+          "explanation": "Goal: Find Second Largest Number. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-2y-q4-2",
+          "title": "Reverse List In-Place",
+          "code": "arr = [1, 2, 3, 4, 5]\nleft = 0\nright = len(arr) - 1\n\nwhile left < right:\n    # MISSING LINE 1\n    # MISSING LINE 2\n\nprint(\"Reversed =\", arr)",
+          "missingLines": [
+            "arr[left], arr[right] = arr[right], arr[left]",
+            "left += 1; right -= 1"
+          ],
+          "expectedOutput": "Reversed = [5, 4, 3, 2, 1]",
+          "explanation": "Goal: Reverse List In-Place. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-2y-q4-3",
+          "title": "Conditional Matrix Element Filter",
+          "code": "matrix = [[1, 5, 3], [8, 2, 9], [4, 7, 6]]\ngreater_than_five = 0\n\nfor row in matrix:\n    for val in row:\n        # MISSING LINE 1\n            # MISSING LINE 2\n\nprint(\"Greater Than 5 Count =\", greater_than_five)",
+          "missingLines": [
+            "if val > 5:",
+            "greater_than_five += 1"
+          ],
+          "expectedOutput": "Greater Than 5 Count = 4",
+          "explanation": "Goal: Conditional Matrix Element Filter. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-2y-q4-4",
+          "title": "Check Prime Number",
+          "code": "num = 29\nis_prime = True\n\nfor i in range(2, num):\n    # MISSING LINE 1\n        # MISSING LINE 2\n        break\n\nprint(\"Is Prime =\", is_prime)",
+          "missingLines": [
+            "if num % i == 0:",
+            "is_prime = False"
+          ],
+          "expectedOutput": "Is Prime = True",
+          "explanation": "Goal: Check Prime Number. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-2y-q4-5",
+          "title": "Character Frequency Dictionary",
+          "code": "text = \"banana\"\nfreq = {}\n\nfor char in text:\n    # MISSING LINE 1\n    # MISSING LINE 2\n\nprint(\"Frequencies =\", freq)",
+          "missingLines": [
+            "count = freq.get(char, 0)",
+            "freq[char] = count + 1"
+          ],
+          "expectedOutput": "Frequencies = {'b': 1, 'a': 3, 'n': 2}",
+          "explanation": "Goal: Character Frequency Dictionary. Identify the two missing lines of code required to make the program complete and correct."
+        }
+      ]
+    },
+    "q5": {
+      "type": "code-completion",
+      "title": "Short Logic",
+      "instruction": "Write the missing Python code (maximum 5 lines) to solve the given challenge.",
+      "maxAnswerLines": 5,
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-2y-q5-1",
+          "title": "Check Prime Number",
+          "codeBefore": "num = 17\nis_prime = True",
+          "codeAfter": "print(\"Is Prime =\", is_prime)",
+          "expectedCode": "for i in range(2, num):\n    if num % i == 0:\n        is_prime = False\n        break",
+          "expectedOutput": "Is Prime = True",
+          "explanation": "Goal: Check Prime Number. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-2y-q5-2",
+          "title": "Count Frequency of Digits",
+          "codeBefore": "num = 122333\nfreq = {}",
+          "codeAfter": "print(\"Digit Frequency =\", freq)",
+          "expectedCode": "for d in str(num):\n    freq[d] = freq.get(d, 0) + 1",
+          "expectedOutput": "Digit Frequency = {'1': 1, '2': 2, '3': 3}",
+          "explanation": "Goal: Count Frequency of Digits. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-2y-q5-3",
+          "title": "Second Largest in List",
+          "codeBefore": "nums = [10, 40, 20, 50, 30]\nnums_copy = list(set(nums))",
+          "codeAfter": "print(\"Second Largest =\", second_largest)",
+          "expectedCode": "nums_copy.sort()\nsecond_largest = nums_copy[-2]",
+          "expectedOutput": "Second Largest = 40",
+          "explanation": "Goal: Second Largest in List. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-2y-q5-4",
+          "title": "Reverse Words in a String",
+          "codeBefore": "text = \"Code Meets AI\"\nreversed_text = \"\"",
+          "codeAfter": "print(\"Reversed Words =\", reversed_text)",
+          "expectedCode": "words = text.split()\nreversed_text = \" \".join(words[::-1])",
+          "expectedOutput": "Reversed Words = AI Meets Code",
+          "explanation": "Goal: Reverse Words in a String. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-2y-q5-5",
+          "title": "Sum of Main Diagonal in Matrix",
+          "codeBefore": "matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]\ndiag_sum = 0",
+          "codeAfter": "print(\"Diagonal Sum =\", diag_sum)",
+          "expectedCode": "for i in range(len(matrix)):\n    diag_sum += matrix[i][i]",
+          "expectedOutput": "Diagonal Sum = 15",
+          "explanation": "Goal: Sum of Main Diagonal in Matrix. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+        }
+      ]
+    }
+  }
+}

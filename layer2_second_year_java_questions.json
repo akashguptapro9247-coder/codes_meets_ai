@@ -1,0 +1,432 @@
+{
+  "layer": 2,
+  "track": "Manual",
+  "language": "Java",
+  "year": "2nd Year",
+  "difficulty": "Medium to Hard",
+  "questionPools": {
+    "q1": {
+      "type": "jumbled-code",
+      "title": "Jumbled Code",
+      "instruction": "Arrange the given lines in the correct order so that the Java program executes successfully.",
+      "questions": [
+        {
+          "id": "java-2y-q1-1",
+          "title": "Second Largest in Array",
+          "jumbledCode": [
+            "if (arr[i] > largest) {",
+            "second = largest;",
+            "System.out.println(second);",
+            "int[] arr = {12, 45, 23, 67, 34};",
+            "for (int i = 2; i < arr.length; i++) {",
+            "int largest = arr[0];",
+            "} else if (arr[i] > second && arr[i] != largest) {",
+            "second = arr[i];",
+            "int second = arr[1];",
+            "largest = arr[i];",
+            "public class Main {",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "if (second > largest) {",
+            "int temp = largest;",
+            "largest = second;",
+            "second = temp;",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {12, 45, 23, 67, 34};\n        int largest = arr[0];\n        int second = arr[1];\n\n        if (second > largest) {\n            int temp = largest;\n            largest = second;\n            second = temp;\n        }\n\n        for (int i = 2; i < arr.length; i++) {\n            if (arr[i] > largest) {\n                second = largest;\n                largest = arr[i];\n            } else if (arr[i] > second && arr[i] != largest) {\n                second = arr[i];\n            }\n        }\n\n        System.out.println(second);\n    }\n}",
+          "expectedOutput": "45",
+          "explanation": "Goal: Second Largest in Array. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-2y-q1-2",
+          "title": "Frequency of a Character",
+          "jumbledCode": [
+            "count++;",
+            "for (int i = 0; i < text.length(); i++) {",
+            "if (text.charAt(i) == target) {",
+            "String text = \"banana\";",
+            "int count = 0;",
+            "char target = 'a';",
+            "System.out.println(count);",
+            "}",
+            "public class Main {",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"banana\";\n        char target = 'a';\n        int count = 0;\n\n        for (int i = 0; i < text.length(); i++) {\n            if (text.charAt(i) == target) {\n                count++;\n            }\n        }\n\n        System.out.println(count);\n    }\n}",
+          "expectedOutput": "3",
+          "explanation": "Goal: Frequency of a Character. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-2y-q1-3",
+          "title": "Remove Duplicates from Sorted Array",
+          "jumbledCode": [
+            "int j = 1;",
+            "for (int i = 1; i < arr.length; i++) {",
+            "if (arr[i] != arr[i - 1]) {",
+            "arr[j] = arr[i];",
+            "}",
+            "j++;",
+            "int[] arr = {1, 1, 2, 2, 3, 4, 4};",
+            "System.out.println(j);",
+            "public class Main {",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {1, 1, 2, 2, 3, 4, 4};\n        int j = 1;\n\n        for (int i = 1; i < arr.length; i++) {\n            if (arr[i] != arr[i - 1]) {\n                arr[j] = arr[i];\n                j++;\n            }\n        }\n\n        System.out.println(j);\n    }\n}",
+          "expectedOutput": "4",
+          "explanation": "Goal: Remove Duplicates from Sorted Array. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-2y-q1-4",
+          "title": "Matrix Diagonal Sum",
+          "jumbledCode": [
+            "sum += matrix[i][i];",
+            "for (int i = 0; i < matrix.length; i++) {",
+            "int[][] matrix = {{1,2,3},{4,5,6},{7,8,9}};",
+            "System.out.println(sum);",
+            "int sum = 0;",
+            "public class Main {",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[][] matrix = {{1,2,3},{4,5,6},{7,8,9}};\n        int sum = 0;\n\n        for (int i = 0; i < matrix.length; i++) {\n            sum += matrix[i][i];\n        }\n\n        System.out.println(sum);\n    }\n}",
+          "expectedOutput": "15",
+          "explanation": "Goal: Matrix Diagonal Sum. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-2y-q1-5",
+          "title": "Method-Based Palindrome",
+          "jumbledCode": [
+            "reverse = reverse * 10 + n % 10;",
+            "public static boolean isPalindrome(int n) {",
+            "n /= 10;",
+            "int original = n;",
+            "int reverse = 0;",
+            "while (n > 0) {",
+            "return original == reverse;",
+            "}",
+            "public class Main {",
+            "System.out.println(isPalindrome(1221));",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static boolean isPalindrome(int n) {\n        int original = n;\n        int reverse = 0;\n        while (n > 0) {\n            reverse = reverse * 10 + n % 10;\n            n /= 10;\n        }\n        return original == reverse;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(isPalindrome(1221));\n    }\n}",
+          "expectedOutput": "true",
+          "explanation": "Goal: Method-Based Palindrome. Arrange the given lines in the correct order so that the Java program executes successfully."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q2": {
+      "type": "syntax-errors",
+      "title": "Syntax Error Challenge",
+      "instruction": "Correct the intentional Java syntax errors. The program's intended logic is already correct.",
+      "questions": [
+        {
+          "id": "java-2y-q2-1",
+          "title": "Array Search",
+          "code": "public class Main {\npublic static void main(String[] args) {\nint[] arr = {4, 8, 15, 16, 23}\nint target = 16;\nint index = -1;\nfor (int i = 0; i < arr.length; i++ {\nif (arr[i] == target) {\nindex = i;\nbreak\n}\n}\nSystem.out.println(\"Index = \" + index);\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {4, 8, 15, 16, 23};\n        int target = 16;\n        int index = -1;\n        for (int i = 0; i < arr.length; i++) {\n            if (arr[i] == target) {\n                index = i;\n                break;\n            }\n        }\n        System.out.println(\"Index = \" + index);\n    }\n}",
+          "expectedOutput": "Index = 3",
+          "codeLineCount": 14,
+          "intendedErrorCount": 3,
+          "explanation": "Goal: Array Search. Correct the intentional Java syntax errors. The program's intended logic is already correct."
+        },
+        {
+          "id": "java-2y-q2-2",
+          "title": "String Character Count",
+          "code": "public class Main {\npublic static void main(String[] args) {\nString text = \"programming\";\nchar target = 'g';\nint count = 0;\nfor (int i = 0; i < text.length(); i++ {\nif (text.charAt(i) == target) {\ncount++\n}\n}\nSystem.out.println(count);\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"programming\";\n        char target = 'g';\n        int count = 0;\n        for (int i = 0; i < text.length(); i++) {\n            if (text.charAt(i) == target) {\n                count++;\n            }\n        }\n        System.out.println(count);\n    }\n}",
+          "expectedOutput": "2",
+          "codeLineCount": 13,
+          "intendedErrorCount": 2,
+          "explanation": "Goal: String Character Count. Correct the intentional Java syntax errors. The program's intended logic is already correct."
+        },
+        {
+          "id": "java-2y-q2-3",
+          "title": "Prime Check",
+          "code": "public class Main {\npublic static void main(String[] args) {\nint n = 29;\nboolean prime = true;\nfor (int i = 2; i * i <= n; i++ {\nif (n % i == 0) {\nprime = false\nbreak;\n}\n}\nSystem.out.println(prime);\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int n = 29;\n        boolean prime = true;\n        for (int i = 2; i * i <= n; i++) {\n            if (n % i == 0) {\n                prime = false;\n                break;\n            }\n        }\n        System.out.println(prime);\n    }\n}",
+          "expectedOutput": "true",
+          "codeLineCount": 13,
+          "intendedErrorCount": 2,
+          "explanation": "Goal: Prime Check. Correct the intentional Java syntax errors. The program's intended logic is already correct."
+        },
+        {
+          "id": "java-2y-q2-4",
+          "title": "Array Rotation",
+          "code": "public class Main {\npublic static void main(String[] args) {\nint[] arr = {1, 2, 3, 4, 5};\nint first = arr[0];\nfor (int i = 0; i < arr.length - 1; i++ {\narr[i] = arr[i + 1]\n}\narr[arr.length - 1] = first;\nfor (int value : arr) {\nSystem.out.print(value + \" \");\n}\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {1, 2, 3, 4, 5};\n        int first = arr[0];\n        for (int i = 0; i < arr.length - 1; i++) {\n            arr[i] = arr[i + 1];\n        }\n        arr[arr.length - 1] = first;\n        for (int value : arr) {\n            System.out.print(value + \" \");\n        }\n    }\n}",
+          "expectedOutput": "2 3 4 5 1 ",
+          "codeLineCount": 13,
+          "intendedErrorCount": 2,
+          "explanation": "Goal: Array Rotation. Correct the intentional Java syntax errors. The program's intended logic is already correct."
+        },
+        {
+          "id": "java-2y-q2-5",
+          "title": "Word Count",
+          "code": "public class Main {\npublic static void main(String[] args) {\nString text = \"Java makes coding fun\";\nString[] words = text.split(\" \");\nint count = 0\nfor (String word : words) {\nif (!word.isEmpty()) {\ncount++;\n}\n}\nSystem.out.println(\"Words = \" + count)\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"Java makes coding fun\";\n        String[] words = text.split(\" \");\n        int count = 0;\n        for (String word : words) {\n            if (!word.isEmpty()) {\n                count++;\n            }\n        }\n        System.out.println(\"Words = \" + count);\n    }\n}",
+          "expectedOutput": "Words = 4",
+          "codeLineCount": 13,
+          "intendedErrorCount": 2,
+          "explanation": "Goal: Word Count. Correct the intentional Java syntax errors. The program's intended logic is already correct."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q3": {
+      "type": "jumbled-and-syntax-errors",
+      "title": "Jumbled + Syntax Errors",
+      "instruction": "Arrange the lines correctly and fix the intentional syntax errors.",
+      "questions": [
+        {
+          "id": "java-2y-q3-1",
+          "title": "Second Largest",
+          "jumbledCode": [
+            "second = arr[i];",
+            "if (arr[i] > largest) {",
+            "int[] arr = {10, 45, 20, 67, 34};",
+            "int second = arr[1];",
+            "largest = arr[i]",
+            "for (int i = 2; i < arr.length; i++ {",
+            "} else if (arr[i] > second && arr[i] != largest) {",
+            "second = largest;",
+            "int largest = arr[0];",
+            "public class Main {",
+            "System.out.println(second);",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "if (second > largest) {",
+            "int temp = largest;",
+            "largest = second;",
+            "second = temp;",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {10, 45, 20, 67, 34};\n        int largest = arr[0];\n        int second = arr[1];\n\n        if (second > largest) {\n            int temp = largest;\n            largest = second;\n            second = temp;\n        }\n\n        for (int i = 2; i < arr.length; i++) {\n            if (arr[i] > largest) {\n                second = largest;\n                largest = arr[i];\n            } else if (arr[i] > second && arr[i] != largest) {\n                second = arr[i];\n            }\n        }\n\n        System.out.println(second);\n    }\n}",
+          "expectedOutput": "45",
+          "explanation": "Goal: Second Largest. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-2y-q3-2",
+          "title": "Remove Spaces",
+          "jumbledCode": [
+            "String result = \"\";",
+            "for (int i = 0; i < text.length(); i++ {",
+            "if (text.charAt(i) != ' ') {",
+            "result += text.charAt(i)",
+            "String text = \"java is fun\";",
+            "System.out.println(result);",
+            "}",
+            "public class Main {",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"java is fun\";\n        String result = \"\";\n\n        for (int i = 0; i < text.length(); i++) {\n            if (text.charAt(i) != ' ') {\n                result += text.charAt(i);\n            }\n        }\n\n        System.out.println(result);\n    }\n}",
+          "expectedOutput": "javaisfun",
+          "explanation": "Goal: Remove Spaces. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-2y-q3-3",
+          "title": "Prime Count",
+          "jumbledCode": [
+            "if (prime) count++;",
+            "boolean prime = true;",
+            "for (int n = 2; n <= 20; n++) {",
+            "for (int d = 2; d * d <= n; d++ {",
+            "if (n % d == 0) {",
+            "prime = false;",
+            "}",
+            "System.out.println(count);",
+            "public class Main {",
+            "int count = 0;",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "break;",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int count = 0;\n\n        for (int n = 2; n <= 20; n++) {\n            boolean prime = true;\n            for (int d = 2; d * d <= n; d++) {\n                if (n % d == 0) {\n                    prime = false;\n                    break;\n                }\n            }\n            if (prime) count++;\n        }\n\n        System.out.println(count);\n    }\n}",
+          "expectedOutput": "8",
+          "explanation": "Goal: Prime Count. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-2y-q3-4",
+          "title": "Diagonal Sum",
+          "jumbledCode": [
+            "sum += matrix[i][i];",
+            "int sum = 0;",
+            "for (int i = 0; i < matrix.length; i++ {",
+            "int[][] matrix = {{1,2,3},{4,5,6},{7,8,9}};",
+            "System.out.println(sum);",
+            "public class Main {",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[][] matrix = {{1,2,3},{4,5,6},{7,8,9}};\n        int sum = 0;\n        for (int i = 0; i < matrix.length; i++) {\n            sum += matrix[i][i];\n        }\n        System.out.println(sum);\n    }\n}",
+          "expectedOutput": "15",
+          "explanation": "Goal: Diagonal Sum. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-2y-q3-5",
+          "title": "Palindrome String",
+          "jumbledCode": [
+            "String reverse = new StringBuilder(text).reverse().toString()",
+            "if (text.equals(reverse)) {",
+            "String text = \"level\";",
+            "System.out.println(\"Palindrome\");",
+            "} else {",
+            "System.out.println(\"Not Palindrome\");",
+            "public class Main {",
+            "public static void main(String[] args) {",
+            "String reverse = new StringBuilder(text).reverse().toString();",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"level\";\n        String reverse = new StringBuilder(text).reverse().toString();\n\n        if (text.equals(reverse)) {\n            System.out.println(\"Palindrome\");\n        } else {\n            System.out.println(\"Not Palindrome\");\n        }\n    }\n}",
+          "expectedOutput": "Palindrome",
+          "explanation": "Goal: Palindrome String. Arrange the lines correctly and fix the intentional syntax errors."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q4": {
+      "type": "missing-lines",
+      "title": "Two Missing Lines",
+      "instruction": "Exactly two important lines are missing. Fill both missing sections. Difficulty is medium.",
+      "questions": [
+        {
+          "id": "java-2y-q4-1",
+          "title": "Second Largest Update",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {12, 45, 23, 67, 34};\n        int largest = arr[1];\n        int second = arr[0];\n\n        for (int i = 2; i < arr.length; i++) {\n            if (arr[i] > largest) {\n                // MISSING LINE 1\n                // MISSING LINE 2\n            } else if (arr[i] > second) {\n                second = arr[i];\n            }\n        }\n\n        System.out.println(second);\n    }\n}",
+          "missingLines": [
+            "second = largest;",
+            "largest = arr[i];"
+          ],
+          "expectedOutput": "45",
+          "explanation": "Goal: Second Largest Update. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+        },
+        {
+          "id": "java-2y-q4-2",
+          "title": "Count Vowels",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        String text = \"programming\";\n        int count = 0;\n\n        for (int i = 0; i < text.length(); i++) {\n            char ch = text.charAt(i);\n            // MISSING LINE 1\n                // MISSING LINE 2\n        }\n\n        System.out.println(count);\n    }\n}",
+          "missingLines": [
+            "if (\"aeiou\".indexOf(ch) >= 0)",
+            "count++;"
+          ],
+          "expectedOutput": "3",
+          "explanation": "Goal: Count Vowels. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+        },
+        {
+          "id": "java-2y-q4-3",
+          "title": "Find Minimum Value",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {32, 14, 56, 8, 21};\n        int min = arr[0];\n\n        for (int i = 1; i < arr.length; i++) {\n            // MISSING LINE 1\n                // MISSING LINE 2\n        }\n\n        System.out.println(\"Minimum = \" + min);\n    }\n}",
+          "missingLines": [
+            "if (arr[i] < min)",
+            "min = arr[i];"
+          ],
+          "expectedOutput": "Minimum = 8",
+          "explanation": "Goal: Find Minimum Value. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+        },
+        {
+          "id": "java-2y-q4-4",
+          "title": "Count Positive Odd Numbers",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {-3, 5, 8, 11, -7, 12};\n        int count = 0;\n\n        for (int value : arr) {\n            // MISSING LINE 1\n                // MISSING LINE 2\n        }\n\n        System.out.println(count);\n    }\n}",
+          "missingLines": [
+            "if (value > 0 && value % 2 != 0)",
+            "count++;"
+          ],
+          "expectedOutput": "2",
+          "explanation": "Goal: Count Positive Odd Numbers. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+        },
+        {
+          "id": "java-2y-q4-5",
+          "title": "Reverse Array In Place",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {10, 20, 30, 40, 50};\n\n        for (int i = 0; i < arr.length / 2; i++) {\n            // MISSING LINE 1\n            // MISSING LINE 2\n        }\n\n        for (int value : arr) {\n            System.out.print(value + \" \");\n        }\n    }\n}",
+          "missingLines": [
+            "int temp = arr[i];",
+            "arr[i] = arr[arr.length - 1 - i]; arr[arr.length - 1 - i] = temp;"
+          ],
+          "expectedOutput": "50 40 30 20 10 ",
+          "explanation": "Goal: Reverse Array In Place. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q5": {
+      "type": "code-completion",
+      "title": "Short Logic",
+      "instruction": "Complete only the missing section. Maximum 5 lines may be entered.",
+      "maxAnswerLines": 5,
+      "questions": [
+        {
+          "id": "java-2y-q5-1",
+          "title": "Prime Check",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int n = 29;\n        boolean prime = true;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(prime);\n    }\n}",
+          "expectedCode": "for (int i = 2; i * i <= n; i++) {\n    if (n % i == 0) {\n        prime = false;\n        break;\n    }\n}",
+          "expectedOutput": "true",
+          "explanation": "Goal: Prime Check. Complete only the missing section. Maximum 5 lines may be entered."
+        },
+        {
+          "id": "java-2y-q5-2",
+          "title": "Second Largest of Three",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int a = 18, b = 27, c = 21;\n        int second;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Second = \" + second);\n    }\n}",
+          "expectedCode": "int max = Math.max(a, Math.max(b, c));\nsecond = Math.max(Math.min(a, b), Math.min(Math.max(a, b), c));\nif (second == max) second = Math.max(Math.min(a, b), Math.min(a, c));",
+          "expectedOutput": "Second = 21",
+          "explanation": "Goal: Second Largest of Three. Complete only the missing section. Maximum 5 lines may be entered."
+        },
+        {
+          "id": "java-2y-q5-3",
+          "title": "Count Digits Equal to 5",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int n = 552351;\n        int count = 0;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Count = \" + count);\n    }\n}",
+          "expectedCode": "while (n > 0) {\n    if (n % 10 == 5) count++;\n    n /= 10;\n}",
+          "expectedOutput": "Count = 3",
+          "explanation": "Goal: Count Digits Equal to 5. Complete only the missing section. Maximum 5 lines may be entered."
+        },
+        {
+          "id": "java-2y-q5-4",
+          "title": "Character Frequency",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        String text = \"banana\";\n        char target = 'a';\n        int count = 0;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Count = \" + count);\n    }\n}",
+          "expectedCode": "for (int i = 0; i < text.length(); i++) {\n    if (text.charAt(i) == target) count++;\n}",
+          "expectedOutput": "Count = 3",
+          "explanation": "Goal: Character Frequency. Complete only the missing section. Maximum 5 lines may be entered."
+        },
+        {
+          "id": "java-2y-q5-5",
+          "title": "Array Average",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {12, 18, 20, 10};\n        int sum = 0;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        double average = (double) sum / arr.length;\n        System.out.printf(\"%.2f\", average);\n    }\n}",
+          "expectedCode": "for (int value : arr) {\n    sum += value;\n}",
+          "expectedOutput": "15.00",
+          "explanation": "Goal: Array Average. Complete only the missing section. Maximum 5 lines may be entered."
+        }
+      ],
+      "questionCount": 5
+    }
+  }
+}

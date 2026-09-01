@@ -1,0 +1,51 @@
+{
+  "round": "Layer 2 - Gen AI Round",
+  "description": "Simple AI-assisted application development challenges. Each participant is assigned exactly one question.",
+  "assignment": {
+    "questions_per_participant": 1,
+    "assignment_mode": "random_or_admin_assigned",
+    "admin_can_change_assignment": true
+  },
+  "participant_requirements": {
+    "ai_tools_allowed": true,
+    "ai_tools": [
+      "ChatGPT",
+      "Gemini"
+    ],
+    "implementation_requirement": "Participants may use AI to understand requirements, generate code, troubleshoot issues, and decide how to structure their application. They must create and organize the application themselves, understand the generated code sufficiently to run and demonstrate it, and complete the requested functionality.",
+    "explanation_required": true,
+    "explanation_prompt": "Explain in your own words what you built, how it works, what parts you implemented, and how you used AI during the development process."
+  },
+  "questions": [
+    {
+      "id": "GENAI-Q1",
+      "title": "Smart Calculator",
+      "problem_statement": "Build a simple Smart Calculator web application for performing common arithmetic operations. The application should allow a user to enter numbers and perform addition, subtraction, multiplication, and division. It should support decimal values, provide controls for clearing the calculation and displaying the final result, and handle invalid operations such as division by zero gracefully. The application should be functional in the browser and have a clean, understandable interface. The solution should be complete enough to demonstrate a working calculator rather than only a visual mock-up."
+    },
+    {
+      "id": "GENAI-Q2",
+      "title": "Personal Portfolio Web Page",
+      "problem_statement": "Create a simple personal portfolio web page for a fictional developer. The page should present the developer's name, a short introduction, technical skills, at least three projects, and contact information. It should include clear navigation between the major sections and remain usable on desktop and mobile screen sizes. Include at least one meaningful interactive feature, such as a dark/light mode switch, mobile navigation menu, expandable content, or another small browser-based interaction. The final result should be a functional and presentable web page, not just a static collection of text."
+    },
+    {
+      "id": "GENAI-Q3",
+      "title": "To-Do List Application",
+      "problem_statement": "Build a simple To-Do List web application for managing everyday tasks. A user should be able to add a task, mark a task as completed, and delete a task. Completed tasks should be visually distinguishable from pending tasks, and the application should display the current number of tasks or otherwise clearly indicate the task-list state. The application should work entirely in the browser without a backend or database. For a stronger implementation, tasks should remain available after a browser refresh using browser-local persistence such as localStorage. The final application should demonstrate working interaction rather than being a static design."
+    },
+    {
+      "id": "GENAI-Q4",
+      "title": "Personal Expense Tracker",
+      "problem_statement": "Create a simple Personal Expense Tracker that allows a user to record and manage everyday expenses. The application should allow the user to enter an expense name, amount, and category such as Food, Travel, Shopping, or Other. The user should be able to add expenses to a visible list, see the total amount spent, and remove individual expenses. Basic input validation should be included and the displayed information should update whenever expenses are added or removed. The application should work completely in the browser without a backend or database. Browser-local persistence is encouraged but not mandatory. The final result should be a functional mini-application with a clear interface and working calculations."
+    },
+    {
+      "id": "GENAI-Q5",
+      "title": "Mini Quiz Application",
+      "problem_statement": "Build a simple interactive five-question quiz application. The application should present one question at a time with multiple-choice answers. A user should be able to select an answer and move through the quiz until all five questions have been completed. At the end, calculate and display the user's final score out of five. Provide a way to restart the quiz and attempt it again. The questions and answers may be predefined within the application; no backend or external database is required. The final application should demonstrate a complete flow from starting the quiz through answering questions, calculating the score, displaying the result, and restarting."
+    },
+    {
+      "id": "GENAI-Q6",
+      "title": "Mini Weather Dashboard",
+      "problem_statement": "Create a simple Mini Weather Dashboard that allows a user to search for a city and view weather information for that city. The application should support at least five predefined cities, including Hyderabad, Mumbai, Delhi, Bengaluru, and Chennai. For a supported city, display representative information such as temperature, weather condition, humidity, and wind speed. If an unsupported city is searched, clearly display a suitable message such as 'City not found.' Use predefined or mock weather data and do not depend on a real external weather API. The main focus is implementing the search, data lookup, conditional behavior, and presentation of results. The final result should be a functional browser-based dashboard rather than a static weather card."
+    }
+  ]
+}

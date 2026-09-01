@@ -1193,5 +1193,211 @@ export const adminService = {
       console.warn('[Supabase::subscribeToChanges] Subscription error:', err);
       return () => {};
     }
+  },
+
+  // ------------------------------------------------------------------------
+  // LAYER 2 MANUAL ATTEMPTS
+  // ------------------------------------------------------------------------
+  
+  async fetchLayer2ManualAttemptForUser(userId) {
+    if (!isSupabaseConfigured() || !supabase) return { data: null, error: null };
+    try {
+      const { data, error } = await supabase
+        .from('layer_2_manual_attempts')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (error) return { data: null, error };
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err };
+    }
+  },
+
+  async fetchAllLayer2ManualAttempts() {
+    if (!isSupabaseConfigured() || !supabase) return { data: [], error: null };
+    try {
+      const { data, error } = await supabase
+        .from('layer_2_manual_attempts')
+        .select('*')
+        .order('final_marks', { ascending: false });
+      if (error) return { data: [], error };
+      return { data: data || [], error: null };
+    } catch (err) {
+      return { data: [], error: err };
+    }
+  },
+
+  async submitLayer2ManualAttempt(payload) {
+    if (!isSupabaseConfigured() || !supabase) return { data: null, error: { message: 'Supabase not configured' } };
+    try {
+      const dbPayload = {
+        user_id: payload.userId,
+        username: payload.username,
+        roll_number: payload.rollNumber,
+        year: payload.year,
+        language: payload.language,
+        questions_pool: payload.questionsPool || [],
+        question_states: payload.questionStates || {},
+        automatic_marks: payload.automaticMarks || 0,
+        status: payload.status || 'in_progress',
+        completed_at: payload.status === 'completed' ? new Date().toISOString() : null
+      };
+
+      const { data, error } = await supabase
+        .from('layer_2_manual_attempts')
+        .upsert(dbPayload, { onConflict: 'user_id' })
+        .select()
+        .single();
+      
+      if (error) return { data: null, error };
+
+      // Cascade to layer_2 and users table if completed
+      if (payload.status === 'completed') {
+        const { data: l2Record } = await supabase
+          .from('layer_2')
+          .select('layer_2_gen_ai_marks, name')
+          .eq('user_id', payload.userId)
+          .maybeSingle();
+
+        const genAiMarks = parseFloat(l2Record?.layer_2_gen_ai_marks) || 0;
+        const userName = payload.username || l2Record?.name || '';
+
+        await this.updateLayer2Marks(payload.userId, genAiMarks, payload.automaticMarks, userName);
+      }
+
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err };
+    }
+  },
+  
+  async overrideLayer2ManualScore(userId, newScore) {
+    if (!isSupabaseConfigured() || !supabase) return { data: null, error: { message: 'Supabase not configured' } };
+    try {
+      const { data, error } = await supabase
+        .from('layer_2_manual_attempts')
+        .update({ admin_override_marks: newScore })
+        .eq('user_id', userId)
+        .select()
+        .single();
+      if (error) return { data: null, error };
+
+      // Re-fetch gen AI marks to recalculate layer 2 average
+      const { data: l2Record } = await supabase
+        .from('layer_2')
+        .select('layer_2_gen_ai_marks, name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const genAiMarks = parseFloat(l2Record?.layer_2_gen_ai_marks) || 0;
+      const userName = l2Record?.name || '';
+
+      await this.updateLayer2Marks(userId, genAiMarks, newScore, userName);
+
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err };
+    }
+  },
+
+  // ------------------------------------------------------------------------
+  // LAYER 2 GEN AI ADMIN METHODS
+  // ------------------------------------------------------------------------
+  async fetchLayer2GenAiSubmissions() {
+    if (!isSupabaseConfigured() || !supabase) return { data: [], error: { message: 'Supabase not configured' } };
+    try {
+      const { data, error } = await supabase
+        .from('layer_2_genai_submissions')
+        .select('*')
+        .order('submitted_at', { ascending: false });
+      if (error) return { data: [], error };
+      return { data: data || [], error: null };
+    } catch (err) {
+      return { data: [], error: err };
+    }
+  },
+
+  async updateLayer2GenAiMarks(submissionId, userId, newMarks, remarks) {
+    if (!isSupabaseConfigured() || !supabase) return { error: { message: 'Supabase not configured' } };
+    try {
+      // 1. Update the submission record
+      const { error: subErr } = await supabase
+        .from('layer_2_genai_submissions')
+        .update({
+          admin_marks: newMarks,
+          admin_remarks: remarks,
+          status: 'reviewed',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', submissionId);
+
+      if (subErr) return { error: subErr };
+
+      // 2. Cascade marks to layer_2 table
+      const { data: l2Record } = await supabase
+        .from('layer_2')
+        .select('layer_2_manual_marks, name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const manualMarks = parseFloat(l2Record?.layer_2_manual_marks) || 0;
+      const userName = l2Record?.name || '';
+      
+      const { error: cascadeErr } = await this.updateLayer2Marks(userId, newMarks, manualMarks, userName);
+      
+      return { error: cascadeErr };
+    } catch (err) {
+      return { error: err };
+    }
+  },
+
+  async overrideLayer2GenAiQuestion(userId, newQuestionId) {
+    if (!isSupabaseConfigured() || !supabase) return { error: { message: 'Supabase not configured' } };
+    try {
+      const { error } = await supabase
+        .from('layer_2_genai_submissions')
+        .update({
+          question_id: newQuestionId,
+          explanation: null,
+          submitted: false,
+          submitted_at: null,
+          status: 'in_progress',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId);
+        
+      return { error };
+    } catch (err) {
+      return { error: err };
+    }
+  },
+  
+  async deleteLayer2GenAiSubmission(submissionId, userId) {
+    if (!isSupabaseConfigured() || !supabase) return { error: { message: 'Supabase not configured' } };
+    try {
+      const { error } = await supabase
+        .from('layer_2_genai_submissions')
+        .delete()
+        .eq('id', submissionId);
+        
+      if (error) return { error };
+      
+      // Also clear the marks from layer_2 table
+      const { data: l2Record } = await supabase
+        .from('layer_2')
+        .select('layer_2_manual_marks, name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const manualMarks = parseFloat(l2Record?.layer_2_manual_marks) || 0;
+      const userName = l2Record?.name || '';
+      
+      await this.updateLayer2Marks(userId, null, manualMarks, userName);
+      
+      return { error: null };
+    } catch (err) {
+      return { error: err };
+    }
   }
 };

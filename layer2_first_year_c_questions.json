@@ -1,0 +1,376 @@
+{
+  "language": "C",
+  "year": "1st Year",
+  "layer": 2,
+  "track": "Manual",
+  "questionPools": {
+    "q1": {
+      "type": "jumbled-code",
+      "title": "Jumbled Code",
+      "instruction": "Arrange the given lines in the correct order so that the program executes successfully.",
+      "questions": [
+        {
+          "id": "c-1y-q1-1",
+          "title": "Sum of Two Numbers",
+          "jumbledCode": [
+            "printf(\"Sum = %d\", sum);",
+            "int b = 20;",
+            "return 0;",
+            "int sum = a + b;",
+            "#include <stdio.h>",
+            "int main() {",
+            "int a = 10;",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint a = 10;\nint b = 20;\nint sum = a + b;\nprintf(\"Sum = %d\", sum);\nreturn 0;\n}",
+          "expectedOutput": "Sum = 30",
+          "explanation": "Goal: Sum of Two Numbers. Arrange the given lines in the correct order so that the program executes successfully."
+        },
+        {
+          "id": "c-1y-q1-2",
+          "title": "Even or Odd",
+          "jumbledCode": [
+            "printf(\"Odd\");",
+            "return 0;",
+            "if (n % 2 == 0) {",
+            "#include <stdio.h>",
+            "}",
+            "int n = 8;",
+            "printf(\"Even\");",
+            "} else {",
+            "int main() {",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint n = 8;\nif (n % 2 == 0) {\nprintf(\"Even\");\n} else {\nprintf(\"Odd\");\n}\nreturn 0;\n}",
+          "expectedOutput": "Even",
+          "explanation": "Goal: Even or Odd. Arrange the given lines in the correct order so that the program executes successfully."
+        },
+        {
+          "id": "c-1y-q1-3",
+          "title": "Largest of Two Numbers",
+          "jumbledCode": [
+            "printf(\"%d\", b);",
+            "return 0;",
+            "int a = 15;",
+            "} else {",
+            "#include <stdio.h>",
+            "int b = 25;",
+            "printf(\"%d\", a);",
+            "int main() {",
+            "if (a > b) {",
+            "}",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint a = 15;\nint b = 25;\nif (a > b) {\nprintf(\"%d\", a);\n} else {\nprintf(\"%d\", b);\n}\nreturn 0;\n}",
+          "expectedOutput": "25",
+          "explanation": "Goal: Largest of Two Numbers. Arrange the given lines in the correct order so that the program executes successfully."
+        },
+        {
+          "id": "c-1y-q1-4",
+          "title": "Sum from 1 to 5",
+          "jumbledCode": [
+            "sum += i;",
+            "printf(\"%d\", sum);",
+            "int sum = 0;",
+            "return 0;",
+            "#include <stdio.h>",
+            "for (int i = 1; i <= 5; i++) {",
+            "int main() {",
+            "}",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint sum = 0;\nfor (int i = 1; i <= 5; i++) {\nsum += i;\n}\nprintf(\"%d\", sum);\nreturn 0;\n}",
+          "expectedOutput": "15",
+          "explanation": "Goal: Sum from 1 to 5. Arrange the given lines in the correct order so that the program executes successfully."
+        },
+        {
+          "id": "c-1y-q1-5",
+          "title": "Multiplication Table",
+          "jumbledCode": [
+            "return 0;",
+            "printf(\"%d x %d = %d\\n\", n, i, n * i);",
+            "int n = 5;",
+            "}",
+            "for (int i = 1; i <= 5; i++) {",
+            "#include <stdio.h>",
+            "int main() {",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint n = 5;\nfor (int i = 1; i <= 5; i++) {\nprintf(\"%d x %d = %d\\n\", n, i, n * i);\n}\nreturn 0;\n}",
+          "expectedOutput": "5 x 1 = 5\n5 x 2 = 10\n5 x 3 = 15\n5 x 4 = 20\n5 x 5 = 25",
+          "explanation": "Goal: Multiplication Table. Arrange the given lines in the correct order so that the program executes successfully."
+        }
+      ]
+    },
+    "q2": {
+      "type": "syntax-errors",
+      "title": "Syntax Error Challenge",
+      "instruction": "Correct all intentional syntax errors in the given C program. No logical correction is required.",
+      "questions": [
+        {
+          "id": "c-1y-q2-1",
+          "title": "Calculate Average",
+          "code": "#include <stdio.h>\nint main( {\nint a = 10\nint b = 20\nint c = 30;\nint sum = a + b + c\nfloat avg = sum / 3\nprintf(\"Average = %.2f\" avg)\n}",
+          "correctCode": "#include <stdio.h>\nint main() {\nint a = 10;\nint b = 20;\nint c = 30;\nint sum = a + b + c;\nfloat avg = sum / 3.0;\nprintf(\"Average = %.2f\", avg);\n}",
+          "expectedOutput": "Average = 20.00",
+          "codeLineCount": 9,
+          "intendedErrorCount": 9,
+          "explanation": "Goal: Calculate Average. Correct all intentional syntax errors in the given C program. No logical correction is required."
+        },
+        {
+          "id": "c-1y-q2-2",
+          "title": "Check Positive Number",
+          "code": "#include <stdio.h>\nint main( {\nint n = 15\nif (n > 0 {\nprintf(\"Positive\")\n} else\nprintf(\"Not Positive\")\n}",
+          "correctCode": "#include <stdio.h>\nint main() {\nint n = 15;\nif (n > 0) {\nprintf(\"Positive\");\n} else {\nprintf(\"Not Positive\");\n}\n}",
+          "expectedOutput": "Positive",
+          "codeLineCount": 8,
+          "intendedErrorCount": 8,
+          "explanation": "Goal: Check Positive Number. Correct all intentional syntax errors in the given C program. No logical correction is required."
+        },
+        {
+          "id": "c-1y-q2-3",
+          "title": "Rectangle Area",
+          "code": "#include <stdio.h>\nint main( {\nint length = 10\nint width = 5;\nint area = length * width\nprintf(\"Length = %d\\n\" length)\nprintf(\"Area = %d\" area)\n}",
+          "correctCode": "#include <stdio.h>\nint main() {\nint length = 10;\nint width = 5;\nint area = length * width;\nprintf(\"Length = %d\\n\", length);\nprintf(\"Area = %d\", area);\n}",
+          "expectedOutput": "Length = 10\nArea = 50",
+          "codeLineCount": 8,
+          "intendedErrorCount": 7,
+          "explanation": "Goal: Rectangle Area. Correct all intentional syntax errors in the given C program. No logical correction is required."
+        },
+        {
+          "id": "c-1y-q2-4",
+          "title": "Find Remainder",
+          "code": "#include <stdio.h>\nint main( {\nint a = 17\nint b = 5;\nint remainder = a % b\nif (remainder == 0 {\nprintf(\"Divisible\")\nelse\nprintf(\"Not Divisible\");\n}",
+          "correctCode": "#include <stdio.h>\nint main() {\nint a = 17;\nint b = 5;\nint remainder = a % b;\nif (remainder == 0) {\nprintf(\"Divisible\");\n} else {\nprintf(\"Not Divisible\");\n}\n}",
+          "expectedOutput": "Not Divisible",
+          "codeLineCount": 10,
+          "intendedErrorCount": 10,
+          "explanation": "Goal: Find Remainder. Correct all intentional syntax errors in the given C program. No logical correction is required."
+        },
+        {
+          "id": "c-1y-q2-5",
+          "title": "Simple For Loop",
+          "code": "#include <stdio.h>\nint main( {\nint sum = 0\nfor (int i = 1; i <= 5; i++ {\nsum += i\nprintf(\"Sum = %d\\n\" sum)\nreturn 0\n}",
+          "correctCode": "#include <stdio.h>\nint main() {\nint sum = 0;\nfor (int i = 1; i <= 5; i++) {\nsum += i;\n}\nprintf(\"Sum = %d\\n\", sum);\nreturn 0;\n}",
+          "expectedOutput": "Sum = 15",
+          "codeLineCount": 8,
+          "intendedErrorCount": 7,
+          "explanation": "Goal: Simple For Loop. Correct all intentional syntax errors in the given C program. No logical correction is required."
+        }
+      ]
+    },
+    "q3": {
+      "type": "jumbled-and-syntax-errors",
+      "title": "Jumbled + Syntax Errors",
+      "instruction": "Arrange the lines in the correct order and correct the intentional syntax errors.",
+      "questions": [
+        {
+          "id": "c-1y-q3-1",
+          "title": "Largest Number",
+          "jumbledCode": [
+            "}",
+            "int a = 15;",
+            "} else {",
+            "#include <stdio.h>",
+            "if (a > b) {",
+            "int b = 10;",
+            "printf(\"%d\", b);",
+            "int main() {",
+            "printf(\"%d\", a);",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint a = 15;\nint b = 10;\nif (a > b) {\nprintf(\"%d\", a);\n} else {\nprintf(\"%d\", b);\n}\n}",
+          "expectedOutput": "15",
+          "explanation": "Goal: Largest Number. Arrange the lines in the correct order and correct the intentional syntax errors."
+        },
+        {
+          "id": "c-1y-q3-2",
+          "title": "Sum of Even Numbers",
+          "jumbledCode": [
+            "printf(\"%d\", sum);",
+            "sum += i",
+            "for (int i = 1; i <= 10; i++) {",
+            "#include <stdio.h>",
+            "if (i % 2 == 0) {",
+            "int sum = 0;",
+            "}",
+            "int main() {",
+            "}",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint sum = 0;\nfor (int i = 1; i <= 10; i++) {\nif (i % 2 == 0) {\nsum += i;\n}\n}\nprintf(\"%d\", sum);\n}",
+          "expectedOutput": "30",
+          "explanation": "Goal: Sum of Even Numbers. Arrange the lines in the correct order and correct the intentional syntax errors."
+        },
+        {
+          "id": "c-1y-q3-3",
+          "title": "Positive or Negative",
+          "jumbledCode": [
+            "printf(\"Negative\");",
+            "if (n >= 0 {",
+            "int n = -4;",
+            "#include <stdio.h>",
+            "} else {",
+            "printf(\"Positive\");",
+            "int main() {",
+            "}",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint n = -4;\nif (n >= 0) {\nprintf(\"Positive\");\n} else {\nprintf(\"Negative\");\n}\n}",
+          "expectedOutput": "Negative",
+          "explanation": "Goal: Positive or Negative. Arrange the lines in the correct order and correct the intentional syntax errors."
+        },
+        {
+          "id": "c-1y-q3-4",
+          "title": "Multiplication Table",
+          "jumbledCode": [
+            "for (int i = 1; i <= 5; i++ {",
+            "printf(\"%d \", n * i);",
+            "#include <stdio.h>",
+            "int n = 4;",
+            "}",
+            "int main() {",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint n = 4;\nfor (int i = 1; i <= 5; i++) {\nprintf(\"%d \", n * i);\n}\n}",
+          "expectedOutput": "4 8 12 16 20",
+          "explanation": "Goal: Multiplication Table. Arrange the lines in the correct order and correct the intentional syntax errors."
+        },
+        {
+          "id": "c-1y-q3-5",
+          "title": "Count Even Numbers",
+          "jumbledCode": [
+            "count++;",
+            "}",
+            "if (i % 2 == 0)",
+            "int count = 0;",
+            "for (int i = 1; i <= 10; i++) {",
+            "printf(\"%d\", count);",
+            "#include <stdio.h>",
+            "int main() {",
+            "}",
+            "}"
+          ],
+          "correctCode": "#include <stdio.h>\nint main() {\nint count = 0;\nfor (int i = 1; i <= 10; i++) {\nif (i % 2 == 0) {\ncount++;\n}\n}\nprintf(\"%d\", count);\n}",
+          "expectedOutput": "5",
+          "explanation": "Goal: Count Even Numbers. Arrange the lines in the correct order and correct the intentional syntax errors."
+        }
+      ]
+    },
+    "q4": {
+      "type": "missing-lines",
+      "title": "Two Missing Lines",
+      "instruction": "Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
+      "questions": [
+        {
+          "id": "c-1y-q4-1",
+          "title": "Find Largest Array Element",
+          "code": "#include <stdio.h>\n\nint main() {\n    int arr[] = {12, 25, 8, 19};\n\n    // MISSING LINE 1\n\n    for (int i = 1; i < 4; i++) {\n\n        // MISSING LINE 2\n\n    }\n\n    printf(\"%d\", largest);\n}",
+          "missingLines": [
+            "int largest = arr[0];",
+            "if (arr[i] > largest)\n        largest = arr[i];"
+          ],
+          "expectedOutput": "25",
+          "explanation": "Goal: Find Largest Array Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+        },
+        {
+          "id": "c-1y-q4-2",
+          "title": "Count Odd Numbers",
+          "code": "#include <stdio.h>\n\nint main() {\n    int arr[] = {3, 8, 11, 14, 17};\n    int count = 0;\n\n    for (int i = 0; i < 5; i++) {\n\n        // MISSING LINE 1\n\n        // MISSING LINE 2\n    }\n\n    printf(\"%d\", count);\n}",
+          "missingLines": [
+            "if (arr[i] % 2 != 0)",
+            "count++;"
+          ],
+          "expectedOutput": "3",
+          "explanation": "Goal: Count Odd Numbers. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+        },
+        {
+          "id": "c-1y-q4-3",
+          "title": "Calculate Array Sum",
+          "code": "#include <stdio.h>\n\nint main() {\n    int arr[] = {5, 10, 15, 20};\n    \n    // MISSING LINE 1\n\n    for (int i = 0; i < 4; i++) {\n\n        // MISSING LINE 2\n    }\n\n    printf(\"%d\", sum);\n}",
+          "missingLines": [
+            "int sum = 0;",
+            "sum += arr[i];"
+          ],
+          "expectedOutput": "50",
+          "explanation": "Goal: Calculate Array Sum. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+        },
+        {
+          "id": "c-1y-q4-4",
+          "title": "Count Numbers Greater Than 10",
+          "code": "#include <stdio.h>\n\nint main() {\n    int arr[] = {5, 15, 8, 20, 12};\n    int count = 0;\n\n    for (int i = 0; i < 5; i++) {\n\n        // MISSING LINE 1\n\n        // MISSING LINE 2\n    }\n\n    printf(\"%d\", count);\n}",
+          "missingLines": [
+            "if (arr[i] > 10)",
+            "count++;"
+          ],
+          "expectedOutput": "3",
+          "explanation": "Goal: Count Numbers Greater Than 10. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+        },
+        {
+          "id": "c-1y-q4-5",
+          "title": "Find Smallest Element",
+          "code": "#include <stdio.h>\n\nint main() {\n    int arr[] = {18, 7, 25, 4, 12};\n\n    // MISSING LINE 1\n\n    for (int i = 1; i < 5; i++) {\n\n        // MISSING LINE 2\n    }\n\n    printf(\"%d\", smallest);\n}",
+          "missingLines": [
+            "int smallest = arr[0];",
+            "if (arr[i] < smallest)\n        smallest = arr[i];"
+          ],
+          "expectedOutput": "4",
+          "explanation": "Goal: Find Smallest Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+        }
+      ]
+    },
+    "q5": {
+      "type": "code-completion",
+      "title": "Short Logic",
+      "instruction": "Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
+      "maxAnswerLines": 4,
+      "questions": [
+        {
+          "id": "c-1y-q5-1",
+          "title": "Even or Odd",
+          "codeBefore": "#include <stdio.h>\n\nint main() {\n    int n = 17;\n\n    // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n    printf(\"Number checking completed.\");\n    return 0;\n}",
+          "expectedCode": "if (n % 2 == 0)\n    printf(\"Even\\n\");\nelse\n    printf(\"Odd\\n\");",
+          "expectedOutput": "Odd\nNumber checking completed.",
+          "explanation": "Goal: Even or Odd. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "c-1y-q5-2",
+          "title": "Find Larger Number",
+          "codeBefore": "#include <stdio.h>\n\nint main() {\n    int a = 25;\n    int b = 18;\n    int largest;\n\n    // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n    printf(\"Largest = %d\", largest);\n    return 0;\n}",
+          "expectedCode": "if (a > b)\n    largest = a;\nelse\n    largest = b;",
+          "expectedOutput": "Largest = 25",
+          "explanation": "Goal: Find Larger Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "c-1y-q5-3",
+          "title": "Positive or Negative",
+          "codeBefore": "#include <stdio.h>\n\nint main() {\n    int n = -12;\n\n    // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n    printf(\"Check completed.\");\n    return 0;\n}",
+          "expectedCode": "if (n >= 0)\n    printf(\"Positive\\n\");\nelse\n    printf(\"Negative\\n\");",
+          "expectedOutput": "Negative\nCheck completed.",
+          "explanation": "Goal: Positive or Negative. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "c-1y-q5-4",
+          "title": "Divisible by 5",
+          "codeBefore": "#include <stdio.h>\n\nint main() {\n    int n = 35;\n\n    // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n    printf(\"Program completed.\");\n    return 0;\n}",
+          "expectedCode": "if (n % 5 == 0)\n    printf(\"Divisible\\n\");\nelse\n    printf(\"Not Divisible\\n\");",
+          "expectedOutput": "Divisible\nProgram completed.",
+          "explanation": "Goal: Divisible by 5. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "c-1y-q5-5",
+          "title": "Square of a Number",
+          "codeBefore": "#include <stdio.h>\n\nint main() {\n    int n = 7;\n    int square;\n\n    // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n    printf(\"Square = %d\", square);\n    return 0;\n}",
+          "expectedCode": "square = n * n;",
+          "expectedOutput": "Square = 49",
+          "explanation": "Goal: Square of a Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+        }
+      ]
+    }
+  }
+}

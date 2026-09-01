@@ -1,0 +1,347 @@
+{
+  "layer": 2,
+  "track": "Manual",
+  "language": "Python",
+  "year": "1st Year",
+  "difficulty": "Easy to Medium",
+  "questionPools": {
+    "q1": {
+      "type": "jumbled-code",
+      "title": "Jumbled Code",
+      "instruction": "Arrange the shuffled lines of Python code into the correct order to form a valid program.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-1y-q1-1",
+          "title": "Sum of Elements in a List",
+          "jumbledCode": [
+            "    total += num",
+            "print(\"Total:\", total)",
+            "numbers = [10, 20, 30, 40]",
+            "for num in numbers:",
+            "total = 0"
+          ],
+          "correctCode": "numbers = [10, 20, 30, 40]\ntotal = 0\nfor num in numbers:\n    total += num\nprint(\"Total:\", total)",
+          "expectedOutput": "Total: 100",
+          "explanation": "Goal: Sum of Elements in a List. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-1y-q1-2",
+          "title": "Count Even Numbers",
+          "jumbledCode": [
+            "        count += 1",
+            "numbers = [3, 8, 11, 14, 20, 25]",
+            "    if num % 2 == 0:",
+            "count = 0",
+            "for num in numbers:",
+            "print(\"Even Count:\", count)"
+          ],
+          "correctCode": "numbers = [3, 8, 11, 14, 20, 25]\ncount = 0\nfor num in numbers:\n    if num % 2 == 0:\n        count += 1\nprint(\"Even Count:\", count)",
+          "expectedOutput": "Even Count: 3",
+          "explanation": "Goal: Count Even Numbers. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-1y-q1-3",
+          "title": "Find Maximum in a List",
+          "jumbledCode": [
+            "    if num > max_val:",
+            "numbers = [15, 42, 8, 99, 23]",
+            "max_val = numbers[0]",
+            "        max_val = num",
+            "for num in numbers:",
+            "print(\"Max:\", max_val)"
+          ],
+          "correctCode": "numbers = [15, 42, 8, 99, 23]\nmax_val = numbers[0]\nfor num in numbers:\n    if num > max_val:\n        max_val = num\nprint(\"Max:\", max_val)",
+          "expectedOutput": "Max: 99",
+          "explanation": "Goal: Find Maximum in a List. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-1y-q1-4",
+          "title": "Vowel Counter",
+          "jumbledCode": [
+            "        vowel_count += 1",
+            "text = \"code meets ai\"",
+            "    if char in \"aeiou\":",
+            "vowel_count = 0",
+            "for char in text:",
+            "print(\"Vowels:\", vowel_count)"
+          ],
+          "correctCode": "text = \"code meets ai\"\nvowel_count = 0\nfor char in text:\n    if char in \"aeiou\":\n        vowel_count += 1\nprint(\"Vowels:\", vowel_count)",
+          "expectedOutput": "Vowels: 6",
+          "explanation": "Goal: Vowel Counter. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        },
+        {
+          "id": "python-1y-q1-5",
+          "title": "Reverse String Output",
+          "jumbledCode": [
+            "print(\"Reversed:\", rev)",
+            "for char in text:",
+            "rev = \"\"",
+            "    rev = char + rev",
+            "text = \"python\""
+          ],
+          "correctCode": "text = \"python\"\nrev = \"\"\nfor char in text:\n    rev = char + rev\nprint(\"Reversed:\", rev)",
+          "expectedOutput": "Reversed: nohtyp",
+          "explanation": "Goal: Reverse String Output. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+        }
+      ]
+    },
+    "q2": {
+      "type": "syntax-errors",
+      "title": "Syntax Error Challenge",
+      "instruction": "Identify and fix all syntax errors in the given Python program so that it runs successfully.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-1y-q2-1",
+          "title": "List Accumulator Syntax Fix",
+          "code": "items = [5 10, 15, 20\ntotal = 0\nfor item in items\n    if item > 8\n        total = total + item\nelse\n    total = total + 1\nprint(\"Result:\" total",
+          "correctCode": "items = [5, 10, 15, 20]\ntotal = 0\nfor item in items:\n    if item > 8:\n        total = total + item\n    else:\n        total = total + 1\nprint(\"Result:\", total)",
+          "expectedOutput": "Result: 46",
+          "codeLineCount": 8,
+          "intendedErrorCount": 7,
+          "explanation": "Goal: List Accumulator Syntax Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-1y-q2-2",
+          "title": "Average Calculation Syntax Fix",
+          "code": "values = [12, 18 24, 30\nsum_val = 0\nfor v in values\n    sum_val += v\nif len(values > 0\n    avg = sum_val / len(values\nelse\n    avg = 0\nprint(\"Average:\" avg",
+          "correctCode": "values = [12, 18, 24, 30]\nsum_val = 0\nfor v in values:\n    sum_val += v\nif len(values) > 0:\n    avg = sum_val / len(values)\nelse:\n    avg = 0\nprint(\"Average:\", avg)",
+          "expectedOutput": "Average: 21.0",
+          "codeLineCount": 9,
+          "intendedErrorCount": 9,
+          "explanation": "Goal: Average Calculation Syntax Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-1y-q2-3",
+          "title": "Grade Allocator Syntax Fix",
+          "code": "score = 85\nif score >= 90\n    grade = 'A\nelif score >= 80\n    grade = 'B\nelif score >= 70\n    grade = 'C\nelse\n    grade = 'F\nprint(\"Grade:\" grade",
+          "correctCode": "score = 85\nif score >= 90:\n    grade = 'A'\nelif score >= 80:\n    grade = 'B'\nelif score >= 70:\n    grade = 'C'\nelse:\n    grade = 'F'\nprint(\"Grade:\", grade)",
+          "expectedOutput": "Grade: B",
+          "codeLineCount": 10,
+          "intendedErrorCount": 10,
+          "explanation": "Goal: Grade Allocator Syntax Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-1y-q2-4",
+          "title": "Word Length Threshold Syntax Fix",
+          "code": "words = [\"cat\", \"elephant\" \"dog\", \"giraffe\"\nlong_words = 0\nfor w in words\n    if len(w) > 4\n        long_words += 1\n    else\n        pass\nprint(\"Count:\" long_words",
+          "correctCode": "words = [\"cat\", \"elephant\", \"dog\", \"giraffe\"]\nlong_words = 0\nfor w in words:\n    if len(w) > 4:\n        long_words += 1\n    else:\n        pass\nprint(\"Count:\", long_words)",
+          "expectedOutput": "Count: 2",
+          "codeLineCount": 8,
+          "intendedErrorCount": 7,
+          "explanation": "Goal: Word Length Threshold Syntax Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        },
+        {
+          "id": "python-1y-q2-5",
+          "title": "Positive Number Filter Syntax Fix",
+          "code": "nums = [-4, 7, -2, 9, 0\npositives = [\nfor n in nums\n    if n > 0\n        positives.append(n\n    else\n        pass\nprint(\"Positives:\" positives",
+          "correctCode": "nums = [-4, 7, -2, 9, 0]\npositives = []\nfor n in nums:\n    if n > 0:\n        positives.append(n)\n    else:\n        pass\nprint(\"Positives:\", positives)",
+          "expectedOutput": "Positives: [7, 9]",
+          "codeLineCount": 8,
+          "intendedErrorCount": 8,
+          "explanation": "Goal: Positive Number Filter Syntax Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+        }
+      ]
+    },
+    "q3": {
+      "type": "jumbled-and-syntax-errors",
+      "title": "Jumbled + Syntax Errors",
+      "instruction": "Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-1y-q3-1",
+          "title": "Minimum Value Search",
+          "jumbledCode": [
+            "    if n < min_val",
+            "numbers = [24, 12, 35, 9, 18",
+            "for n in numbers",
+            "print(\"Min:\" min_val",
+            "min_val = numbers[0",
+            "        min_val = n"
+          ],
+          "correctCode": "numbers = [24, 12, 35, 9, 18]\nmin_val = numbers[0]\nfor n in numbers:\n    if n < min_val:\n        min_val = n\nprint(\"Min:\", min_val)",
+          "expectedOutput": "Min: 9",
+          "explanation": "Goal: Minimum Value Search. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-1y-q3-2",
+          "title": "Multiply Positive Numbers",
+          "jumbledCode": [
+            "        product *= x",
+            "data = [2, -3, 4, -1, 5",
+            "    if x > 0",
+            "product = 1",
+            "print(\"Product:\" product",
+            "for x in data"
+          ],
+          "correctCode": "data = [2, -3, 4, -1, 5]\nproduct = 1\nfor x in data:\n    if x > 0:\n        product *= x\nprint(\"Product:\", product)",
+          "expectedOutput": "Product: 40",
+          "explanation": "Goal: Multiply Positive Numbers. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-1y-q3-3",
+          "title": "String Character Invert Count",
+          "jumbledCode": [
+            "print(\"Non-Spaces:\" count",
+            "    if ch != \" \"",
+            "count = 0",
+            "msg = \"hi code ai\"",
+            "        count += 1",
+            "for ch in msg"
+          ],
+          "correctCode": "msg = \"hi code ai\"\ncount = 0\nfor ch in msg:\n    if ch != \" \":\n        count += 1\nprint(\"Non-Spaces:\", count)",
+          "expectedOutput": "Non-Spaces: 8",
+          "explanation": "Goal: String Character Invert Count. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-1y-q3-4",
+          "title": "Build Square List",
+          "jumbledCode": [
+            "    squares.append(i * i",
+            "print(\"Squares:\" squares",
+            "squares = [",
+            "for i in range(1, 6)",
+            "limit = 5"
+          ],
+          "correctCode": "limit = 5\nsquares = []\nfor i in range(1, 6):\n    squares.append(i * i)\nprint(\"Squares:\", squares)",
+          "expectedOutput": "Squares: [1, 4, 9, 16, 25]",
+          "explanation": "Goal: Build Square List. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        },
+        {
+          "id": "python-1y-q3-5",
+          "title": "Odd Index Accumulator",
+          "jumbledCode": [
+            "        total += items[i]",
+            "items = [10, 20, 30, 40, 50, 60",
+            "print(\"Odd Pos Sum:\" total",
+            "for i in range(len(items)",
+            "total = 0",
+            "    if i % 2 != 0"
+          ],
+          "correctCode": "items = [10, 20, 30, 40, 50, 60]\ntotal = 0\nfor i in range(len(items)):\n    if i % 2 != 0:\n        total += items[i]\nprint(\"Odd Pos Sum:\", total)",
+          "expectedOutput": "Odd Pos Sum: 120",
+          "explanation": "Goal: Odd Index Accumulator. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+        }
+      ]
+    },
+    "q4": {
+      "type": "missing-lines",
+      "title": "Two Missing Lines",
+      "instruction": "Identify the two missing lines of code required to make the program complete and correct.",
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-1y-q4-1",
+          "title": "Find Maximum in Array",
+          "code": "numbers = [18, 42, 27, 65, 31]\nmaximum = numbers[0]\n\nfor num in numbers[1:]:\n    # MISSING LINE 1\n        # MISSING LINE 2\n\nprint(\"Maximum =\", maximum)",
+          "missingLines": [
+            "if num > maximum:",
+            "maximum = num"
+          ],
+          "expectedOutput": "Maximum = 65",
+          "explanation": "Goal: Find Maximum in Array. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-1y-q4-2",
+          "title": "Count Negative Numbers",
+          "code": "vals = [12, -5, 0, -8, 14, -1]\nneg_count = 0\n\nfor v in vals:\n    # MISSING LINE 1\n        # MISSING LINE 2\n\nprint(\"Negative Count =\", neg_count)",
+          "missingLines": [
+            "if v < 0:",
+            "neg_count += 1"
+          ],
+          "expectedOutput": "Negative Count = 3",
+          "explanation": "Goal: Count Negative Numbers. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-1y-q4-3",
+          "title": "Calculate Average of Positive Numbers",
+          "code": "scores = [10, -5, 20, 30, -2]\ntotal = 0\ncount = 0\n\nfor s in scores:\n    if s > 0:\n        # MISSING LINE 1\n        # MISSING LINE 2\n\navg = total / count\nprint(\"Average =\", avg)",
+          "missingLines": [
+            "total += s",
+            "count += 1"
+          ],
+          "expectedOutput": "Average = 20.0",
+          "explanation": "Goal: Calculate Average of Positive Numbers. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-1y-q4-4",
+          "title": "Search for Target Value",
+          "code": "arr = [4, 9, 15, 22, 33]\ntarget = 22\nfound = False\n\nfor element in arr:\n    # MISSING LINE 1\n        # MISSING LINE 2\n\nprint(\"Found =\", found)",
+          "missingLines": [
+            "if element == target:",
+            "found = True"
+          ],
+          "expectedOutput": "Found = True",
+          "explanation": "Goal: Search for Target Value. Identify the two missing lines of code required to make the program complete and correct."
+        },
+        {
+          "id": "python-1y-q4-5",
+          "title": "Sum of Digits of an Integer",
+          "code": "num = 1234\ndigit_sum = 0\n\nwhile num > 0:\n    # MISSING LINE 1\n    # MISSING LINE 2\n\nprint(\"Digit Sum =\", digit_sum)",
+          "missingLines": [
+            "digit_sum += num % 10",
+            "num //= 10"
+          ],
+          "expectedOutput": "Digit Sum = 10",
+          "explanation": "Goal: Sum of Digits of an Integer. Identify the two missing lines of code required to make the program complete and correct."
+        }
+      ]
+    },
+    "q5": {
+      "type": "code-completion",
+      "title": "Short Logic",
+      "instruction": "Write the missing Python code (maximum 4 lines) to solve the given challenge.",
+      "maxAnswerLines": 4,
+      "questionCount": 5,
+      "questions": [
+        {
+          "id": "python-1y-q5-1",
+          "title": "Check Even Numbers Count",
+          "codeBefore": "numbers = [3, 8, 11, 14, 20]\ncount = 0",
+          "codeAfter": "print(\"Even Count =\", count)",
+          "expectedCode": "for num in numbers:\n    if num % 2 == 0:\n        count += 1",
+          "expectedOutput": "Even Count = 3",
+          "explanation": "Goal: Check Even Numbers Count. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-1y-q5-2",
+          "title": "Find Minimum of List",
+          "codeBefore": "values = [45, 12, 89, 7, 23]\nminimum = values[0]",
+          "codeAfter": "print(\"Minimum =\", minimum)",
+          "expectedCode": "for v in values:\n    if v < minimum:\n        minimum = v",
+          "expectedOutput": "Minimum = 7",
+          "explanation": "Goal: Find Minimum of List. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-1y-q5-3",
+          "title": "Check Positive Number",
+          "codeBefore": "val = -15\nis_positive = False",
+          "codeAfter": "print(\"Is Positive =\", is_positive)",
+          "expectedCode": "if val > 0:\n    is_positive = True",
+          "expectedOutput": "Is Positive = False",
+          "explanation": "Goal: Check Positive Number. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-1y-q5-4",
+          "title": "Count Target Occurrences",
+          "codeBefore": "items = [1, 4, 2, 4, 5, 4, 9]\ntarget = 4\noccurrences = 0",
+          "codeAfter": "print(\"Occurrences =\", occurrences)",
+          "expectedCode": "for x in items:\n    if x == target:\n        occurrences += 1",
+          "expectedOutput": "Occurrences = 3",
+          "explanation": "Goal: Count Target Occurrences. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+        },
+        {
+          "id": "python-1y-q5-5",
+          "title": "Concatenate Strings in List",
+          "codeBefore": "words = [\"Code\", \"Meets\", \"AI\"]\nresult = \"\"",
+          "codeAfter": "print(\"Result =\", result)",
+          "expectedCode": "for word in words:\n    result += word",
+          "expectedOutput": "Result = CodeMeetsAI",
+          "explanation": "Goal: Concatenate Strings in List. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+        }
+      ]
+    }
+  }
+}

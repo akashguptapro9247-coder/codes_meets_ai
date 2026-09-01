@@ -2,6 +2,7 @@ import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { uploadToImageKit, generateAuthParams, deleteFromImageKit } from './server/imagekitApi.js';
+import { executeCodeOnPiston } from './server/executionApi.js';
 
 // Custom Vite middleware plugin to serve ImageKit server-side endpoints safely
 function imageKitPlugin() {
@@ -72,6 +73,32 @@ function imageKitPlugin() {
               } catch (delErr) {
                 res.statusCode = 500;
                 res.end(JSON.stringify({ error: delErr.message }));
+              }
+            });
+          } catch (err) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: err.message }));
+          }
+          return;
+        }
+
+        // 4. POST /api/execute (Layer 2 Manual Piston execution proxy)
+        if (url === '/api/execute' && req.method === 'POST') {
+          try {
+            let body = '';
+            req.on('data', (chunk) => {
+              body += chunk;
+            });
+            req.on('end', async () => {
+              try {
+                const parsed = JSON.parse(body || '{}');
+                const result = await executeCodeOnPiston(parsed);
+                res.setHeader('Content-Type', 'application/json');
+                res.statusCode = 200;
+                res.end(JSON.stringify(result));
+              } catch (execErr) {
+                res.statusCode = 500;
+                res.end(JSON.stringify({ error: execErr.message }));
               }
             });
           } catch (err) {
