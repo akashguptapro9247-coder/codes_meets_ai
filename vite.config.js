@@ -134,6 +134,15 @@ export default defineConfig(({ mode }) => {
         '@database': path.resolve(__dirname, './database'),
         '@assets': path.resolve(__dirname, './src/assets')
       }
+    },
+    optimizeDeps: {
+      include: [
+        '@uiw/react-codemirror',
+        '@uiw/codemirror-theme-vscode',
+        '@codemirror/lang-cpp',
+        '@codemirror/lang-java',
+        '@codemirror/lang-python'
+      ]
     }
   };
 });

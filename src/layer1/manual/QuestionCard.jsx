@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 export default function QuestionCard({
@@ -8,20 +8,13 @@ export default function QuestionCard({
   totalQuestions,
   selectedOption,
   answeredQuestionsMap,
-<<<<<<< Updated upstream
-  feedbackState = 'idle', // 'idle' | 'processing' | 'revealed'
-=======
-  disabled = false,
   feedbackState = 'idle', // 'idle' | 'processing' | 'revealed'
   revealData = null        // { is_correct: bool, correct_answer: 'A'|'B'|'C'|'D' } — from server RPC
->>>>>>> Stashed changes
 }) {
   if (!question) return null;
 
   const isRevealed    = feedbackState === 'revealed';
   const isProcessing  = feedbackState === 'processing';
-  // correct_answer comes from server revealData (never from question object)
-  const serverCorrect    = isRevealed ? (revealData?.correct_answer ?? null) : null;
   const isCorrectAnswer  = isRevealed && revealData?.is_correct === true;
 
   return (
@@ -114,7 +107,7 @@ export default function QuestionCard({
             )}
           </div>
 
-          {/* 15 Visual Progress Dots */}
+          {/* Visual Progress Dots */}
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {Array.from({ length: totalQuestions }).map((_, i) => {
               const isAnswered = answeredQuestionsMap && answeredQuestionsMap[i] !== undefined;
@@ -210,21 +203,6 @@ export default function QuestionCard({
           </pre>
         )}
       </div>
-
-<<<<<<< Updated upstream
-=======
-      {/* 4 Options Selector */}
-      <div style={{ flexShrink: 0 }}>
-        <OptionSelector
-          options={question.options}
-          selectedOption={selectedOption}
-          onSelectOption={onSelectOption}
-          disabled={disabled || isProcessing || isRevealed}
-          feedbackState={feedbackState}
-          correctAnswer={serverCorrect}
-        />
-      </div>
->>>>>>> Stashed changes
     </motion.div>
   );
 }

@@ -1,11 +1,6 @@
-<<<<<<< Updated upstream
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-=======
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
->>>>>>> Stashed changes
 import ManualHeader from './ManualHeader';
 import QuestionCard from './QuestionCard';
 import ManualTimer from './ManualTimer';
@@ -15,17 +10,9 @@ import ManualResultsScreen from './ManualResultsScreen';
 import InvalidRollNumberScreen from './InvalidRollNumberScreen';
 import DigitalParticles from '../../shared/components/DigitalParticles';
 import ScanOverlay from '../../shared/components/ScanOverlay';
-<<<<<<< Updated upstream
 import { SpiderManAnimation } from '../../animation/SpiderMan/SpiderManAnimation';
 import { WebShot } from '../../animation/SpiderMan/WebShot';
-import {
-  validateRollNumber,
-  generateRandomQuestionSet,
-  evaluateManualAnswers
-} from '../questions/layer1ManualQuestions';
-=======
 import { validateRollNumber } from '../questions/layer1ManualQuestions';
->>>>>>> Stashed changes
 import { adminService } from '../../admin/services/adminService';
 import { eventStateService } from '../../shared/services/eventStateService';
 import { soundEngine } from '../../shared/utils/SoundEngine';
@@ -329,31 +316,14 @@ export default function Layer1ManualChallenge({
     feedbackTimers.current = [t1];
   };
 
-<<<<<<< Updated upstream
-  // Timer expired callback: immediately locks and submits current state
-  const handleTimeUp = useCallback(() => {
-=======
   // Timer expired callback: immediately locks and finalizes
-  const handleTimeUp = () => {
->>>>>>> Stashed changes
+  const handleTimeUp = useCallback(() => {
     if (isCompleted) return;
     feedbackTimers.current.forEach(clearTimeout);
     setFeedbackState('idle');
     soundEngine.playClick();
-<<<<<<< Updated upstream
-    const currentQ = questions[currentIndex];
-    const updatedAnswers = { ...selectedAnswers };
-    if (currentQ && currentSelectedOption) {
-      updatedAnswers[currentQ.id] = currentSelectedOption;
-    }
-
-    handleFinalizeAttempt(updatedAnswers);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCompleted, questions, currentIndex, selectedAnswers, currentSelectedOption]);
-=======
     handleFinalizeAttempt();
-  };
->>>>>>> Stashed changes
+  }, [isCompleted, handleFinalizeAttempt]);
 
   // ── Invalid roll number screen ──
   if (!validation.valid) {
