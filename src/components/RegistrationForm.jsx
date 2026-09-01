@@ -69,8 +69,8 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     }
   };
 
-  const validateAndAdvanceRollNumber = async () => {
-    const roll = (formData.rollNumber || '').trim().toUpperCase();
+  const validateAndAdvanceRollNumber = async (rollOverride) => {
+    const roll = (rollOverride !== undefined ? rollOverride : formData.rollNumber || '').trim().toUpperCase();
 
     // RULE 1 — FORMAT VALIDATION
     if (!roll) {
@@ -203,6 +203,9 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     if (field === 'rollNumber') {
       setRollVerified(false);
       setRollSuccessMessage('');
+      if (finalValue.length === 10) {
+        validateAndAdvanceRollNumber(finalValue);
+      }
     }
     if (onFormChange) onFormChange(updated);
     if (errors[field]) {
