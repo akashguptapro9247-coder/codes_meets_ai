@@ -4,7 +4,7 @@ import { soundEngine } from '../utils/SoundEngine';
 
 export default function ScanOverlay({ currentStage, isLandingPage = false, showVignette = false, hideHeader = false }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
-  const shouldRenderVignette = isLandingPage || showVignette;
+  const shouldRenderVignette = !isLandingPage && showVignette;
 
   useEffect(() => {
     setMuted(soundEngine.isMuted());
