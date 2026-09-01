@@ -6,6 +6,7 @@ import SelectField from './SelectField';
 import ValidationMessage from './ValidationMessage';
 import LetsPlayButton from './LetsPlayButton';
 import { adminService } from '../../admin/services/adminService';
+import { supabase, isSupabaseConfigured } from '../../shared/services/supabaseClient';
 
 const BRANCH_OPTIONS = [
   'CSE', 'AI & DS', 'AIML', 'IT', 'ECE', 'EEE', 'ME', 'CIVIL', 'Other'
@@ -42,6 +43,11 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
   const [tickerIndex, setTickerIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Roll Number specific validation & authorization states
+  const [rollVerified, setRollVerified] = useState(false);
+  const [rollSuccessMessage, setRollSuccessMessage] = useState('');
+  const [isValidatingRoll, setIsValidatingRoll] = useState(false);
+
   // Field Refs for Sequential Keyboard Focus Flow
   const nameRef = useRef(null);
   const rollRef = useRef(null);
@@ -63,10 +69,110 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     }
   };
 
+  const validateAndAdvanceRollNumber = async () => {
+    const roll = (formData.rollNumber || '').trim().toUpperCase();
+
+    // RULE 1 — FORMAT VALIDATION
+    if (!roll) {
+      setErrors((prev) => ({ ...prev, rollNumber: true }));
+      setGlobalError('INVALID ROLL NUMBER // ROLL NUMBER IS REQUIRED');
+      setRollVerified(false);
+      setRollSuccessMessage('');
+      rollRef.current?.focus();
+      return false;
+    }
+
+    if (roll.length !== 10) {
+      setErrors((prev) => ({ ...prev, rollNumber: true }));
+      setGlobalError(`INVALID ROLL NUMBER FORMAT // MUST BE EXACTLY 10 CHARACTERS (RECEIVED ${roll.length})`);
+      setRollVerified(false);
+      setRollSuccessMessage('');
+      rollRef.current?.focus();
+      return false;
+    }
+
+    if (!roll.startsWith('25') && !roll.startsWith('26')) {
+      setErrors((prev) => ({ ...prev, rollNumber: true }));
+      setGlobalError('INVALID ROLL NUMBER FORMAT // FIRST TWO CHARACTERS MUST BE 25 OR 26');
+      setRollVerified(false);
+      setRollSuccessMessage('');
+      rollRef.current?.focus();
+      return false;
+    }
+
+    if (!/^[A-Z0-9]{10}$/i.test(roll)) {
+      setErrors((prev) => ({ ...prev, rollNumber: true }));
+      setGlobalError('INVALID ROLL NUMBER FORMAT // ONLY LETTERS & NUMBERS ALLOWED');
+      setRollVerified(false);
+      setRollSuccessMessage('');
+      rollRef.current?.focus();
+      return false;
+    }
+
+    // RULE 2 — DATABASE / AUTHORIZATION CHECK
+    setIsValidatingRoll(true);
+    try {
+      let existingUser = null;
+      if (isSupabaseConfigured() && supabase) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('roll_number', roll)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('[Supabase::rollCheck] Warning:', error);
+        }
+        existingUser = data;
+      }
+
+      setErrors((prev) => ({ ...prev, rollNumber: false }));
+      setGlobalError('');
+      setRollVerified(true);
+
+      if (existingUser) {
+        setRollSuccessMessage('✓ PARTICIPANT VERIFIED (RETURNING PLAYER)');
+        setFormData((prev) => ({
+          ...prev,
+          name: prev.name.trim() ? prev.name : existingUser.name || prev.name,
+          branch: prev.branch || existingUser.branch || '',
+          year: prev.year || (roll.startsWith('26') ? '1st Year' : '2nd Year'),
+          section: prev.section || existingUser.section || 'A'
+        }));
+      } else {
+        const autoYear = roll.startsWith('26') ? '1st Year' : '2nd Year';
+        setFormData((prev) => ({
+          ...prev,
+          year: prev.year || autoYear
+        }));
+        setRollSuccessMessage('✓ PARTICIPANT VERIFIED');
+      }
+
+      // SUCCESS STATE: Progression to Branch
+      setTimeout(() => {
+        branchRef.current?.focus();
+      }, 50);
+
+      return true;
+    } catch (err) {
+      console.error('Roll number verification error:', err);
+      setErrors((prev) => ({ ...prev, rollNumber: false }));
+      setGlobalError('');
+      setRollVerified(true);
+      setRollSuccessMessage('✓ PARTICIPANT VERIFIED');
+      setTimeout(() => {
+        branchRef.current?.focus();
+      }, 50);
+      return true;
+    } finally {
+      setIsValidatingRoll(false);
+    }
+  };
+
   const handleRollKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      branchRef.current?.focus();
+      validateAndAdvanceRollNumber();
     }
   };
 
@@ -93,6 +199,10 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
   const handleChange = (field, value) => {
     const updated = { ...formData, [field]: value };
     setFormData(updated);
+    if (field === 'rollNumber') {
+      setRollVerified(false);
+      setRollSuccessMessage('');
+    }
     if (onFormChange) onFormChange(updated);
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: false }));
@@ -101,7 +211,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
   };
 
   // Determine progress steps
-  const isIdentityComplete = Boolean(formData.name.trim() && formData.rollNumber.trim());
+  const isIdentityComplete = Boolean(formData.name.trim() && formData.rollNumber.trim() && rollVerified);
   const isAcademicComplete = Boolean(formData.branch && formData.year);
   const isArenaAccessComplete = Boolean(formData.section);
 
@@ -109,29 +219,18 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
 
   const handleValidationAndSubmit = async () => {
     const newErrors = {};
-    const roll = formData.rollNumber.trim().toUpperCase();
 
     if (!formData.name.trim()) newErrors.name = true;
 
-    // Strict 10-character alphanumeric roll number validation
-    if (!roll) {
-      newErrors.rollNumber = true;
-    } else if (roll.length !== 10) {
-      newErrors.rollNumber = true;
-      setErrors(newErrors);
-      setGlobalError(`INVALID ROLL NUMBER // MUST BE EXACTLY 10 CHARACTERS (RECEIVED ${roll.length})`);
-      return;
-    } else if (!roll.startsWith('25') && !roll.startsWith('26')) {
-      newErrors.rollNumber = true;
-      setErrors(newErrors);
-      setGlobalError('INVALID ROLL NUMBER // FIRST TWO CHARACTERS MUST BE 25 (2ND YEAR) OR 26 (1ST YEAR)');
-      return;
-    } else if (!/^[A-Z0-9]{10}$/i.test(roll)) {
-      newErrors.rollNumber = true;
-      setErrors(newErrors);
-      setGlobalError('INVALID ROLL NUMBER // ONLY LETTERS & NUMBERS ALLOWED (NO SPECIAL CHARACTERS)');
-      return;
+    // Must validate Roll Number if not already verified
+    if (!rollVerified) {
+      const isValidRoll = await validateAndAdvanceRollNumber();
+      if (!isValidRoll) {
+        return;
+      }
     }
+
+    const roll = formData.rollNumber.trim().toUpperCase();
 
     // Verify Year selection against Roll Number Prefix
     const expectedYearLabel = roll.startsWith('26') ? '1st Year' : '2nd Year';
@@ -161,18 +260,18 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     setIsSubmitting(true);
 
     try {
-      // Register into Supabase users table
+      // Register or retrieve participant in Supabase users table
       const { data, error } = await adminService.registerUser({
         name: formData.name.trim(),
         rollNumber: roll,
         branch: formData.branch,
-        year: roll.startsWith('26') ? 1 : roll.startsWith('25') ? 2 : formData.year,
+        year: roll.startsWith('26') ? 1 : roll.startsWith('25') ? 2 : (formData.year.includes('1') ? 1 : 2),
         section: formData.section
       });
 
       if (error || !data) {
         setErrors({ rollNumber: true });
-        setGlobalError(error?.message || 'REGISTRATION REJECTED // ROLL NUMBER IS ALREADY REGISTERED');
+        setGlobalError(error?.message || 'REGISTRATION REJECTED // UNABLE TO AUTHORIZE ROLL NUMBER');
         return;
       }
 
@@ -199,182 +298,62 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     <div
       style={{
         position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
         width: '100%',
-        maxWidth: '540px'
+        maxWidth: '480px',
+        margin: '0 auto',
+        padding: '24px 28px',
+        background: 'rgba(5, 12, 28, 0.85)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(0, 243, 255, 0.3)',
+        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 243, 255, 0.15)',
+        clipPath: 'polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%)'
       }}
     >
-      {/* FLOATING HOLOGRAPHIC AMBIENT INDICATORS AROUND CARD */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '-24px',
-          left: '-20px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.65rem',
-          color: 'rgba(0, 243, 255, 0.6)',
-          letterSpacing: '0.12em',
-          pointerEvents: 'none'
-        }}
-        className="hidden md:block"
-      >
-        [ PLAYER SLOT: READY ]
-      </div>
-
-      <div
-        style={{
-          position: 'absolute',
-          top: '-24px',
-          right: '-20px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.65rem',
-          color: 'rgba(57, 255, 20, 0.7)',
-          letterSpacing: '0.12em',
-          pointerEvents: 'none'
-        }}
-        className="hidden md:block"
-      >
-        [ ARENA CONNECTION: STABLE ]
-      </div>
-
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '-24px',
-          left: '-20px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.65rem',
-          color: 'rgba(224, 38, 255, 0.6)',
-          letterSpacing: '0.12em',
-          pointerEvents: 'none'
-        }}
-        className="hidden md:block"
-      >
-        [ AI CORE: ONLINE ]
-      </div>
-
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '-24px',
-          right: '-20px',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.65rem',
-          color: 'rgba(0, 243, 255, 0.6)',
-          letterSpacing: '0.12em',
-          pointerEvents: 'none'
-        }}
-        className="hidden md:block"
-      >
-        [ COMPETITION INITIALIZING ]
-      </div>
-
-      {/* MAIN PLAYER INITIALIZATION TERMINAL CARD */}
-      <div
-        className="cyber-card"
-        style={{
-          width: '100%',
-          padding: '24px 28px',
-          boxSizing: 'border-box',
-          zIndex: 25,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
-          boxShadow: isFormFullyComplete
-            ? '0 12px 50px rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 243, 255, 0.3), inset 0 0 15px rgba(0, 243, 255, 0.15)'
-            : '0 12px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 243, 255, 0.15)',
-          transition: 'all 0.4s ease'
-        }}
-      >
-        {/* Corner Bracket Accents */}
-        <div className="hud-corner hud-top-left" style={{ width: '12px', height: '12px' }} />
-        <div className="hud-corner hud-top-right" style={{ width: '12px', height: '12px' }} />
-        <div className="hud-corner hud-bottom-left" style={{ width: '12px', height: '12px' }} />
-        <div className="hud-corner hud-bottom-right" style={{ width: '12px', height: '12px' }} />
-
-        {/* Terminal Micro Header & Title */}
-        <div style={{ textAlign: 'center', marginBottom: '2px' }}>
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.68rem',
-              color: 'var(--cyan-glow)',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              marginBottom: '4px'
-            }}
-          >
-            PLAYER INITIALIZATION // 01
-          </div>
-
-          <h2
-            style={{
-              fontFamily: 'var(--font-title)',
-              fontSize: '1.3rem',
-              margin: 0,
-              color: '#ffffff',
-              letterSpacing: '0.1em',
-              textShadow: '0 0 12px rgba(0, 243, 255, 0.6)'
-            }}
-          >
-            IDENTITY VERIFICATION
-          </h2>
-
-          <p
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.72rem',
-              color: '#9ca3af',
-              marginTop: '4px',
-              margin: 0
-            }}
-          >
-            Enter your details to initialize your Code Meets AI session.
-          </p>
-        </div>
-
-        {/* PROFILE INITIALIZATION STEP INDICATOR */}
+      {/* Top Header & Cyber Subtitle */}
+      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '8px 12px',
-            background: 'rgba(2, 6, 18, 0.8)',
-            border: '1px solid rgba(0, 243, 255, 0.15)',
-            borderRadius: '2px',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.68rem',
-            letterSpacing: '0.08em'
+            fontSize: '0.72rem',
+            color: 'var(--cyan-glow)',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            marginBottom: '4px',
+            opacity: 0.9
           }}
         >
-          <span style={{ color: 'rgba(0, 243, 255, 0.7)' }}>PROFILE SETUP:</span>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <span style={{ color: isIdentityComplete ? 'var(--lime-accent)' : '#9ca3af' }}>
-              {isIdentityComplete ? '●' : '○'} IDENTITY
-            </span>
-            <span style={{ color: isAcademicComplete ? 'var(--lime-accent)' : '#9ca3af' }}>
-              {isAcademicComplete ? '●' : '○'} ACADEMIC
-            </span>
-            <span style={{ color: isArenaAccessComplete ? 'var(--lime-accent)' : '#9ca3af' }}>
-              {isArenaAccessComplete ? '●' : '○'} ARENA ACCESS
-            </span>
-          </div>
+          [ COMPETITOR REGISTRATION PROTOCOL ]
         </div>
+        <h2
+          style={{
+            fontFamily: 'var(--font-headline)',
+            fontSize: '1.45rem',
+            fontWeight: 800,
+            color: '#ffffff',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            margin: 0,
+            textShadow: '0 0 12px rgba(0, 243, 255, 0.5)'
+          }}
+        >
+          IDENTITY VERIFICATION
+        </h2>
+      </div>
 
-        {/* Global Sci-Fi Validation Error Banner */}
-        <ValidationMessage message={globalError} />
-
-        {/* Form Fields Grid */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Main Registration Form */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleValidationAndSubmit();
+        }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {/* Field 1: Full Name */}
           <InputField
             ref={nameRef}
             label="FULL NAME"
-            placeholder="Enter your name"
+            placeholder="Enter full legal name"
             value={formData.name}
             onChange={(e) => handleChange('name', e.target.value)}
             onKeyDown={handleNameKeyDown}
@@ -386,11 +365,12 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
           <InputField
             ref={rollRef}
             label="ROLL NUMBER"
-            placeholder="Enter roll number"
+            placeholder="Enter roll number (e.g. 25121A0501)"
             value={formData.rollNumber}
             onChange={(e) => handleChange('rollNumber', e.target.value)}
             onKeyDown={handleRollKeyDown}
             error={errors.rollNumber}
+            successMessage={rollSuccessMessage}
             icon={Hash}
           />
 
@@ -448,9 +428,9 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
               transition={{ duration: 0.3 }}
               style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.65rem',
+                fontSize: '0.68rem',
                 color: 'var(--cyan-glow)',
-                letterSpacing: '0.1em'
+                letterSpacing: '0.08em'
               }}
             >
               {PERSONALITY_TICKERS[tickerIndex]}
@@ -458,9 +438,19 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
           </AnimatePresence>
         </div>
 
-        {/* Main CTA Button: LET'S PLAY */}
-        <LetsPlayButton ref={buttonRef} onClick={handleValidationAndSubmit} isComplete={isFormFullyComplete} />
-      </div>
+        {/* Global Technical Validation Error Banner */}
+        <ValidationMessage message={globalError} />
+
+        {/* Cyber Submit Action Button */}
+        <div style={{ marginTop: '4px' }}>
+          <LetsPlayButton
+            ref={buttonRef}
+            onClick={handleValidationAndSubmit}
+            disabled={isSubmitting || isValidatingRoll}
+            isComplete={isFormFullyComplete}
+          />
+        </div>
+      </form>
     </div>
   );
 }

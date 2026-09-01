@@ -90,11 +90,9 @@ export const adminService = {
 
       if (existingUser) {
         return {
-          data: null,
-          error: {
-            code: '23505',
-            message: 'Roll number is already registered. Please contact event admin if you believe this is an error.'
-          }
+          data: existingUser,
+          error: null,
+          isReturning: true
         };
       }
 

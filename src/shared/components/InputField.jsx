@@ -8,6 +8,7 @@ const InputField = forwardRef(function InputField({
   onChange,
   placeholder,
   error,
+  successMessage,
   type = 'text',
   icon: Icon,
   onKeyDown
@@ -61,7 +62,21 @@ const InputField = forwardRef(function InputField({
               letterSpacing: '0.08em'
             }}
           >
-            ! DATA REQUIRED
+            {typeof error === 'string' ? error : '! DATA REQUIRED'}
+          </span>
+        ) : successMessage ? (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.65rem',
+              color: 'var(--lime-accent)',
+              letterSpacing: '0.08em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <Check size={11} color="var(--lime-accent)" /> {successMessage}
           </span>
         ) : isValid ? (
           <span
