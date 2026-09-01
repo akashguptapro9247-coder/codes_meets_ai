@@ -5,6 +5,9 @@ import IntroScene from './shared/components/IntroScene';
 import RegistrationScene from './shared/components/RegistrationScene';
 import EventArenaScene from './shared/components/EventArenaScene';
 import AdminDashboard from './admin/pages/AdminDashboard';
+import Layer2ManualRoute from './layer2/manual/Layer2ManualRoute';
+import Layer2GenAIRoute from './layer2/genai/Layer2GenAIRoute';
+import { ToastContainer } from './shared/components/Toast';
 import { participantGuard } from './shared/services/participantGuard';
 import { soundEngine } from './shared/utils/SoundEngine';
 
@@ -49,6 +52,13 @@ function App() {
     if (path === '/play' || path === '/arena' || hash === '#play' || hash === '#arena') {
       return 'arena';
     }
+    // Specific Layer 2 routes MUST be checked BEFORE generic /layer2 prefix
+    if (path === '/layer2/manual' || path === '/layer/2/manual' || path === '/layer-2/manual') {
+      return 'layer2_manual';
+    }
+    if (path === '/layer2/gen-ai' || path === '/layer2/genai' || path === '/layer/2/gen-ai' || path === '/layer-2/gen-ai') {
+      return 'layer2_genai';
+    }
     if (path.startsWith('/layer/1') || path.startsWith('/layer1') || path.startsWith('/layer-1')) {
       return 'layer1';
     }
@@ -65,11 +75,14 @@ function App() {
   const [selectedRound, setSelectedRound] = useState(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.toLowerCase();
-      if (path.includes('manual')) {
-        return { path: '/layer1/manual', title: 'LAYER 01 - MANUAL TRACK' };
-      } else if (path.includes('gen-ai') || path.includes('genai')) {
-        return { path: '/layer1/gen-ai', title: 'LAYER 01 - GEN AI TRACK' };
-      }
+      const isLayer2 = path.startsWith('/layer/2') || path.startsWith('/layer2') || path.startsWith('/layer-2');
+      const isLayer1 = path.startsWith('/layer/1') || path.startsWith('/layer1') || path.startsWith('/layer-1');
+      const isManual = path.includes('manual');
+      const isGenAi = path.includes('gen-ai') || path.includes('genai');
+      if (isLayer2 && isManual) return { path: '/layer2/manual', title: 'LAYER 02 - MANUAL TRACK' };
+      if (isLayer2 && isGenAi)  return { path: '/layer2/gen-ai', title: 'LAYER 02 - GEN AI TRACK' };
+      if (isLayer1 && isManual) return { path: '/layer1/manual', title: 'LAYER 01 - MANUAL TRACK' };
+      if (isLayer1 && isGenAi)  return { path: '/layer1/gen-ai', title: 'LAYER 01 - GEN AI TRACK' };
     }
     return null;
   });
@@ -123,7 +136,7 @@ function App() {
 
   // 2. Strict Route Guard on Route Changes & Page Focus
   useEffect(() => {
-    const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2';
+    const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai';
 
     if (isProtected) {
       const stored = getStoredParticipant();
@@ -146,7 +159,7 @@ function App() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const stored = getStoredParticipant();
-        const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2';
+        const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai';
         if (isProtected && stored) {
           participantGuard.validateParticipantExists(stored.userId || stored.user_id);
         }
@@ -169,14 +182,23 @@ function App() {
       setParticipant(stored);
 
       // Guard check on back/forward button navigation
-      const isProtected = route === 'arena' || route === 'layer1' || route === 'layer2';
+      const isProtected = route === 'arena' || route === 'layer1' || route === 'layer2' || route === 'layer2_manual' || route === 'layer2_genai';
       if (isProtected && (!stored || (!stored.userId && !stored.user_id))) {
         navigateTo('/', 'landing', true);
       } else {
         const path = window.location.pathname.toLowerCase();
-        if (path.includes('manual')) {
+        const isLayer2 = path.startsWith('/layer/2') || path.startsWith('/layer2') || path.startsWith('/layer-2');
+        const isLayer1 = path.startsWith('/layer/1') || path.startsWith('/layer1') || path.startsWith('/layer-1');
+        const isManual = path.includes('manual');
+        const isGenAi = path.includes('gen-ai') || path.includes('genai');
+
+        if (isLayer2 && isManual) {
+          setSelectedRound({ path: '/layer2/manual', title: 'LAYER 02 - MANUAL TRACK' });
+        } else if (isLayer2 && isGenAi) {
+          setSelectedRound({ path: '/layer2/gen-ai', title: 'LAYER 02 - GEN AI TRACK' });
+        } else if (isLayer1 && isManual) {
           setSelectedRound({ path: '/layer1/manual', title: 'LAYER 01 - MANUAL TRACK' });
-        } else if (path.includes('gen-ai') || path.includes('genai')) {
+        } else if (isLayer1 && isGenAi) {
           setSelectedRound({ path: '/layer1/gen-ai', title: 'LAYER 01 - GEN AI TRACK' });
         } else if (path === '/play' || path === '/arena') {
           setSelectedRound(null);
@@ -355,7 +377,7 @@ function App() {
         />
       )}
 
-      {/* 3. EVENT ARENA & CHALLENGE LAYERS (ROUTE: /play, /layer1/manual, /layer1/gen-ai, etc.) */}
+      {/* 3. EVENT ARENA & CHALLENGE LAYERS (ROUTE: /play, generic /layer1, generic /layer2) */}
       {(currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2') && (
         <EventArenaScene
           participant={participant}
@@ -377,11 +399,33 @@ function App() {
                 title: path.includes('manual') ? 'LAYER 02 - MANUAL TRACK' : 'LAYER 02 - GEN AI TRACK'
               };
               setSelectedRound(roundObj);
-              navigateTo(path, 'layer2');
+              if (path.includes('manual')) {
+                navigateTo(path, 'layer2_manual');
+              } else if (path.includes('gen-ai') || path.includes('genai')) {
+                navigateTo(path, 'layer2_genai');
+              } else {
+                navigateTo(path, 'layer2');
+              }
             }
           }}
           onForceExit={handleForceExit}
           onOpenAdmin={() => navigateTo('/admin-panel', 'admin')}
+        />
+      )}
+
+      {/* 3b. DEDICATED LAYER 2 MANUAL ROUTE (ROUTE: /layer2/manual) */}
+      {currentRoute === 'layer2_manual' && (
+        <Layer2ManualRoute
+          participant={participant}
+          onBack={() => navigateTo('/play', 'arena')}
+        />
+      )}
+
+      {/* 3c. DEDICATED LAYER 2 GEN AI ROUTE (ROUTE: /layer2/gen-ai) */}
+      {currentRoute === 'layer2_genai' && (
+        <Layer2GenAIRoute
+          participant={participant}
+          onBack={() => navigateTo('/play', 'arena')}
         />
       )}
 
@@ -391,6 +435,7 @@ function App() {
           onClose={() => navigateTo('/play', 'arena')}
         />
       )}
+    <ToastContainer />
     </div>
   );
 }

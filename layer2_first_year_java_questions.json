@@ -1,0 +1,402 @@
+{
+  "layer": 2,
+  "track": "Manual",
+  "language": "Java",
+  "year": "1st Year",
+  "difficulty": "Easy to Medium",
+  "questionPools": {
+    "q1": {
+      "type": "jumbled-code",
+      "title": "Jumbled Code",
+      "instruction": "Arrange the given lines in the correct order so that the Java program executes successfully.",
+      "questions": [
+        {
+          "id": "java-1y-q1-1",
+          "title": "Sum of Array",
+          "jumbledCode": [
+            "System.out.println(sum);",
+            "int[] arr = {10, 20, 30, 40};",
+            "for (int i = 0; i < arr.length; i++) {",
+            "public class Main {",
+            "sum += arr[i];",
+            "int sum = 0;",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {10, 20, 30, 40};\n        int sum = 0;\n\n        for (int i = 0; i < arr.length; i++) {\n            sum += arr[i];\n        }\n\n        System.out.println(sum);\n    }\n}",
+          "expectedOutput": "100",
+          "explanation": "Goal: Sum of Array. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-1y-q1-2",
+          "title": "Count Even Numbers",
+          "jumbledCode": [
+            "count++;",
+            "public class Main {",
+            "if (arr[i] % 2 == 0) {",
+            "int count = 0;",
+            "System.out.println(count);",
+            "int[] arr = {3, 8, 11, 14, 20};",
+            "}",
+            "for (int i = 0; i < arr.length; i++) {",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {3, 8, 11, 14, 20};\n        int count = 0;\n\n        for (int i = 0; i < arr.length; i++) {\n            if (arr[i] % 2 == 0) {\n                count++;\n            }\n        }\n\n        System.out.println(count);\n    }\n}",
+          "expectedOutput": "3",
+          "explanation": "Goal: Count Even Numbers. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-1y-q1-3",
+          "title": "Find Maximum",
+          "jumbledCode": [
+            "max = arr[i];",
+            "System.out.println(max);",
+            "int[] arr = {12, 45, 23, 67, 34};",
+            "if (arr[i] > max) {",
+            "}",
+            "public class Main {",
+            "int max = arr[0];",
+            "for (int i = 1; i < arr.length; i++) {",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {12, 45, 23, 67, 34};\n        int max = arr[0];\n\n        for (int i = 1; i < arr.length; i++) {\n            if (arr[i] > max) {\n                max = arr[i];\n            }\n        }\n\n        System.out.println(max);\n    }\n}",
+          "expectedOutput": "67",
+          "explanation": "Goal: Find Maximum. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-1y-q1-4",
+          "title": "Reverse a String",
+          "jumbledCode": [
+            "System.out.println(new StringBuilder(text).reverse());",
+            "String text = \"JAVA\";",
+            "public class Main {",
+            "public static void main(String[] args) {",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"JAVA\";\n        System.out.println(new StringBuilder(text).reverse());\n    }\n}",
+          "expectedOutput": "AVAJ",
+          "explanation": "Goal: Reverse a String. Arrange the given lines in the correct order so that the Java program executes successfully."
+        },
+        {
+          "id": "java-1y-q1-5",
+          "title": "Count Vowels",
+          "jumbledCode": [
+            "if (\"aeiou\".indexOf(text.charAt(i)) >= 0) {",
+            "count++;",
+            "public class Main {",
+            "String text = \"education\";",
+            "for (int i = 0; i < text.length(); i++) {",
+            "int count = 0;",
+            "}",
+            "System.out.println(count);",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"education\";\n        int count = 0;\n\n        for (int i = 0; i < text.length(); i++) {\n            if (\"aeiou\".indexOf(text.charAt(i)) >= 0) {\n                count++;\n            }\n        }\n\n        System.out.println(count);\n    }\n}",
+          "expectedOutput": "5",
+          "explanation": "Goal: Count Vowels. Arrange the given lines in the correct order so that the Java program executes successfully."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q2": {
+      "type": "syntax-errors",
+      "title": "Syntax Error Challenge",
+      "instruction": "Correct all intentional Java syntax errors. The intended program logic is already correct.",
+      "questions": [
+        {
+          "id": "java-1y-q2-1",
+          "title": "Array Sum",
+          "code": "public class Main {\npublic static void main(String[] args) {\nint[] arr = {10, 20, 30, 40}\nint sum = 0;\nfor (int i = 0; i < arr.length; i++ {\nsum += arr[i];\n}\nSystem.out.println(\"Sum = \" + sum)\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {10, 20, 30, 40};\n        int sum = 0;\n        for (int i = 0; i < arr.length; i++) {\n            sum += arr[i];\n        }\n        System.out.println(\"Sum = \" + sum);\n    }\n}",
+          "expectedOutput": "Sum = 100",
+          "codeLineCount": 10,
+          "intendedErrorCount": 3,
+          "explanation": "Goal: Array Sum. Correct all intentional Java syntax errors. The intended program logic is already correct."
+        },
+        {
+          "id": "java-1y-q2-2",
+          "title": "Reverse Number",
+          "code": "public class Main {\npublic static void main(String[] args) {\nint n = 1234;\nint rev = 0\nwhile (n > 0) {\nrev = rev * 10 + n % 10\nn /= 10;\n}\nSystem.out.println(rev);\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int n = 1234;\n        int rev = 0;\n        while (n > 0) {\n            rev = rev * 10 + n % 10;\n            n /= 10;\n        }\n        System.out.println(rev);\n    }\n}",
+          "expectedOutput": "4321",
+          "codeLineCount": 11,
+          "intendedErrorCount": 2,
+          "explanation": "Goal: Reverse Number. Correct all intentional Java syntax errors. The intended program logic is already correct."
+        },
+        {
+          "id": "java-1y-q2-3",
+          "title": "Count Odd Numbers",
+          "code": "public class Main {\npublic static void main(String[] args) {\nint[] arr = {2, 5, 8, 11, 14};\nint count = 0\nfor (int i = 0; i < arr.length; i++) {\nif (arr[i] % 2 != 0) {\ncount++;\n}\nSystem.out.println(count);\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {2, 5, 8, 11, 14};\n        int count = 0;\n        for (int i = 0; i < arr.length; i++) {\n            if (arr[i] % 2 != 0) {\n                count++;\n            }\n        }\n        System.out.println(count);\n    }\n}",
+          "expectedOutput": "2",
+          "codeLineCount": 11,
+          "intendedErrorCount": 2,
+          "explanation": "Goal: Count Odd Numbers. Correct all intentional Java syntax errors. The intended program logic is already correct."
+        },
+        {
+          "id": "java-1y-q2-4",
+          "title": "String Length",
+          "code": "public class Main {\npublic static void main(String[] args) {\nString text = \"programming\";\nint length = 0;\nfor (int i = 0; i < text.length(); i++ {\nlength++;\n}\nSystem.out.println(\"Length = \" + length);\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"programming\";\n        int length = 0;\n        for (int i = 0; i < text.length(); i++) {\n            length++;\n        }\n        System.out.println(\"Length = \" + length);\n    }\n}",
+          "expectedOutput": "Length = 11",
+          "codeLineCount": 10,
+          "intendedErrorCount": 1,
+          "explanation": "Goal: String Length. Correct all intentional Java syntax errors. The intended program logic is already correct."
+        },
+        {
+          "id": "java-1y-q2-5",
+          "title": "Search Array",
+          "code": "public class Main {\npublic static void main(String[] args) {\nint[] arr = {4, 8, 15, 16, 23};\nint target = 15;\nboolean found = false;\nfor (int i = 0; i < arr.length; i++ {\nif (arr[i] == target) {\nfound = true;\n}\n}\nSystem.out.println(found);\n}\n}",
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {4, 8, 15, 16, 23};\n        int target = 15;\n        boolean found = false;\n        for (int i = 0; i < arr.length; i++) {\n            if (arr[i] == target) {\n                found = true;\n            }\n        }\n        System.out.println(found);\n    }\n}",
+          "expectedOutput": "true",
+          "codeLineCount": 13,
+          "intendedErrorCount": 1,
+          "explanation": "Goal: Search Array. Correct all intentional Java syntax errors. The intended program logic is already correct."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q3": {
+      "type": "jumbled-and-syntax-errors",
+      "title": "Jumbled + Syntax Errors",
+      "instruction": "Arrange the lines correctly and fix the intentional syntax errors.",
+      "questions": [
+        {
+          "id": "java-1y-q3-1",
+          "title": "Sum of Odd Numbers",
+          "jumbledCode": [
+            "sum += i",
+            "for (int i = 1; i <= 10; i++ {",
+            "public class Main {",
+            "if (i % 2 != 0) {",
+            "int sum = 0;",
+            "System.out.println(sum);",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int sum = 0;\n        for (int i = 1; i <= 10; i++) {\n            if (i % 2 != 0) {\n                sum += i;\n            }\n        }\n        System.out.println(sum);\n    }\n}",
+          "expectedOutput": "25",
+          "explanation": "Goal: Sum of Odd Numbers. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-1y-q3-2",
+          "title": "Find Minimum",
+          "jumbledCode": [
+            "min = arr[i];",
+            "int min = arr[0];",
+            "public class Main {",
+            "for (int i = 1; i < arr.length; i++ {",
+            "System.out.println(min);",
+            "if (arr[i] < min) {",
+            "int[] arr = {9, 4, 12, 2, 7};",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {9, 4, 12, 2, 7};\n        int min = arr[0];\n        for (int i = 1; i < arr.length; i++) {\n            if (arr[i] < min) {\n                min = arr[i];\n            }\n        }\n        System.out.println(min);\n    }\n}",
+          "expectedOutput": "2",
+          "explanation": "Goal: Find Minimum. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-1y-q3-3",
+          "title": "Count Digits",
+          "jumbledCode": [
+            "count++;",
+            "int n = 54321;",
+            "while (n > 0 {",
+            "public class Main {",
+            "n /= 10",
+            "int count = 0;",
+            "System.out.println(count);",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int n = 54321;\n        int count = 0;\n        while (n > 0) {\n            count++;\n            n /= 10;\n        }\n        System.out.println(count);\n    }\n}",
+          "expectedOutput": "5",
+          "explanation": "Goal: Count Digits. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-1y-q3-4",
+          "title": "Check Positive",
+          "jumbledCode": [
+            "System.out.println(\"Positive\");",
+            "int n = 18;",
+            "if (n > 0) {",
+            "public class Main {",
+            "} else {",
+            "System.out.println(\"Not Positive\");",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int n = 18;\n        if (n > 0) {\n            System.out.println(\"Positive\");\n        } else {\n            System.out.println(\"Not Positive\");\n        }\n    }\n}",
+          "expectedOutput": "Positive",
+          "explanation": "Goal: Check Positive. Arrange the lines correctly and fix the intentional syntax errors."
+        },
+        {
+          "id": "java-1y-q3-5",
+          "title": "Palindrome Number",
+          "jumbledCode": [
+            "if (original == reverse) {",
+            "n /= 10;",
+            "int n = original;",
+            "System.out.println(\"Palindrome\");",
+            "int reverse = 0;",
+            "while (n > 0) {",
+            "reverse = reverse * 10 + n % 10",
+            "public class Main {",
+            "int original = 121;",
+            "} else {",
+            "System.out.println(\"Not Palindrome\");",
+            "}",
+            "public static void main(String[] args) {",
+            "}",
+            "}",
+            "}"
+          ],
+          "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int original = 121;\n        int n = original;\n        int reverse = 0;\n\n        while (n > 0) {\n            reverse = reverse * 10 + n % 10;\n            n /= 10;\n        }\n\n        if (original == reverse) {\n            System.out.println(\"Palindrome\");\n        } else {\n            System.out.println(\"Not Palindrome\");\n        }\n    }\n}",
+          "expectedOutput": "Palindrome",
+          "explanation": "Goal: Palindrome Number. Arrange the lines correctly and fix the intentional syntax errors."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q4": {
+      "type": "missing-lines",
+      "title": "Two Missing Lines",
+      "instruction": "Exactly two important lines are missing. Fill both missing sections.",
+      "questions": [
+        {
+          "id": "java-1y-q4-1",
+          "title": "Find Maximum",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {18, 42, 27, 65, 31};\n        int max = arr[0];\n\n        for (int i = 1; i < arr.length; i++) {\n            // MISSING LINE 1\n                // MISSING LINE 2\n        }\n\n        System.out.println(\"Maximum = \" + max);\n    }\n}",
+          "missingLines": [
+            "if (arr[i] > max)",
+            "max = arr[i];"
+          ],
+          "expectedOutput": "Maximum = 65",
+          "explanation": "Goal: Find Maximum. Exactly two important lines are missing. Fill both missing sections."
+        },
+        {
+          "id": "java-1y-q4-2",
+          "title": "Sum of Positive Numbers",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {-2, 5, -4, 8, 10};\n\n        // MISSING LINE 1\n\n        for (int i = 0; i < arr.length; i++) {\n            if (arr[i] > 0) {\n                // MISSING LINE 2\n            }\n        }\n\n        System.out.println(sum);\n    }\n}",
+          "missingLines": [
+            "int sum = 0;",
+            "sum += arr[i];"
+          ],
+          "expectedOutput": "23",
+          "explanation": "Goal: Sum of Positive Numbers. Exactly two important lines are missing. Fill both missing sections."
+        },
+        {
+          "id": "java-1y-q4-3",
+          "title": "Count Digits Greater Than 5",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int n = 785634;\n        int count = 0;\n\n        while (n > 0) {\n            int digit = n % 10;\n\n            // MISSING LINE 1\n            // MISSING LINE 2\n\n            n /= 10;\n        }\n\n        System.out.println(count);\n    }\n}",
+          "missingLines": [
+            "if (digit > 5)",
+            "count++;"
+          ],
+          "expectedOutput": "3",
+          "explanation": "Goal: Count Digits Greater Than 5. Exactly two important lines are missing. Fill both missing sections."
+        },
+        {
+          "id": "java-1y-q4-4",
+          "title": "Find First Occurrence",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {4, 7, 9, 7, 12};\n        int target = 7;\n        int position = -1;\n\n        for (int i = 0; i < arr.length; i++) {\n            // MISSING LINE 1\n                // MISSING LINE 2\n        }\n\n        System.out.println(position);\n    }\n}",
+          "missingLines": [
+            "if (arr[i] == target) {",
+            "position = i;\n                break;\n            }"
+          ],
+          "expectedOutput": "1",
+          "explanation": "Goal: Find First Occurrence. Exactly two important lines are missing. Fill both missing sections."
+        },
+        {
+          "id": "java-1y-q4-5",
+          "title": "Average of Array",
+          "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {10, 20, 30, 40, 50};\n\n        // MISSING LINE 1\n\n        for (int i = 0; i < arr.length; i++) {\n            // MISSING LINE 2\n        }\n\n        double average = sum / 5.0;\n        System.out.printf(\"%.2f\", average);\n    }\n}",
+          "missingLines": [
+            "int sum = 0;",
+            "sum += arr[i];"
+          ],
+          "expectedOutput": "30.00",
+          "explanation": "Goal: Average of Array. Exactly two important lines are missing. Fill both missing sections."
+        }
+      ],
+      "questionCount": 5
+    },
+    "q5": {
+      "type": "code-completion",
+      "title": "Short Logic",
+      "instruction": "Complete only the missing section. Maximum 4 lines may be entered.",
+      "maxAnswerLines": 4,
+      "questions": [
+        {
+          "id": "java-1y-q5-1",
+          "title": "Check Even",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int n = 24;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Check completed.\");\n    }\n}",
+          "expectedCode": "if (n % 2 == 0) System.out.println(\"Even\");\nelse System.out.println(\"Odd\");",
+          "expectedOutput": "Even\nCheck completed.",
+          "explanation": "Goal: Check Even. Complete only the missing section. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "java-1y-q5-2",
+          "title": "Find Larger Number",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int a = 18, b = 27;\n        int max;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Maximum = \" + max);\n    }\n}",
+          "expectedCode": "max = (a > b) ? a : b;",
+          "expectedOutput": "Maximum = 27",
+          "explanation": "Goal: Find Larger Number. Complete only the missing section. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "java-1y-q5-3",
+          "title": "Count Even",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {3, 8, 11, 14, 20};\n        int count = 0;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Even Count = \" + count);\n    }\n}",
+          "expectedCode": "for (int i = 0; i < arr.length; i++)\n    if (arr[i] % 2 == 0) count++;",
+          "expectedOutput": "Even Count = 3",
+          "explanation": "Goal: Count Even. Complete only the missing section. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "java-1y-q5-4",
+          "title": "Positive or Negative",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int n = -7;\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Done\");\n    }\n}",
+          "expectedCode": "if (n >= 0) System.out.println(\"Positive\");\nelse System.out.println(\"Negative\");",
+          "expectedOutput": "Negative\nDone",
+          "explanation": "Goal: Positive or Negative. Complete only the missing section. Maximum 4 lines may be entered."
+        },
+        {
+          "id": "java-1y-q5-5",
+          "title": "Character Case",
+          "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        char ch = 'e';\n\n        // WRITE YOUR CODE HERE",
+          "codeAfter": "\n\n        System.out.println(\"Character check completed.\");\n    }\n}",
+          "expectedCode": "if (Character.isLowerCase(ch)) System.out.println(\"Lowercase\");\nelse System.out.println(\"Not Lowercase\");",
+          "expectedOutput": "Lowercase\nCharacter check completed.",
+          "explanation": "Goal: Character Case. Complete only the missing section. Maximum 4 lines may be entered."
+        }
+      ],
+      "questionCount": 5
+    }
+  }
+}

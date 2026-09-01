@@ -11,13 +11,39 @@ import { eventStateService } from '../services/eventStateService';
 
 export default function EventArenaScene({ participant, initialRound = null, onNavigate, onForceExit, onOpenAdmin }) {
   const [eventState, setEventState] = useState(eventStateService.getEventState());
+
+  // activeRound: tracks WHICH round the user selected (null = arena view)
+  // Use a ref to store the initial value so we don't set it again if the prop
+  // bounces with a new object reference (same value).
   const [activeRound, setActiveRound] = useState(initialRound);
+  const activeRoundRef = useRef(activeRound);
+
+  // isChallengeOpen: LIFTED from RoundPlaceholder so it survives re-renders
+  // When the user clicks BEGIN CHALLENGE this becomes true and is never reset
+  // by a prop/state change — only by explicit back navigation.
+  const [isChallengeOpen, setIsChallengeOpen] = useState(false);
 
   const mousePosition = useRef({ x: 0, y: 0 });
 
-  // Sync with initialRound prop changes
+  // Sync with initialRound prop changes — but ONLY update activeRound if the
+  // actual path value changed (not just a new object reference for the same round).
+  // This prevents remounting RoundPlaceholder and resetting isChallengeOpen.
   useEffect(() => {
-    setActiveRound(initialRound);
+    if (!initialRound) {
+      // Navigated back to /play
+      if (activeRoundRef.current !== null) {
+        activeRoundRef.current = null;
+        setActiveRound(null);
+        setIsChallengeOpen(false);
+      }
+      return;
+    }
+    // Only update if the path actually changed
+    if (activeRoundRef.current?.path !== initialRound.path) {
+      activeRoundRef.current = initialRound;
+      setActiveRound(initialRound);
+      setIsChallengeOpen(false); // new round selected — reset challenge open
+    }
   }, [initialRound]);
 
   // Handle Mouse movement for smooth 3D parallax
@@ -39,53 +65,71 @@ export default function EventArenaScene({ participant, initialRound = null, onNa
   }, []);
 
   const handleSelectRound = (path, title) => {
-    setActiveRound({ path, title });
-    if (onNavigate) onNavigate(path, { path, title });
+    // Only open a new round if it is different from the currently active one
+    if (activeRoundRef.current?.path === path) return;
+    const round = { path, title };
+    activeRoundRef.current = round;
+    setActiveRound(round);
+    setIsChallengeOpen(false);
+    if (onNavigate) onNavigate(path, round);
   };
 
   const handleBackToArena = () => {
+    console.error('[CMA DEBUG] handleBackToArena CALLED', new Error().stack);
+    activeRoundRef.current = null;
     setActiveRound(null);
+    setIsChallengeOpen(false);
     if (onNavigate) onNavigate('/play');
   };
 
-  // Real-time & URL/Refresh Lock Enforcement:
-  // If the admin locks/deactivates the round the user is currently in, immediately redirect to Play Page (/play)
+  // Real-time Lock Enforcement:
+  // Only redirect if the admin ACTIVELY changes state from active → inactive.
+  // We compare previous vs current state so the initial mount (active:false default)
+  // never incorrectly kicks the user.
+  const prevEventStateRef = useRef(null);
   useEffect(() => {
-    if (!activeRound) return;
+    const prev = prevEventStateRef.current;
+    prevEventStateRef.current = eventState;
 
-    const path = (activeRound.path || '').toLowerCase();
-    const title = (activeRound.title || '').toLowerCase();
+    // Skip on first render — prev is null, nothing to compare
+    if (!prev) return;
+    if (!activeRoundRef.current) return;
+
+    const path = (activeRoundRef.current.path || '').toLowerCase();
+    const title = (activeRoundRef.current.title || '').toLowerCase();
 
     const isLayer1 = path.includes('layer1') || path.includes('layer/1') || path.includes('layer-1') || title.includes('layer 01') || title.includes('layer 1');
     const isLayer2 = path.includes('layer2') || path.includes('layer/2') || path.includes('layer-2') || title.includes('layer 02') || title.includes('layer 2');
-
     const isManual = path.includes('manual') || title.includes('manual');
     const isGenAi = path.includes('gen-ai') || path.includes('genai') || title.includes('gen ai') || title.includes('genai') || title.includes('prompt');
 
     let isDisabled = false;
 
     if (isLayer1) {
-      if (!eventState.layer1?.active) {
-        isDisabled = true;
-      } else if (isManual && eventState.layer1?.activeTrack !== 'manual') {
-        isDisabled = true;
-      } else if (isGenAi && eventState.layer1?.activeTrack !== 'gen-ai') {
-        isDisabled = true;
+      const wasActive = prev.layer1?.active;
+      const nowActive = eventState.layer1?.active;
+      const trackChanged = prev.layer1?.activeTrack !== eventState.layer1?.activeTrack;
+      if (wasActive && !nowActive) isDisabled = true;
+      else if (wasActive && trackChanged) {
+        if (isManual && eventState.layer1?.activeTrack !== 'manual') isDisabled = true;
+        else if (isGenAi && eventState.layer1?.activeTrack !== 'gen-ai') isDisabled = true;
       }
     } else if (isLayer2) {
-      if (!eventState.layer2?.active) {
-        isDisabled = true;
-      } else if (isManual && eventState.layer2?.activeTrack !== 'manual') {
-        isDisabled = true;
-      } else if (isGenAi && eventState.layer2?.activeTrack !== 'gen-ai') {
-        isDisabled = true;
+      const wasActive = prev.layer2?.active;
+      const nowActive = eventState.layer2?.active;
+      const trackChanged = prev.layer2?.activeTrack !== eventState.layer2?.activeTrack;
+      if (wasActive && !nowActive) isDisabled = true;
+      else if (wasActive && trackChanged) {
+        if (isManual && eventState.layer2?.activeTrack !== 'manual') isDisabled = true;
+        else if (isGenAi && eventState.layer2?.activeTrack !== 'gen-ai') isDisabled = true;
       }
     }
 
     if (isDisabled) {
+      console.error('[CMA DEBUG] LOCK EFFECT triggered disable. prev=', prev, 'cur=', eventState, 'round=', activeRoundRef.current);
       handleBackToArena();
     }
-  }, [activeRound, eventState]);
+  }, [eventState]);
 
   return (
     <div
@@ -121,9 +165,12 @@ export default function EventArenaScene({ participant, initialRound = null, onNa
       <AnimatePresence>
         {activeRound && (
           <RoundPlaceholder
+            key={activeRound.path}
             roundPath={activeRound.path}
             roundTitle={activeRound.title}
             participant={participant}
+            isChallengeOpen={isChallengeOpen}
+            onLaunchChallenge={() => setIsChallengeOpen(true)}
             onBackToArena={handleBackToArena}
           />
         )}
