@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ArrowLeft, Shield, Volume2, VolumeX, Settings } from 'lucide-react';
+import { Sparkles, ArrowLeft, Shield, Volume2, VolumeX } from 'lucide-react';
 import { soundEngine } from '../../utils/SoundEngine';
 
-export default function ChallengeHeader({ participant, onBack, onOpenAdmin }) {
+export default function ChallengeHeader({ participant, onBack }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
   useEffect(() => {
@@ -28,7 +28,9 @@ export default function ChallengeHeader({ participant, onBack, onOpenAdmin }) {
         borderBottom: '1px solid rgba(0, 243, 255, 0.25)',
         background: 'rgba(2, 6, 18, 0.85)',
         boxSizing: 'border-box',
-        zIndex: 10
+        zIndex: 10,
+        flexWrap: 'wrap',
+        gap: '12px'
       }}
     >
       {/* Left: Branding & Layer Badge */}
@@ -116,7 +118,7 @@ export default function ChallengeHeader({ participant, onBack, onOpenAdmin }) {
         <span>CHALLENGE ACTIVE // RECONSTRUCTION TRACK</span>
       </div>
 
-      {/* Right: Operator Identity, SFX Toggle & Admin Panel Button */}
+      {/* Right: Operator Identity & SFX Toggle */}
       <div
         style={{
           display: 'flex',
@@ -172,40 +174,6 @@ export default function ChallengeHeader({ participant, onBack, onOpenAdmin }) {
         >
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
           <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
-        </button>
-
-        {/* Admin Panel Trigger Button */}
-        <button
-          onClick={() => {
-            soundEngine.playClick();
-            if (window.history.pushState) {
-              window.history.pushState({}, '', '/admin-panel');
-              window.dispatchEvent(new Event('popstate'));
-            } else {
-              window.location.hash = '#admin-panel';
-            }
-            if (onOpenAdmin) onOpenAdmin();
-          }}
-          onMouseEnter={() => soundEngine.playHover()}
-          style={{
-            background: 'rgba(224, 38, 255, 0.12)',
-            border: '1px solid var(--magenta-glow)',
-            color: 'var(--magenta-glow)',
-            padding: '6px 12px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem',
-            letterSpacing: '0.08em',
-            borderRadius: '2px',
-            boxShadow: '0 0 10px rgba(224, 38, 255, 0.2)'
-          }}
-          title="Open Admin Control Panel (/admin-panel)"
-        >
-          <Settings size={14} />
-          <span>ADMIN PANEL</span>
         </button>
       </div>
     </header>
