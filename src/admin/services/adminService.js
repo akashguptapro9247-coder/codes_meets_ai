@@ -6,8 +6,14 @@
 // Layer 3 Combined = ((P1_L1_Avg + P1_L2_Avg) + (P2_L1_Avg + P2_L2_Avg)) / 2
 // ==========================================================================
 
-import { supabase, isSupabaseConfigured } from '../../shared/services/supabaseClient';
-import { imagekitClient } from '../../shared/services/imagekitClient';
+import { supabase, isSupabaseConfigured } from '../../shared/services/supabaseClient.js';
+import { imagekitClient } from '../../shared/services/imagekitClient.js';
+import {
+  generateRandomQuestionSet,
+  evaluateSingleAnswer,
+  evaluateManualAnswers,
+  validateRollNumber
+} from '../../layer1/questions/layer1ManualQuestions.js';
 
 export const adminService = {
   // ------------------------------------------------------------------------
@@ -539,21 +545,126 @@ export const adminService = {
     if (!userId || !rollNumber) {
       return { data: null, error: { message: 'userId and rollNumber are required.' } };
     }
+
     try {
-      const { data, error } = await supabase.rpc('rpc_start_layer1_manual_session', {
+      // 1. Try RPC first if configured in Supabase
+      const { data: rpcData, error: rpcError } = await supabase.rpc('rpc_start_layer1_manual_session', {
         p_user_id:    userId,
         p_roll_number: rollNumber
       });
-      if (error) {
-        console.error('[RPC::startLayer1ManualSession] Error:', error);
-        return { data: null, error };
+
+      if (!rpcError && rpcData && !rpcData.error) {
+        return { data: rpcData, error: null };
       }
-      if (data?.error) {
-        return { data: null, error: { message: data.error } };
+
+      // 2. Direct Table Fallback (Resilient Supabase Architecture)
+      const batchValidation = validateRollNumber(rollNumber);
+      if (!batchValidation.valid) {
+        return { data: null, error: { message: batchValidation.error } };
       }
-      return { data, error: null };
+
+      // Check if attempt already exists in layer_1_manual_attempts
+      const { data: existingAttempts, error: fetchErr } = await supabase
+        .from('layer_1_manual_attempts')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (!fetchErr && existingAttempts && existingAttempts.length > 0) {
+        const attempt = existingAttempts[0];
+
+        // If completed: return completed state
+        if (attempt.status === 'completed') {
+          return {
+            data: {
+              already_completed: true,
+              score:          attempt.score || 0,
+              correct_count:  attempt.correct_count || 0,
+              total_questions: attempt.total_questions || 15
+            },
+            error: null
+          };
+        }
+
+        // If in_progress: compute remaining seconds
+        const startTime = new Date(attempt.started_at || attempt.created_at).getTime();
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const remainingSeconds = Math.max(0, 900 - elapsedSeconds);
+
+        if (remainingSeconds <= 0) {
+          // Timer expired while away: auto-complete
+          return this.completeLayer1ManualSession(attempt.id, userId);
+        }
+
+        return {
+          data: {
+            attempt_id:        attempt.id,
+            expires_at:        new Date(startTime + 900 * 1000).toISOString(),
+            remaining_seconds: remainingSeconds,
+            questions:         attempt.questions_pool || [],
+            batch:             attempt.batch || batchValidation.batch,
+            year_name:         attempt.year || batchValidation.yearName,
+            resumed:           true
+          },
+          error: null
+        };
+      }
+
+      // 3. Create fresh new attempt
+      const questionSet = generateRandomQuestionSet(rollNumber);
+      if (!questionSet.valid) {
+        return { data: null, error: { message: questionSet.error } };
+      }
+
+      // Get user's name
+      const { data: userRec } = await supabase
+        .from('users')
+        .select('name')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const expiresAt = new Date(Date.now() + 900 * 1000).toISOString();
+
+      const newAttemptPayload = {
+        user_id:          userId,
+        username:         userRec?.name || 'Participant',
+        roll_number:      rollNumber,
+        year:             questionSet.yearName,
+        batch:            questionSet.batch,
+        questions_pool:   questionSet.questions,
+        selected_answers: {},
+        score:            0,
+        total_questions:  15,
+        correct_count:    0,
+        status:           'in_progress',
+        started_at:       new Date().toISOString()
+      };
+
+      const { data: createdAttempt, error: insertErr } = await supabase
+        .from('layer_1_manual_attempts')
+        .insert(newAttemptPayload)
+        .select('*')
+        .single();
+
+      if (insertErr) {
+        console.error('[Supabase::startLayer1ManualSession] Insert error:', insertErr);
+        return { data: null, error: insertErr };
+      }
+
+      return {
+        data: {
+          attempt_id:        createdAttempt.id,
+          expires_at:        expiresAt,
+          remaining_seconds: 900,
+          questions:         questionSet.questions,
+          batch:             questionSet.batch,
+          year_name:         questionSet.yearName
+        },
+        error: null
+      };
     } catch (err) {
-      console.error('[RPC::startLayer1ManualSession] Exception:', err);
+      console.error('[Supabase::startLayer1ManualSession] Exception:', err);
       return { data: null, error: err };
     }
   },
@@ -567,28 +678,58 @@ export const adminService = {
       return { data: null, error: { message: 'Supabase not configured' } };
     }
     try {
-      const { data, error } = await supabase.rpc('rpc_submit_layer1_manual_answer', {
+      // 1. Try RPC first if available
+      const { data: rpcData, error: rpcError } = await supabase.rpc('rpc_submit_layer1_manual_answer', {
         p_attempt_id:      attemptId,
         p_user_id:         userId,
         p_question_id:     questionId,
         p_selected_option: selectedOption
       });
-      if (error) {
-        console.error('[RPC::submitLayer1ManualAnswer] Error:', error);
-        return { data: null, error };
+
+      if (!rpcError && rpcData && !rpcData.error) {
+        return { data: rpcData, error: null };
       }
-      if (data?.error) {
-        return { data: null, error: { message: data.error } };
+
+      // 2. Direct Table Fallback
+      const evalRes = evaluateSingleAnswer(questionId, selectedOption);
+
+      if (attemptId) {
+        // Fetch current selected_answers
+        const { data: attempt } = await supabase
+          .from('layer_1_manual_attempts')
+          .select('selected_answers')
+          .eq('id', attemptId)
+          .maybeSingle();
+
+        const updatedAnswers = {
+          ...(attempt?.selected_answers || {}),
+          [questionId]: selectedOption
+        };
+
+        await supabase
+          .from('layer_1_manual_attempts')
+          .update({
+            selected_answers: updatedAnswers,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', attemptId);
       }
-      return { data, error: null };
+
+      return {
+        data: {
+          is_correct:     evalRes.is_correct,
+          correct_answer: evalRes.correct_answer
+        },
+        error: null
+      };
     } catch (err) {
-      console.error('[RPC::submitLayer1ManualAnswer] Exception:', err);
+      console.error('[Supabase::submitLayer1ManualAnswer] Exception:', err);
       return { data: null, error: err };
     }
   },
 
   /**
-   * Finalize the session. Server recalculates authoritative score and syncs to layer_1 table.
+   * Finalize the session. Recalculates authoritative score and syncs to layer_1 & users table.
    * @returns {{ score, correct_count, total_questions, max_score, accuracy }}
    */
   async completeLayer1ManualSession(attemptId, userId) {
@@ -596,20 +737,106 @@ export const adminService = {
       return { data: null, error: { message: 'Supabase not configured' } };
     }
     try {
-      const { data, error } = await supabase.rpc('rpc_complete_layer1_manual_session', {
+      // 1. Try RPC first if available
+      const { data: rpcData, error: rpcError } = await supabase.rpc('rpc_complete_layer1_manual_session', {
         p_attempt_id: attemptId,
         p_user_id:    userId
       });
-      if (error) {
-        console.error('[RPC::completeLayer1ManualSession] Error:', error);
-        return { data: null, error };
+
+      if (!rpcError && rpcData && !rpcData.error) {
+        return { data: rpcData, error: null };
       }
-      if (data?.error) {
-        return { data: null, error: { message: data.error } };
+
+      // 2. Direct Table Fallback
+      let attemptQuery = supabase.from('layer_1_manual_attempts').select('*');
+      if (attemptId) {
+        attemptQuery = attemptQuery.eq('id', attemptId);
+      } else if (userId) {
+        attemptQuery = attemptQuery.eq('user_id', userId).order('created_at', { ascending: false }).limit(1);
       }
-      return { data, error: null };
+
+      const { data: attemptRows, error: attErr } = await attemptQuery;
+      const attempt = attemptRows && attemptRows.length > 0 ? (attemptRows[0] || attemptRows) : null;
+
+      if (!attempt) {
+        return {
+          data: { score: 0, correct_count: 0, total_questions: 15, max_score: 150, accuracy: 0 },
+          error: null
+        };
+      }
+
+      const evalRes = evaluateManualAnswers(attempt.selected_answers || {});
+
+      // 1. Update layer_1_manual_attempts
+      await supabase
+        .from('layer_1_manual_attempts')
+        .update({
+          score:          evalRes.score,
+          correct_count:  evalRes.correctCount,
+          total_questions: 15,
+          status:         'completed',
+          completed_at:   new Date().toISOString(),
+          updated_at:     new Date().toISOString()
+        })
+        .eq('id', attempt.id);
+
+      // 2. Sync to layer_1 table
+      const { data: existingL1 } = await supabase
+        .from('layer_1')
+        .select('*')
+        .eq('user_id', attempt.user_id)
+        .maybeSingle();
+
+      const genAiMarks = existingL1?.layer_1_gen_ai_marks !== undefined && existingL1?.layer_1_gen_ai_marks !== null
+        ? parseFloat(existingL1.layer_1_gen_ai_marks)
+        : 0;
+
+      const newAverage = parseFloat(((genAiMarks + evalRes.score) / 2.0).toFixed(2));
+
+      if (existingL1) {
+        await supabase
+          .from('layer_1')
+          .update({
+            layer_1_manual_marks: evalRes.score,
+            average_marks:        newAverage,
+            updated_at:           new Date().toISOString()
+          })
+          .eq('user_id', attempt.user_id);
+      } else {
+        await supabase
+          .from('layer_1')
+          .insert({
+            user_id:              attempt.user_id,
+            name:                 attempt.username || 'Participant',
+            layer_1_gen_ai_marks: 0,
+            layer_1_manual_marks: evalRes.score,
+            average_marks:        newAverage,
+            created_at:           new Date().toISOString(),
+            updated_at:           new Date().toISOString()
+          });
+      }
+
+      // 3. Sync to users table average_layer_1
+      await supabase
+        .from('users')
+        .update({
+          average_layer_1: newAverage,
+          updated_at:      new Date().toISOString()
+        })
+        .eq('user_id', attempt.user_id);
+
+      return {
+        data: {
+          score:           evalRes.score,
+          correct_count:   evalRes.correctCount,
+          total_questions: 15,
+          max_score:       150,
+          accuracy:        evalRes.accuracy
+        },
+        error: null
+      };
     } catch (err) {
-      console.error('[RPC::completeLayer1ManualSession] Exception:', err);
+      console.error('[Supabase::completeLayer1ManualSession] Exception:', err);
       return { data: null, error: err };
     }
   },
