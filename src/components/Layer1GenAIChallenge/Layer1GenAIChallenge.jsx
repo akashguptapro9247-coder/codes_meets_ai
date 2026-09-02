@@ -255,9 +255,16 @@ export default function Layer1GenAIChallenge({
             overflow: 'hidden'
           }}
         >
-          {/* LEFT COLUMN: TARGET SCENE RECONSTRUCTION VIEWER */}
+          {/* LEFT COLUMN: TARGET SCENE RECONSTRUCTION VIEWER / LIVE TELEMETRY HUD */}
           <section style={{ height: '100%', overflow: 'hidden' }}>
-            <SceneViewer imageUrl={challengeImage} />
+            <SceneViewer
+              prompt={prompt}
+              images={images}
+              submissionSuccess={submissionSuccess}
+              existingSubmission={existingSubmission}
+              isSubmitting={isSubmitting}
+              isTimeUp={isTimeUp}
+            />
           </section>
 
           {/* RIGHT COLUMN: PROMPT INPUT, ASSET UPLOAD, SUBMIT & 15-MIN TIMER */}
