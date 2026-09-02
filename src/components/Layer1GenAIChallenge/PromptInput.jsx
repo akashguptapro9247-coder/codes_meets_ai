@@ -2,14 +2,25 @@ import React, { useState } from 'react';
 import { Terminal, AlignLeft, AlertCircle } from 'lucide-react';
 
 export default function PromptInput({
-  value = '',
+  value,
+  prompt,
   onChange,
+  onChangePrompt,
   disabled = false,
   maxLength = 2000
 }) {
   const [isFocused, setIsFocused] = useState(false);
-  const currentLength = value.length;
+  const textValue = value !== undefined ? value : prompt !== undefined ? prompt : '';
+  const currentLength = textValue.length;
   const isNearLimit = currentLength > maxLength * 0.85;
+
+  const handleChange = (e) => {
+    const newVal = e.target.value;
+    if (newVal.length <= maxLength) {
+      if (typeof onChange === 'function') onChange(newVal);
+      if (typeof onChangePrompt === 'function') onChangePrompt(newVal);
+    }
+  };
 
   return (
     <div
@@ -70,12 +81,8 @@ export default function PromptInput({
 
       {/* Large Cyber Monospace Textarea */}
       <textarea
-        value={value}
-        onChange={(e) => {
-          if (e.target.value.length <= maxLength) {
-            onChange(e.target.value);
-          }
-        }}
+        value={textValue}
+        onChange={handleChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         disabled={disabled}

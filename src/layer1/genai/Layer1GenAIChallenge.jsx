@@ -576,7 +576,9 @@ export default function Layer1GenAIChallenge({
 
               {/* PROMPT INPUT TERMINAL */}
               <PromptInput
+                value={prompt}
                 prompt={prompt}
+                onChange={setPrompt}
                 onChangePrompt={setPrompt}
                 disabled={isSubmitting || submissionSuccess}
               />
