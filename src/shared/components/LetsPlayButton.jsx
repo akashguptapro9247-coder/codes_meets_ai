@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function LetsPlayButton({ onClick, isComplete = false }) {
+const LetsPlayButton = forwardRef(function LetsPlayButton({ onClick, isComplete = false }, ref) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -15,10 +16,25 @@ export default function LetsPlayButton({ onClick, isComplete = false }) {
     setIsHovered(false);
   };
 
+  const handleFocus = () => {
+    setIsFocused(true);
+    soundEngine.playHover();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
+
   const handleClick = (e) => {
     e.preventDefault();
     soundEngine.playClick();
     if (onClick) onClick();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      handleClick(e);
+    }
   };
 
   return (
@@ -34,26 +50,32 @@ export default function LetsPlayButton({ onClick, isComplete = false }) {
       }}
     >
       <button
+        ref={ref}
         className="cyber-btn"
         onClick={handleClick}
+        onKeyDown={handleKeyDown}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         style={{
           width: '100%',
           padding: '15px 32px',
-          background: isHovered
+          background: (isHovered || isFocused)
             ? 'rgba(0, 243, 255, 0.25)'
             : isComplete
             ? 'rgba(0, 243, 255, 0.15)'
             : 'rgba(5, 12, 28, 0.85)',
-          borderColor: isHovered
+          borderColor: (isHovered || isFocused)
             ? '#ffffff'
             : isComplete
             ? 'var(--cyan-glow)'
             : 'rgba(0, 243, 255, 0.4)',
-          boxShadow: isHovered || isComplete
+          boxShadow: (isHovered || isFocused || isComplete)
             ? '0 0 30px rgba(0, 243, 255, 0.6), inset 0 0 20px rgba(0, 243, 255, 0.3)'
             : '0 0 10px rgba(0, 243, 255, 0.1)',
+          outline: isFocused ? '2px solid var(--cyan-glow)' : 'none',
+          outlineOffset: '2px',
           transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
         }}
       >
@@ -73,8 +95,8 @@ export default function LetsPlayButton({ onClick, isComplete = false }) {
         ) : (
           <Play
             size={16}
-            color={isHovered ? '#ffffff' : 'var(--cyan-glow)'}
-            fill={isHovered ? '#ffffff' : 'var(--cyan-glow)'}
+            color={(isHovered || isFocused) ? '#ffffff' : 'var(--cyan-glow)'}
+            fill={(isHovered || isFocused) ? '#ffffff' : 'var(--cyan-glow)'}
           />
         )}
 
@@ -88,4 +110,6 @@ export default function LetsPlayButton({ onClick, isComplete = false }) {
       </button>
     </motion.div>
   );
-}
+});
+
+export default LetsPlayButton;

@@ -338,7 +338,7 @@ export default function Layer1ManualChallenge({
         }}
       >
         <DigitalParticles />
-        <ScanOverlay currentStage={1} />
+        <ScanOverlay currentStage={1} hideHeader={true} />
         <InvalidRollNumberScreen
           rollNumber={rollNumber}
           errorMessage={validation.error}
@@ -425,7 +425,7 @@ export default function Layer1ManualChallenge({
       <DigitalParticles />
 
       {/* CRT Scanline & HUD Telemetry Overlay */}
-      <ScanOverlay currentStage={1} />
+      <ScanOverlay currentStage={1} hideHeader={true} />
 
       {/* ==========================================
           SPIDER-MAN TEMPORARY INTEGRATION 

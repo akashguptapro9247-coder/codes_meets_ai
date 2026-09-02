@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, Terminal } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function ScanOverlay({ currentStage }) {
+export default function ScanOverlay({ currentStage, isLandingPage = false, showVignette = false, hideHeader = false }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
+  const shouldRenderVignette = !isLandingPage && showVignette;
+
+  useEffect(() => {
+    setMuted(soundEngine.isMuted());
+    const unsubscribe = soundEngine.subscribe((newMutedState) => {
+      setMuted(newMutedState);
+    });
+    return unsubscribe;
+  }, []);
 
   const toggleSound = () => {
     const isNowMuted = soundEngine.toggleMute();
-    setMuted(isNowMuted);
     if (!isNowMuted) {
       soundEngine.playHover();
     }
@@ -17,7 +25,7 @@ export default function ScanOverlay({ currentStage }) {
     <>
       {/* CRT Scanline & Vignette Effects */}
       <div className="crt-scanlines" />
-      <div className="cyber-vignette" />
+      {shouldRenderVignette && <div className="cyber-vignette" />}
 
       {/* Cyber Corner HUD Brackets */}
       <div className="hud-corner hud-top-left" />
@@ -26,7 +34,8 @@ export default function ScanOverlay({ currentStage }) {
       <div className="hud-corner hud-bottom-right" />
 
       {/* TOP HEADER BAR */}
-      <header
+      {!hideHeader && (
+        <header
         style={{
           position: 'absolute',
           top: 0,
@@ -36,7 +45,7 @@ export default function ScanOverlay({ currentStage }) {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 30,
+          zIndex: 50,
           fontFamily: 'var(--font-mono)',
           fontSize: '0.8rem',
           pointerEvents: 'none'
@@ -92,6 +101,7 @@ export default function ScanOverlay({ currentStage }) {
           </button>
         </div>
       </header>
+      )}
 
       {/* BOTTOM EVENT FOOTER */}
       <footer

@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { Check } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function InputField({
+const InputField = forwardRef(function InputField({
   label,
   value,
   onChange,
   placeholder,
   error,
+  successMessage,
   type = 'text',
-  icon: Icon
-}) {
+  maxLength,
+  icon: Icon,
+  onKeyDown
+}, ref) {
   const [isFocused, setIsFocused] = useState(false);
   const isValid = Boolean(value && String(value).trim().length > 0 && !error);
 
@@ -60,7 +63,21 @@ export default function InputField({
               letterSpacing: '0.08em'
             }}
           >
-            ! DATA REQUIRED
+            {typeof error === 'string' ? error : '! DATA REQUIRED'}
+          </span>
+        ) : successMessage ? (
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.65rem',
+              color: 'var(--lime-accent)',
+              letterSpacing: '0.08em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <Check size={11} color="var(--lime-accent)" /> {successMessage}
           </span>
         ) : isValid ? (
           <span
@@ -121,12 +138,15 @@ export default function InputField({
         )}
 
         <input
+          ref={ref}
           type={type}
           value={value}
           onChange={onChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
+          maxLength={maxLength}
           style={{
             width: '100%',
             padding: '11px 36px 11px 14px',
@@ -158,4 +178,6 @@ export default function InputField({
       </div>
     </div>
   );
-}
+});
+
+export default InputField;

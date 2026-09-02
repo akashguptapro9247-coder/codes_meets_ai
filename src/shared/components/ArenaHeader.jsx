@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Terminal, ShieldCheck, Volume2, VolumeX, Settings, Cpu } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
 export default function ArenaHeader({ participant, onOpenAdmin }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
+  useEffect(() => {
+    setMuted(soundEngine.isMuted());
+    const unsubscribe = soundEngine.subscribe((newMutedState) => {
+      setMuted(newMutedState);
+    });
+    return unsubscribe;
+  }, []);
+
   const toggleSound = () => {
-    const isMuted = soundEngine.toggleMute();
-    setMuted(isMuted);
-    if (!isMuted) soundEngine.playHover();
+    const isNowMuted = soundEngine.toggleMute();
+    if (!isNowMuted) soundEngine.playHover();
   };
 
   // Mask roll number slightly to keep it clean (e.g. 23XXXXX)
@@ -49,25 +56,25 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
         }}
       />
 
-      {/* LEFT: Branding Identity */}
+      {/* LEFT: Single CODE MEETS AI Branding Identity */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '4px 10px',
-            background: 'rgba(0, 243, 255, 0.08)',
-            border: '1px solid rgba(0, 243, 255, 0.3)',
+            padding: '6px 12px',
+            background: 'rgba(0, 243, 255, 0.06)',
+            border: '1px solid rgba(0, 243, 255, 0.25)',
             borderRadius: '2px',
             color: 'var(--cyan-glow)',
-            fontFamily: 'var(--font-title)',
-            fontSize: '0.85rem',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.8rem',
             letterSpacing: '0.12em',
-            fontWeight: 800
+            fontWeight: 700
           }}
         >
-          <Terminal size={15} />
+          <Terminal size={14} className="text-cyan-400" />
           <span>CODE MEETS AI</span>
         </div>
         <span className="status-beacon" />
@@ -90,7 +97,7 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
         <span>EVENT ARENA</span>
       </div>
 
-      {/* RIGHT: Participant Identity & Controls */}
+      {/* RIGHT: Participant Identity, SFX Toggle & Admin Panel Button */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {/* Participant Info Tag */}
         <div
@@ -116,25 +123,28 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
           </span>
         </div>
 
-        {/* Audio Mute Toggle */}
+        {/* Audio SFX Mute Toggle */}
         <button
           onClick={toggleSound}
           onMouseEnter={() => soundEngine.playHover()}
           style={{
-            background: 'transparent',
-            border: '1px solid rgba(0, 243, 255, 0.25)',
-            color: muted ? '#6b7280' : 'var(--cyan-glow)',
-            padding: '6px 10px',
-            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '8px',
+            background: 'rgba(5, 10, 24, 0.8)',
+            border: '1px solid rgba(0, 243, 255, 0.3)',
+            color: muted ? '#6b7280' : 'var(--cyan-glow)',
+            padding: '6px 12px',
+            cursor: 'pointer',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem'
+            fontSize: '0.75rem',
+            letterSpacing: '0.1em',
+            transition: 'all 0.2s ease'
           }}
           title="Toggle SFX"
         >
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+          <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
         </button>
 
         {/* Secret Admin Control Modal Trigger for Live Testing */}
