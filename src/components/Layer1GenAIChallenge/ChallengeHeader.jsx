@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, ArrowLeft, Shield, Volume2, VolumeX } from 'lucide-react';
 import { soundEngine } from '../../utils/SoundEngine';
 
-export default function ChallengeHeader({ participant, onBack }) {
+export default function ChallengeHeader({ participant, onBack, isCompleted = false }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
   useEffect(() => {
@@ -88,15 +88,15 @@ export default function ChallengeHeader({ participant, onBack }) {
         </div>
       </div>
 
-      {/* Center: Live Status Indicator */}
+      {/* Center: Live / Completed Status Indicator */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
           padding: '4px 12px',
-          background: 'rgba(57, 255, 20, 0.08)',
-          border: '1px solid rgba(57, 255, 20, 0.3)',
+          background: isCompleted ? 'rgba(57, 255, 20, 0.12)' : 'rgba(57, 255, 20, 0.08)',
+          border: '1px solid rgba(57, 255, 20, 0.4)',
           borderRadius: '2px',
           fontFamily: 'var(--font-mono)',
           fontSize: '0.7rem',
@@ -112,10 +112,10 @@ export default function ChallengeHeader({ participant, onBack }) {
             borderRadius: '50%',
             backgroundColor: 'var(--lime-accent)',
             boxShadow: '0 0 8px var(--lime-accent)',
-            animation: 'pulse 2s infinite'
+            animation: isCompleted ? 'none' : 'pulse 2s infinite'
           }}
         />
-        <span>CHALLENGE ACTIVE // RECONSTRUCTION TRACK</span>
+        <span>{isCompleted ? 'RESPONSE RECORDED // SUBMISSION LOCKED' : 'CHALLENGE ACTIVE // RECONSTRUCTION TRACK'}</span>
       </div>
 
       {/* Right: Operator Identity & SFX Toggle */}

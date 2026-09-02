@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { CheckCircle2, Lock, ArrowRight } from 'lucide-react';
 import ChallengeHeader from './ChallengeHeader';
 import SceneViewer from './SceneViewer';
 import PromptInput from './PromptInput';
@@ -172,11 +173,6 @@ export default function Layer1GenAIChallenge({
         try {
           localStorage.removeItem(timerKey);
         } catch (e) {}
-
-        // Short success delay, then automatically navigate back to the Event Arena (/play)
-        setTimeout(() => {
-          if (onBack) onBack();
-        }, 1500);
       }
     } catch (err) {
       console.error('Submission exception:', err);
@@ -185,6 +181,8 @@ export default function Layer1GenAIChallenge({
       setIsSubmitting(false);
     }
   };
+
+  const isCompleted = Boolean(submissionSuccess || existingSubmission);
 
   return (
     <div
@@ -223,8 +221,10 @@ export default function Layer1GenAIChallenge({
           maxHeight: '880px',
           background: 'rgba(4, 9, 24, 0.94)',
           backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(0, 243, 255, 0.35)',
-          boxShadow: '0 25px 75px rgba(0, 0, 0, 0.95), 0 0 45px rgba(0, 243, 255, 0.2), inset 0 0 25px rgba(0, 243, 255, 0.06)',
+          border: isCompleted ? '1px solid rgba(57, 255, 20, 0.4)' : '1px solid rgba(0, 243, 255, 0.35)',
+          boxShadow: isCompleted
+            ? '0 25px 75px rgba(0, 0, 0, 0.95), 0 0 45px rgba(57, 255, 20, 0.2), inset 0 0 25px rgba(57, 255, 20, 0.06)'
+            : '0 25px 75px rgba(0, 0, 0, 0.95), 0 0 45px rgba(0, 243, 255, 0.2), inset 0 0 25px rgba(0, 243, 255, 0.06)',
           borderRadius: '4px',
           padding: 0,
           display: 'flex',
@@ -235,109 +235,371 @@ export default function Layer1GenAIChallenge({
         }}
       >
         {/* Four Sci-Fi HUD Corner Brackets */}
-        <div className="hud-corner hud-top-left" style={{ width: '16px', height: '16px', zIndex: 25 }} />
-        <div className="hud-corner hud-top-right" style={{ width: '16px', height: '16px', zIndex: 25 }} />
-        <div className="hud-corner hud-bottom-left" style={{ width: '16px', height: '16px', zIndex: 25 }} />
-        <div className="hud-corner hud-bottom-right" style={{ width: '16px', height: '16px', zIndex: 25 }} />
+        <div className="hud-corner hud-top-left" style={{ width: '16px', height: '16px', zIndex: 25, borderColor: isCompleted ? 'var(--lime-accent)' : undefined }} />
+        <div className="hud-corner hud-top-right" style={{ width: '16px', height: '16px', zIndex: 25, borderColor: isCompleted ? 'var(--lime-accent)' : undefined }} />
+        <div className="hud-corner hud-bottom-left" style={{ width: '16px', height: '16px', zIndex: 25, borderColor: isCompleted ? 'var(--lime-accent)' : undefined }} />
+        <div className="hud-corner hud-bottom-right" style={{ width: '16px', height: '16px', zIndex: 25, borderColor: isCompleted ? 'var(--lime-accent)' : undefined }} />
 
         {/* 1. TOP CHALLENGE HEADER */}
-        <ChallengeHeader participant={participant} onBack={onBack} />
+        <ChallengeHeader participant={participant} onBack={onBack} isCompleted={isCompleted} />
 
-        {/* 2. MAIN 2-COLUMN CHALLENGE ARENA WORKSPACE */}
-        <main
-          style={{
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: '44% 56%',
-            gap: '16px',
-            padding: '16px 20px',
-            boxSizing: 'border-box',
-            overflow: 'hidden'
-          }}
-        >
-          {/* LEFT COLUMN: TARGET SCENE RECONSTRUCTION VIEWER / LIVE TELEMETRY HUD */}
-          <section style={{ height: '100%', overflow: 'hidden' }}>
-            <SceneViewer
-              prompt={prompt}
-              images={images}
-              submissionSuccess={submissionSuccess}
-              existingSubmission={existingSubmission}
-              isSubmitting={isSubmitting}
-              isTimeUp={isTimeUp}
-            />
-          </section>
-
-          {/* RIGHT COLUMN: PROMPT INPUT, ASSET UPLOAD, SUBMIT & 15-MIN TIMER */}
-          <section
+        {/* 2. MAIN WORKSPACE OR SUBMISSION COMPLETION SCREEN */}
+        {isCompleted ? (
+          <main
             style={{
-              height: '100%',
+              flex: 1,
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '12px',
-              overflow: 'hidden',
-              boxSizing: 'border-box'
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '24px',
+              boxSizing: 'border-box',
+              overflowY: 'auto'
             }}
           >
-            {/* Top Workspace Area: Large Prompt Textarea */}
-            <div style={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
-              <PromptInput
-                value={prompt}
-                onChange={(val) => {
-                  setPrompt(val);
-                  if (validationError) setValidationError(null);
-                }}
-                disabled={Boolean(existingSubmission || submissionSuccess || isTimeUp)}
-                maxLength={2000}
-              />
-            </div>
-
-            {/* Quick AI Experimentation Buttons (ChatGPT & Gemini) */}
-            <div style={{ flexShrink: 0 }}>
-              <AiPlatformButtons />
-            </div>
-
-            {/* Middle Workspace Area: Reference Image Uploader */}
-            <div style={{ flexShrink: 0 }}>
-              <ImageUploader
-                images={images}
-                onAddImages={handleAddImages}
-                onRemoveImage={handleRemoveImage}
-                disabled={Boolean(existingSubmission || submissionSuccess || isTimeUp)}
-                maxImages={1}
-              />
-            </div>
-
-            {/* Bottom Action & Timer Control Bar */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
               style={{
-                flexShrink: 0,
-                display: 'grid',
-                gridTemplateColumns: '1fr auto',
-                gap: '14px',
+                width: '100%',
+                maxWidth: '680px',
+                background: 'rgba(3, 10, 26, 0.95)',
+                border: '1px solid rgba(57, 255, 20, 0.4)',
+                boxShadow: '0 0 50px rgba(57, 255, 20, 0.15), inset 0 0 20px rgba(57, 255, 20, 0.05)',
+                borderRadius: '6px',
+                padding: '32px 28px',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                paddingTop: '6px',
-                borderTop: '1px solid rgba(0, 243, 255, 0.15)'
+                textAlign: 'center',
+                position: 'relative'
               }}
             >
-              {/* Submit & Validation Controls */}
-              <SubmissionControls
-                onSubmit={handleSubmit}
-                isSubmitting={isSubmitting}
-                submissionSuccess={Boolean(existingSubmission || submissionSuccess)}
-                disabled={isTimeUp}
-                validationError={validationError}
-              />
+              {/* Inner Corner Brackets */}
+              <div className="hud-corner hud-top-left" style={{ width: '12px', height: '12px', borderColor: 'var(--lime-accent)' }} />
+              <div className="hud-corner hud-top-right" style={{ width: '12px', height: '12px', borderColor: 'var(--lime-accent)' }} />
+              <div className="hud-corner hud-bottom-left" style={{ width: '12px', height: '12px', borderColor: 'var(--lime-accent)' }} />
+              <div className="hud-corner hud-bottom-right" style={{ width: '12px', height: '12px', borderColor: 'var(--lime-accent)' }} />
 
-              {/* 15-Minute Countdown Timer (Bottom Right) */}
+              {/* Success Icon Badge */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 220, damping: 16, delay: 0.15 }}
+                style={{
+                  width: '68px',
+                  height: '68px',
+                  borderRadius: '50%',
+                  background: 'rgba(57, 255, 20, 0.1)',
+                  border: '2px solid var(--lime-accent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 30px rgba(57, 255, 20, 0.4)',
+                  marginBottom: '16px'
+                }}
+              >
+                <CheckCircle2 size={38} color="var(--lime-accent)" />
+              </motion.div>
+
+              {/* Stage Sub-tag */}
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.72rem',
+                  color: 'var(--cyan-glow)',
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  marginBottom: '6px'
+                }}
+              >
+                LAYER 01 // GENAI CHALLENGE
+              </div>
+
+              {/* Main Completion Title */}
+              <h1
+                style={{
+                  fontFamily: 'var(--font-title)',
+                  fontSize: '1.75rem',
+                  margin: '0 0 12px 0',
+                  color: '#ffffff',
+                  letterSpacing: '0.12em',
+                  textShadow: '0 0 20px rgba(57, 255, 20, 0.6), 0 0 40px rgba(0, 243, 255, 0.3)'
+                }}
+              >
+                SUBMISSION SUCCESSFUL
+              </h1>
+
+              {/* Status Pill Badges */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  marginBottom: '24px',
+                  flexWrap: 'wrap'
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 12px',
+                    background: 'rgba(57, 255, 20, 0.12)',
+                    border: '1px solid rgba(57, 255, 20, 0.4)',
+                    borderRadius: '2px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.68rem',
+                    color: 'var(--lime-accent)',
+                    letterSpacing: '0.1em'
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--lime-accent)', boxShadow: '0 0 6px var(--lime-accent)' }} />
+                  <span>RESPONSE RECORDED</span>
+                </div>
+
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 12px',
+                    background: 'rgba(0, 243, 255, 0.08)',
+                    border: '1px solid rgba(0, 243, 255, 0.3)',
+                    borderRadius: '2px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.68rem',
+                    color: 'var(--cyan-glow)',
+                    letterSpacing: '0.1em'
+                  }}
+                >
+                  <Lock size={12} color="var(--cyan-glow)" />
+                  <span>SUBMISSION LOCKED</span>
+                </div>
+              </div>
+
+              {/* Participant & Submission Metadata Grid */}
+              <div
+                style={{
+                  width: '100%',
+                  background: 'rgba(2, 6, 18, 0.85)',
+                  border: '1px solid rgba(0, 243, 255, 0.2)',
+                  borderRadius: '4px',
+                  padding: '16px',
+                  boxSizing: 'border-box',
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                  gap: '12px',
+                  marginBottom: '20px',
+                  textAlign: 'left'
+                }}
+              >
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: '#9ca3af', letterSpacing: '0.1em' }}>
+                    OPERATOR NAME
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#ffffff', fontWeight: 700, marginTop: '2px' }}>
+                    {(participant?.name || existingSubmission?.username || 'PARTICIPANT').toUpperCase()}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: '#9ca3af', letterSpacing: '0.1em' }}>
+                    ROLL NUMBER
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--cyan-glow)', fontWeight: 700, marginTop: '2px' }}>
+                    {participant?.rollNumber || participant?.roll_number || existingSubmission?.roll_number || 'N/A'}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: '#9ca3af', letterSpacing: '0.1em' }}>
+                    SUBMISSION TIME
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--lime-accent)', fontWeight: 700, marginTop: '2px' }}>
+                    {existingSubmission?.time_taken ? `DURATION ${existingSubmission.time_taken}` : (existingSubmission?.submitted_at ? new Date(existingSubmission.submitted_at).toLocaleTimeString() : 'RECORDED')}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: '#9ca3af', letterSpacing: '0.1em' }}>
+                    ATTEMPT NUMBER
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--magenta-glow)', fontWeight: 700, marginTop: '2px' }}>
+                    01 / 01
+                  </div>
+                </div>
+              </div>
+
+              {/* Read-Only Submitted Prompt & Image Summary (if present) */}
+              {(prompt.trim() || (images && images.length > 0) || (existingSubmission && (existingSubmission.prompt || existingSubmission.image_urls))) && (
+                <div
+                  style={{
+                    width: '100%',
+                    background: 'rgba(2, 6, 18, 0.6)',
+                    border: '1px solid rgba(0, 243, 255, 0.15)',
+                    borderRadius: '4px',
+                    padding: '14px',
+                    boxSizing: 'border-box',
+                    marginBottom: '24px',
+                    textAlign: 'left'
+                  }}
+                >
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--cyan-glow)', letterSpacing: '0.12em', fontWeight: 800, marginBottom: '8px' }}>
+                    RECORDED RESPONSE (READ-ONLY)
+                  </div>
+
+                  {(prompt.trim() || existingSubmission?.prompt) && (
+                    <div style={{ marginBottom: (images?.length || existingSubmission?.image_urls?.length) ? '12px' : 0 }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: '#9ca3af', marginBottom: '4px' }}>
+                        PROMPT:
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.74rem',
+                          color: '#e5e7eb',
+                          background: 'rgba(0, 0, 0, 0.4)',
+                          border: '1px solid rgba(0, 243, 255, 0.2)',
+                          padding: '8px 12px',
+                          borderRadius: '3px',
+                          lineHeight: 1.4,
+                          maxHeight: '75px',
+                          overflowY: 'auto'
+                        }}
+                      >
+                        {prompt.trim() || existingSubmission?.prompt}
+                      </div>
+                    </div>
+                  )}
+
+                  {((images && images.length > 0) || (existingSubmission?.image_urls && existingSubmission.image_urls.length > 0)) && (
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: '#9ca3af', marginBottom: '4px' }}>
+                        SUBMITTED ASSET:
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <img
+                          src={images?.[0]?.previewUrl || images?.[0]?.url || existingSubmission?.image_urls?.[0]}
+                          alt="Submitted Asset"
+                          style={{
+                            width: '56px',
+                            height: '56px',
+                            objectFit: 'cover',
+                            borderRadius: '3px',
+                            border: '1px solid var(--cyan-glow)'
+                          }}
+                        />
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: 'var(--lime-accent)' }}>
+                          ✓ ASSET EVALUATION PENDING MANUAL SCORING
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Primary Action Button */}
+              <button
+                onClick={() => {
+                  soundEngine.playClick();
+                  if (onBack) onBack();
+                }}
+                onMouseEnter={() => soundEngine.playHover()}
+                className="cyber-btn"
+                style={{
+                  padding: '12px 32px',
+                  fontSize: '0.82rem',
+                  letterSpacing: '0.12em',
+                  borderColor: 'var(--cyan-glow)',
+                  color: 'var(--cyan-glow)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  boxShadow: '0 0 20px rgba(0, 243, 255, 0.2)'
+                }}
+              >
+                <span>RETURN TO ARENA</span>
+                <ArrowRight size={16} />
+              </button>
+            </motion.div>
+          </main>
+        ) : (
+          <main
+            style={{
+              flex: 1,
+              display: 'grid',
+              gridTemplateColumns: '44% 56%',
+              gap: '16px',
+              padding: '16px 20px',
+              boxSizing: 'border-box',
+              overflow: 'hidden'
+            }}
+          >
+            {/* LEFT COLUMN: TARGET SCENE RECONSTRUCTION VIEWER / LIVE TELEMETRY HUD */}
+            <section style={{ height: '100%', overflow: 'hidden' }}>
+              <SceneViewer
+                prompt={prompt}
+                images={images}
+                submissionSuccess={submissionSuccess}
+                existingSubmission={existingSubmission}
+                isSubmitting={isSubmitting}
+                isTimeUp={isTimeUp}
+              />
+            </section>
+
+            {/* RIGHT COLUMN: PROMPT INPUT, ASSET UPLOAD, SUBMIT & 15-MIN TIMER */}
+            <section
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                height: '100%',
+                overflowY: 'auto',
+                boxSizing: 'border-box',
+                paddingRight: '4px'
+              }}
+            >
+              {/* 15-MIN COUNTDOWN TIMER */}
               <CountdownTimer
                 participantId={userId || 'player'}
                 onTimeUp={handleTimeUp}
               />
-            </div>
-          </section>
-        </main>
-      </motion.div>
+
+              {/* STAGE DESCRIPTION & HELPER BUTTONS */}
+              <AiPlatformButtons />
+
+              {/* PROMPT INPUT TERMINAL */}
+              <PromptInput
+                prompt={prompt}
+                onChangePrompt={setPrompt}
+                disabled={isSubmitting || submissionSuccess}
+              />
+
+              {/* IMAGE ASSET UPLOADER */}
+              <ImageUploader
+                images={images}
+                onAddImages={handleAddImages}
+                onRemoveImage={handleRemoveImage}
+                disabled={isSubmitting || submissionSuccess}
+              />
+
+              {/* SUBMISSION ACTION BAR */}
+              <SubmissionControls
+                isSubmitting={isSubmitting}
+                submissionSuccess={submissionSuccess}
+                validationError={validationError}
+                onSubmit={handleSubmit}
+                isTimeUp={isTimeUp}
+              />
+            </section>
+          </main>
+        )}</motion.div>
     </div>
   );
 }
