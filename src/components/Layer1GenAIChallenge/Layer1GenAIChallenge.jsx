@@ -28,6 +28,7 @@ export default function Layer1GenAIChallenge({
   const [validationError, setValidationError] = useState(null);
   const [isTimeUp, setIsTimeUp] = useState(false);
   const [existingSubmission, setExistingSubmission] = useState(null);
+  const [isLoadingSubmission, setIsLoadingSubmission] = useState(true);
   const isFinalizingTimeoutRef = useRef(false);
 
   // Helper to reliably extract the active user ID from props or storage
@@ -89,47 +90,63 @@ export default function Layer1GenAIChallenge({
   // Load any existing submission from Supabase on mount and listen to realtime updates
   useEffect(() => {
     const activeId = getActiveUserId();
-    if (!activeId) return;
+    if (!activeId) {
+      setIsLoadingSubmission(false);
+      return;
+    }
 
     let isMounted = true;
 
     const loadSubmission = async () => {
-      const { data } = await adminService.fetchLayer1SubmissionForUser(activeId);
-      if (!isMounted) return;
+      try {
+        const { data } = await adminService.fetchLayer1SubmissionForUser(activeId);
+        if (!isMounted) return;
 
-      if (data) {
-        setExistingSubmission(data);
-        if (data.prompt) setPrompt(data.prompt);
-        if (data.image_urls && Array.isArray(data.image_urls)) {
-          const loadedImages = data.image_urls.map((url, idx) => ({
-            id: `loaded_${idx}`,
-            url,
-            fileId: data.image_file_ids?.[idx] || '',
-            filePath: data.image_paths?.[idx] || '',
-            previewUrl: url,
-            name: `Uploaded Asset #${idx + 1}`
-          }));
-          setImages(loadedImages);
-        }
-
-        if (data.status === 'TIME_EXPIRED' || data.time_taken === '15:00') {
-          setIsTimeUp(true);
-        } else {
-          setSubmissionSuccess(true);
-        }
-      } else {
-        // If Admin deleted submission or no submission exists
-        setExistingSubmission(null);
-        setSubmissionSuccess(false);
-
-        // Check if timer in localStorage is already expired (30 seconds for testing)
-        const timerKey = `cma_l1_genai_timer_start_${activeId}`;
-        const storedStart = localStorage.getItem(timerKey);
-        if (storedStart) {
-          const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
-          if (elapsed >= 30) {
-            handleTimeUp();
+        if (data) {
+          setExistingSubmission(data);
+          if (data.prompt) setPrompt(data.prompt);
+          if (data.image_urls && Array.isArray(data.image_urls)) {
+            const loadedImages = data.image_urls.map((url, idx) => ({
+              id: `loaded_${idx}`,
+              url,
+              fileId: data.image_file_ids?.[idx] || '',
+              filePath: data.image_paths?.[idx] || '',
+              previewUrl: url,
+              name: `Uploaded Asset #${idx + 1}`
+            }));
+            setImages(loadedImages);
           }
+
+          if (data.status === 'TIME_EXPIRED' || data.time_taken === '15:00' || data.time_taken === '00:30') {
+            setIsTimeUp(true);
+          } else {
+            setSubmissionSuccess(true);
+          }
+        } else {
+          // If Admin deleted submission or no submission exists
+          setExistingSubmission(null);
+          setSubmissionSuccess(false);
+
+          // Check if timer in localStorage is already marked as expired or reached timeout
+          const timerKey = `cma_l1_genai_timer_start_${activeId}`;
+          const expiredKey = `cma_l1_genai_timer_expired_${activeId}`;
+          const isExpiredMarked = localStorage.getItem(expiredKey) === 'true';
+          const storedStart = localStorage.getItem(timerKey);
+
+          if (isExpiredMarked) {
+            handleTimeUp();
+          } else if (storedStart) {
+            const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
+            if (elapsed >= 30) { // 30 seconds testing duration
+              handleTimeUp();
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Layer1GenAI] loadSubmission error:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoadingSubmission(false);
         }
       }
     };
@@ -189,9 +206,9 @@ export default function Layer1GenAIChallenge({
     const activeId = userId || getActiveUserId();
 
     if (activeId) {
-      const timerKey = `cma_l1_genai_timer_start_${activeId}`;
+      const expiredKey = `cma_l1_genai_timer_expired_${activeId}`;
       try {
-        localStorage.removeItem(timerKey);
+        localStorage.setItem(expiredKey, 'true');
       } catch (e) {}
     }
 
@@ -310,6 +327,60 @@ export default function Layer1GenAIChallenge({
 
   const cornerColor = isTimeoutState ? '#ef4444' : isManualCompleted ? 'var(--lime-accent)' : undefined;
   const info = getActiveParticipantInfo();
+
+  if (isLoadingSubmission) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100vw',
+          height: '100vh',
+          zIndex: 80,
+          backgroundColor: '#020612',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          userSelect: 'none'
+        }}
+      >
+        <DigitalParticles />
+        <ScanOverlay currentStage={1} hideHeader={true} />
+        <div
+          className="cyber-card"
+          style={{
+            padding: '32px 48px',
+            textAlign: 'center',
+            borderColor: 'var(--cyan-glow)',
+            boxShadow: '0 0 35px rgba(0, 243, 255, 0.25)',
+            background: 'rgba(4, 9, 24, 0.95)'
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: '1.1rem',
+              color: 'var(--cyan-glow)',
+              letterSpacing: '0.15em',
+              marginBottom: '10px'
+            }}
+          >
+            AUTHENTICATING ATTEMPT STATE...
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.74rem',
+              color: '#9ca3af',
+              letterSpacing: '0.1em'
+            }}
+          >
+            VERIFYING DATABASE RECORD
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -1014,6 +1085,7 @@ export default function Layer1GenAIChallenge({
               <CountdownTimer
                 participantId={userId || 'player'}
                 onTimeUp={handleTimeUp}
+                disabled={isCompleted}
               />
 
               {/* STAGE DESCRIPTION & HELPER BUTTONS */}
