@@ -122,12 +122,12 @@ export default function Layer1GenAIChallenge({
         setExistingSubmission(null);
         setSubmissionSuccess(false);
 
-        // Check if timer in localStorage is already expired
+        // Check if timer in localStorage is already expired (30 seconds for testing)
         const timerKey = `cma_l1_genai_timer_start_${activeId}`;
         const storedStart = localStorage.getItem(timerKey);
         if (storedStart) {
           const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
-          if (elapsed >= 900) {
+          if (elapsed >= 30) {
             handleTimeUp();
           }
         }
@@ -252,7 +252,7 @@ export default function Layer1GenAIChallenge({
     const timerKey = `cma_l1_genai_timer_start_${activeId || 'player'}`;
     const storedStart = localStorage.getItem(timerKey);
     const startTime = storedStart ? parseInt(storedStart, 10) : Date.now();
-    const elapsedSeconds = Math.max(0, Math.min(900, Math.floor((Date.now() - startTime) / 1000)));
+    const elapsedSeconds = Math.max(0, Math.min(30, Math.floor((Date.now() - startTime) / 1000)));
     const mins = Math.floor(elapsedSeconds / 60);
     const secs = elapsedSeconds % 60;
     const timeTakenFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
