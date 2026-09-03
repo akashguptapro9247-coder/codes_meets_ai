@@ -1713,7 +1713,7 @@ export default function AdminDashboard({ onClose }) {
                   </div>
 
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    {['ALL', 'pending', 'reviewed'].map((statusKey) => (
+                    {['ALL', 'pending', 'reviewed', 'TIME_EXPIRED'].map((statusKey) => (
                       <button
                         key={statusKey}
                         onClick={() => {
@@ -1793,8 +1793,9 @@ export default function AdminDashboard({ onClose }) {
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                     <div
                                       style={{
-                                        color: '#d1d5db',
+                                        color: sub.prompt ? '#d1d5db' : '#ef4444',
                                         fontSize: '0.74rem',
+                                        fontStyle: sub.prompt ? 'normal' : 'italic',
                                         lineHeight: 1.4,
                                         display: '-webkit-box',
                                         WebkitLineClamp: 2,
@@ -1803,7 +1804,7 @@ export default function AdminDashboard({ onClose }) {
                                         textOverflow: 'ellipsis'
                                       }}
                                     >
-                                      "{sub.prompt}"
+                                      {sub.prompt ? `"${sub.prompt}"` : '[NOT PROVIDED - TIMEOUT]'}
                                     </div>
                                     <button
                                       type="button"
@@ -1862,7 +1863,7 @@ export default function AdminDashboard({ onClose }) {
                                       </button>
                                     </div>
                                   ) : (
-                                    <span style={{ color: '#6b7280', fontSize: '0.7rem' }}>[ NO IMAGES ]</span>
+                                    <span style={{ color: '#ef4444', fontStyle: 'italic', fontSize: '0.7rem' }}>[NOT UPLOADED]</span>
                                   )}
                                 </td>
 
@@ -1901,7 +1902,11 @@ export default function AdminDashboard({ onClose }) {
 
                                 {/* Status Badge */}
                                 <td style={{ padding: '12px 14px' }}>
-                                  {isReviewed ? (
+                                  {sub.status === 'TIME_EXPIRED' ? (
+                                    <span className="cyber-badge" style={{ borderColor: '#ef4444', color: '#ef4444' }}>
+                                      TIME EXPIRED
+                                    </span>
+                                  ) : isReviewed ? (
                                     <span className="cyber-badge" style={{ borderColor: 'var(--lime-accent)', color: 'var(--lime-accent)' }}>
                                       REVIEWED ({sub.marks})
                                     </span>

@@ -30,7 +30,51 @@ export default function Layer1GenAIChallenge({
   const [existingSubmission, setExistingSubmission] = useState(null);
   const isFinalizingTimeoutRef = useRef(false);
 
-  const userId = participant?.userId || participant?.user_id;
+  // Helper to reliably extract the active user ID from props or storage
+  const getActiveUserId = () => {
+    if (participant?.userId) return participant.userId;
+    if (participant?.user_id) return participant.user_id;
+    if (participant?.id) return participant.id;
+
+    if (typeof window !== 'undefined') {
+      try {
+        const storedSession =
+          sessionStorage.getItem('cma_participant_session') ||
+          localStorage.getItem('cma_participant_session');
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession);
+          return parsed.userId || parsed.user_id || parsed.id || null;
+        }
+      } catch (e) {}
+    }
+    return null;
+  };
+
+  // Helper to extract participant display name and roll number reliably
+  const getActiveParticipantInfo = () => {
+    let name = participant?.name;
+    let rollNumber = participant?.rollNumber || participant?.roll_number;
+
+    if ((!name || !rollNumber) && typeof window !== 'undefined') {
+      try {
+        const storedSession =
+          sessionStorage.getItem('cma_participant_session') ||
+          localStorage.getItem('cma_participant_session');
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession);
+          if (!name) name = parsed.name;
+          if (!rollNumber) rollNumber = parsed.rollNumber || parsed.roll_number;
+        }
+      } catch (e) {}
+    }
+
+    return {
+      name: name || 'PARTICIPANT',
+      rollNumber: rollNumber || 'N/A'
+    };
+  };
+
+  const userId = getActiveUserId();
 
   // Real-time lock listener: if admin locks Layer 1 or deactivates GenAI track, exit immediately to Play Page
   useEffect(() => {
@@ -44,51 +88,56 @@ export default function Layer1GenAIChallenge({
 
   // Load any existing submission from Supabase on mount and listen to realtime updates
   useEffect(() => {
-    if (!userId) return;
+    const activeId = getActiveUserId();
+    if (!activeId) return;
 
-    const loadSubmission = () => {
-      adminService.fetchLayer1SubmissionForUser(userId).then(({ data }) => {
-        if (data) {
-          setExistingSubmission(data);
-          if (data.prompt) setPrompt(data.prompt);
-          if (data.image_urls && Array.isArray(data.image_urls)) {
-            const loadedImages = data.image_urls.map((url, idx) => ({
-              id: `loaded_${idx}`,
-              url,
-              fileId: data.image_file_ids?.[idx] || '',
-              filePath: data.image_paths?.[idx] || '',
-              previewUrl: url,
-              name: `Uploaded Asset #${idx + 1}`
-            }));
-            setImages(loadedImages);
-          }
-          if (data.status === 'TIME_EXPIRED' || data.time_taken === '15:00') {
-            setIsTimeUp(true);
-          } else {
-            setSubmissionSuccess(true);
-          }
+    let isMounted = true;
+
+    const loadSubmission = async () => {
+      const { data } = await adminService.fetchLayer1SubmissionForUser(activeId);
+      if (!isMounted) return;
+
+      if (data) {
+        setExistingSubmission(data);
+        if (data.prompt) setPrompt(data.prompt);
+        if (data.image_urls && Array.isArray(data.image_urls)) {
+          const loadedImages = data.image_urls.map((url, idx) => ({
+            id: `loaded_${idx}`,
+            url,
+            fileId: data.image_file_ids?.[idx] || '',
+            filePath: data.image_paths?.[idx] || '',
+            previewUrl: url,
+            name: `Uploaded Asset #${idx + 1}`
+          }));
+          setImages(loadedImages);
+        }
+
+        if (data.status === 'TIME_EXPIRED' || data.time_taken === '15:00') {
+          setIsTimeUp(true);
         } else {
-          // If Admin deleted submission or no submission exists
-          setExistingSubmission(null);
-          setSubmissionSuccess(false);
+          setSubmissionSuccess(true);
+        }
+      } else {
+        // If Admin deleted submission or no submission exists
+        setExistingSubmission(null);
+        setSubmissionSuccess(false);
 
-          // Check if timer in localStorage is already expired
-          const timerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
-          const storedStart = localStorage.getItem(timerKey);
-          if (storedStart) {
-            const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
-            if (elapsed >= 900) {
-              handleTimeUp();
-            }
+        // Check if timer in localStorage is already expired
+        const timerKey = `cma_l1_genai_timer_start_${activeId}`;
+        const storedStart = localStorage.getItem(timerKey);
+        if (storedStart) {
+          const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
+          if (elapsed >= 900) {
+            handleTimeUp();
           }
         }
-      });
+      }
     };
 
     loadSubmission();
 
-    // Subscribe to Realtime submission changes (detect Admin delete)
-    const channelName = `genai_sub_user_${userId}_${Date.now()}`;
+    // Subscribe to Realtime submission changes (detect Admin delete or updates)
+    const channelName = `genai_sub_user_${activeId}_${Date.now()}`;
     const channel = supabase
       ?.channel(channelName)
       .on(
@@ -99,10 +148,11 @@ export default function Layer1GenAIChallenge({
           table: 'layer_1_genai_submissions'
         },
         (payload) => {
+          if (!isMounted) return;
           if (payload.eventType === 'DELETE') {
             loadSubmission();
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            if (payload.new && payload.new.user_id === userId) {
+            if (payload.new && payload.new.user_id === activeId) {
               loadSubmission();
             }
           }
@@ -111,6 +161,7 @@ export default function Layer1GenAIChallenge({
       .subscribe();
 
     return () => {
+      isMounted = false;
       if (channel && supabase) {
         supabase.removeChannel(channel);
       }
@@ -130,38 +181,49 @@ export default function Layer1GenAIChallenge({
     setImages((prev) => prev.filter((img, idx) => (img.id ? img.id !== id : idx !== id)));
   };
 
-  // Time expired callback: auto-finalize attempt to DB
+  // Time expired callback: auto-finalize attempt to DB (idempotent, single execution)
   const handleTimeUp = async () => {
     setIsTimeUp(true);
     soundEngine.playClick();
 
-    const timerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
-    try {
-      localStorage.removeItem(timerKey);
-    } catch (e) {}
+    const activeId = userId || getActiveUserId();
+
+    if (activeId) {
+      const timerKey = `cma_l1_genai_timer_start_${activeId}`;
+      try {
+        localStorage.removeItem(timerKey);
+      } catch (e) {}
+    }
 
     // Prevent race-condition / duplicate timeout submission calls
     if (isFinalizingTimeoutRef.current) return;
     isFinalizingTimeoutRef.current = true;
 
+    // If submission is already loaded and recorded in state, do not re-submit
+    if (existingSubmission) return;
+
+    const activeInfo = getActiveParticipantInfo();
+
     try {
-      const { data } = await adminService.autoFinalizeLayer1GenAiTimeout({
-        userId,
-        username: participant?.name || 'Participant',
-        rollNumber: participant?.rollNumber || participant?.roll_number || '',
+      const { data, error } = await adminService.autoFinalizeLayer1GenAiTimeout({
+        userId: activeId,
+        username: activeInfo.name,
+        rollNumber: activeInfo.rollNumber,
         prompt: prompt.trim(),
         imageItems: images
       });
 
       if (data) {
         setExistingSubmission(data);
+      } else if (error) {
+        console.error('[Layer1GenAI] Auto-finalization error:', error);
       }
     } catch (err) {
-      console.error('[Layer1GenAI] Auto-finalization error:', err);
+      console.error('[Layer1GenAI] Auto-finalization exception:', err);
     }
   };
 
-  // Real Submission Handler: ImageKit upload + Supabase insertion
+  // Real Manual Submission Handler: ImageKit upload + Supabase insertion
   const handleSubmit = async () => {
     if (isTimeUp || existingSubmission?.status === 'TIME_EXPIRED') {
       setValidationError('CHALLENGE TIME HAS EXPIRED // SUBMISSIONS LOCKED');
@@ -183,8 +245,11 @@ export default function Layer1GenAIChallenge({
     setValidationError(null);
     setIsSubmitting(true);
 
+    const activeId = userId || getActiveUserId();
+    const activeInfo = getActiveParticipantInfo();
+
     // Calculate actual time taken using the session timer
-    const timerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
+    const timerKey = `cma_l1_genai_timer_start_${activeId || 'player'}`;
     const storedStart = localStorage.getItem(timerKey);
     const startTime = storedStart ? parseInt(storedStart, 10) : Date.now();
     const elapsedSeconds = Math.max(0, Math.min(900, Math.floor((Date.now() - startTime) / 1000)));
@@ -194,9 +259,9 @@ export default function Layer1GenAIChallenge({
 
     try {
       const { data, error } = await adminService.submitLayer1GenAi({
-        userId,
-        username: participant?.name || 'Participant',
-        rollNumber: participant?.rollNumber || participant?.roll_number || '',
+        userId: activeId,
+        username: activeInfo.name,
+        rollNumber: activeInfo.rollNumber,
         prompt: prompt.trim(),
         imageItems: images,
         timeTaken: timeTakenFormatted,
@@ -244,6 +309,7 @@ export default function Layer1GenAIChallenge({
     : '0 25px 75px rgba(0, 0, 0, 0.95), 0 0 45px rgba(0, 243, 255, 0.2), inset 0 0 25px rgba(0, 243, 255, 0.06)';
 
   const cornerColor = isTimeoutState ? '#ef4444' : isManualCompleted ? 'var(--lime-accent)' : undefined;
+  const info = getActiveParticipantInfo();
 
   return (
     <div
@@ -477,7 +543,7 @@ export default function Layer1GenAIChallenge({
                       OPERATOR NAME
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#ffffff', fontWeight: 700, marginTop: '2px' }}>
-                      {(participant?.name || existingSubmission?.username || 'PARTICIPANT').toUpperCase()}
+                      {(existingSubmission?.username || info.name).toUpperCase()}
                     </div>
                   </div>
 
@@ -486,7 +552,7 @@ export default function Layer1GenAIChallenge({
                       ROLL NUMBER
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--cyan-glow)', fontWeight: 700, marginTop: '2px' }}>
-                      {participant?.rollNumber || participant?.roll_number || existingSubmission?.roll_number || 'N/A'}
+                      {existingSubmission?.roll_number || info.rollNumber}
                     </div>
                   </div>
 
@@ -780,7 +846,7 @@ export default function Layer1GenAIChallenge({
                       OPERATOR NAME
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: '#ffffff', fontWeight: 700, marginTop: '2px' }}>
-                      {(participant?.name || existingSubmission?.username || 'PARTICIPANT').toUpperCase()}
+                      {(existingSubmission?.username || info.name).toUpperCase()}
                     </div>
                   </div>
 
@@ -789,7 +855,7 @@ export default function Layer1GenAIChallenge({
                       ROLL NUMBER
                     </div>
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', color: 'var(--cyan-glow)', fontWeight: 700, marginTop: '2px' }}>
-                      {participant?.rollNumber || participant?.roll_number || existingSubmission?.roll_number || 'N/A'}
+                      {existingSubmission?.roll_number || info.rollNumber}
                     </div>
                   </div>
 
