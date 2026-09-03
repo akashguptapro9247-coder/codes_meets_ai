@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { ExternalLink, Sparkles, Bot } from 'lucide-react';
 import { soundEngine } from '../../utils/SoundEngine';
 
-export default function AiPlatformButtons() {
+export default function AiPlatformButtons({ disabled = false }) {
   const handleOpenPlatform = (url) => {
+    if (disabled) return;
     soundEngine.playClick();
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -19,7 +20,9 @@ export default function AiPlatformButtons() {
         background: 'rgba(2, 6, 20, 0.85)',
         border: '1px solid rgba(0, 243, 255, 0.2)',
         borderRadius: '3px',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        opacity: disabled ? 0.5 : 1,
+        pointerEvents: disabled ? 'none' : 'auto'
       }}
     >
       {/* Top Header Row with Title and Action Buttons */}
