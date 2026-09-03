@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Clock, AlertTriangle, ShieldAlert } from 'lucide-react';
 
-// TEMPORARY TESTING CONFIGURATION: 30 seconds timer duration (Restore to 15 * 60 when requested)
-const TOTAL_DURATION = 30;
+const TOTAL_DURATION = 15 * 60; // 15 minutes in seconds
 
 export default function CountdownTimer({
   participantId = 'default',
