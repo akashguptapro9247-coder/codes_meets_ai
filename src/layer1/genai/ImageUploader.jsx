@@ -161,7 +161,7 @@ export default function ImageUploader({
               fontWeight: 700
             }}
           >
-            IMAGE SUBMISSION
+            FINAL IMAGE // SUBMISSION
           </span>
         </div>
 
@@ -174,6 +174,19 @@ export default function ImageUploader({
         >
           {selectedImage ? '1 / 1 IMAGE ATTACHED' : '0 / 1 IMAGE ATTACHED'}
         </div>
+      </div>
+
+      {/* Helper Text */}
+      <div
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: '0.68rem',
+          color: '#9ca3af',
+          lineHeight: '1.4',
+          letterSpacing: '0.02em'
+        }}
+      >
+        Upload the final generated image that best matches the reference shown on the event projector.
       </div>
 
       {/* Inline Warning Notice */}

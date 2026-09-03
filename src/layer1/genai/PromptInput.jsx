@@ -63,7 +63,7 @@ export default function PromptInput({
               fontWeight: 700
             }}
           >
-            PROMPT FORMULATION // INPUT TERMINAL
+            FINAL PROMPT // SUBMISSION
           </span>
         </div>
 
@@ -86,7 +86,7 @@ export default function PromptInput({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         disabled={disabled}
-        placeholder="Describe the exact prompt, camera angle, atmospheric lighting, artistic style, and negative constraints you would use to reconstruct the target scene with maximum accuracy..."
+        placeholder="Paste the exact final prompt you used to generate your submitted image..."
         style={{
           width: '100%',
           height: '140px',
