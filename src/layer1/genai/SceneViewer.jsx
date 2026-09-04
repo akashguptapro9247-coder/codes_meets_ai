@@ -1,59 +1,13 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import {
-  Brain,
-  Activity,
-  ShieldCheck,
-  Wifi,
-  HardDrive,
-  CheckCircle2,
-  AlertCircle,
-  Sparkles,
-  Layers,
-  Repeat,
-  FileCheck,
-  Radio,
-  Lock,
-  Compass,
-  Target
-} from 'lucide-react';
+import { Brain, Sparkles, ShieldAlert } from 'lucide-react';
 
 export default function SceneViewer({
-  prompt = '',
-  images = [],
+  isTimeUp = false,
   submissionSuccess = false,
-  existingSubmission = null,
-  isSubmitting = false,
-  isTimeUp = false
+  existingSubmission = null
 }) {
-  const promptLength = typeof prompt === 'string' ? prompt.length : 0;
-  const isImageReady = Array.isArray(images) && images.length > 0;
-  const isPromptReady = promptLength > 0;
   const isSubmitted = Boolean(submissionSuccess || existingSubmission);
-  const isMissionReady = isPromptReady && isImageReady && !isTimeUp;
-
-  let submissionLabel = 'IN PROGRESS';
-  let submissionColor = '#f59e0b'; // Amber
-  if (isSubmitting) {
-    submissionLabel = 'DEPLOYING...';
-    submissionColor = 'var(--cyan-glow)';
-  } else if (isSubmitted) {
-    submissionLabel = 'SUBMITTED & LOCKED';
-    submissionColor = 'var(--lime-accent)';
-  }
-
-  const sessionLabel = isTimeUp ? 'EXPIRED' : 'ACTIVE';
   const sessionColor = isTimeUp ? '#ef4444' : 'var(--lime-accent)';
-
-  // Mission progression steps (The "Game Loop")
-  const workflowSteps = [
-    { id: 1, label: 'BRIEFING', done: true, current: false },
-    { id: 2, label: 'EXPERIMENT (∞)', done: true, current: !isSubmitted },
-    { id: 3, label: 'FINAL PROMPT', done: isPromptReady, current: !isPromptReady && !isSubmitted },
-    { id: 4, label: 'FINAL ASSET', done: isImageReady, current: isPromptReady && !isImageReady && !isSubmitted },
-    { id: 5, label: 'VALIDATION', done: isMissionReady || isSubmitted, current: isPromptReady && isImageReady && !isSubmitted },
-    { id: 6, label: 'DEPLOYMENT', done: isSubmitted, current: false }
-  ];
 
   return (
     <div
@@ -65,42 +19,42 @@ export default function SceneViewer({
         background: 'rgba(3, 7, 20, 0.85)',
         border: '1px solid rgba(0, 243, 255, 0.25)',
         borderRadius: '4px',
-        padding: '14px',
+        padding: '16px',
         boxSizing: 'border-box',
         overflow: 'hidden',
         position: 'relative'
       }}
     >
       {/* HUD Corner Brackets */}
-      <div className="hud-corner hud-top-left" style={{ width: '10px', height: '10px' }} />
-      <div className="hud-corner hud-top-right" style={{ width: '10px', height: '10px' }} />
-      <div className="hud-corner hud-bottom-left" style={{ width: '10px', height: '10px' }} />
-      <div className="hud-corner hud-bottom-right" style={{ width: '10px', height: '10px' }} />
+      <div className="hud-corner hud-top-left" style={{ width: '12px', height: '12px' }} />
+      <div className="hud-corner hud-top-right" style={{ width: '12px', height: '12px' }} />
+      <div className="hud-corner hud-bottom-left" style={{ width: '12px', height: '12px' }} />
+      <div className="hud-corner hud-bottom-right" style={{ width: '12px', height: '12px' }} />
 
-      {/* Top Section Bar */}
+      {/* A. PANEL HEADER */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '10px',
-          paddingBottom: '8px',
-          borderBottom: '1px solid rgba(0, 243, 255, 0.15)',
+          marginBottom: '14px',
+          paddingBottom: '10px',
+          borderBottom: '1px solid rgba(0, 243, 255, 0.18)',
           flexShrink: 0
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Brain size={16} color="var(--cyan-glow)" />
+          <Sparkles size={16} color="var(--cyan-glow)" />
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.74rem',
+              fontFamily: 'var(--font-title)',
+              fontSize: '0.78rem',
               color: 'var(--cyan-glow)',
-              letterSpacing: '0.15em',
+              letterSpacing: '0.12em',
               fontWeight: 800
             }}
           >
-            MISSION CONTROL // TACTICAL INTEL
+            GENAI CHALLENGE // MEMORY RECONSTRUCTION
           </span>
         </div>
 
@@ -111,7 +65,7 @@ export default function SceneViewer({
             gap: '6px',
             background: 'rgba(57, 255, 20, 0.08)',
             border: '1px solid rgba(57, 255, 20, 0.3)',
-            padding: '2px 8px',
+            padding: '3px 9px',
             borderRadius: '2px',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.62rem',
@@ -129,438 +83,210 @@ export default function SceneViewer({
               display: 'inline-block'
             }}
           />
-          <span>PROJECTOR SCENE ACTIVE</span>
+          <span>PROJECTOR ACTIVE</span>
         </div>
       </div>
 
-      {/* Main Scrollable Intel Stack Container */}
+      {/* SCROLLABLE MAIN CONTENT CONTAINER */}
       <div
         style={{
           flex: 1,
           width: '100%',
-          background: 'linear-gradient(135deg, rgba(2, 6, 20, 0.98) 0%, rgba(10, 18, 45, 0.95) 100%)',
-          border: '1px solid rgba(0, 243, 255, 0.25)',
-          borderRadius: '4px',
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          padding: '14px',
-          boxSizing: 'border-box',
-          gap: '12px',
-          position: 'relative'
+          gap: '14px',
+          paddingRight: '4px',
+          boxSizing: 'border-box'
         }}
       >
-        {/* Cyber Grid Overlay */}
+        {/* B. LARGE REFERENCE / MISSION DISPLAY SCREEN */}
         <div
           style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage:
-              'linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-            pointerEvents: 'none',
-            zIndex: 1
+            position: 'relative',
+            background: 'linear-gradient(135deg, rgba(2, 6, 22, 0.98) 0%, rgba(12, 22, 54, 0.95) 100%)',
+            border: '1px solid rgba(0, 243, 255, 0.35)',
+            boxShadow: '0 0 25px rgba(0, 243, 255, 0.12), inset 0 0 15px rgba(0, 243, 255, 0.05)',
+            borderRadius: '4px',
+            padding: '24px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            flexShrink: 0
           }}
-        />
-
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          
-          {/* CARD 1: MISSION TITLE & RECONSTRUCTION OBJECTIVE */}
+        >
+          {/* Cyber Screen Grid FX Overlay */}
           <div
             style={{
-              background: 'rgba(3, 8, 24, 0.9)',
-              border: '1px solid rgba(0, 243, 255, 0.25)',
-              borderRadius: '4px',
-              padding: '12px',
-              boxSizing: 'border-box'
+              position: 'absolute',
+              inset: 0,
+              backgroundImage:
+                'linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+              pointerEvents: 'none',
+              zIndex: 1
             }}
-          >
+          />
+
+          <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {/* Glowing Icon Hub */}
             <div
               style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                background: 'rgba(0, 243, 255, 0.1)',
+                border: '1px solid var(--cyan-glow)',
+                boxShadow: '0 0 20px rgba(0, 243, 255, 0.35)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '6px'
+                justifyContent: 'center',
+                marginBottom: '14px'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Target size={14} color="var(--cyan-glow)" />
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.68rem',
-                    color: 'var(--cyan-glow)',
-                    letterSpacing: '0.12em',
-                    fontWeight: 800
-                  }}
-                >
-                  MISSION OBJECTIVE // STAGE 01
-                </span>
-              </div>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.6rem',
-                  color: 'var(--lime-accent)',
-                  background: 'rgba(57, 255, 20, 0.1)',
-                  padding: '2px 6px',
-                  borderRadius: '2px'
-                }}
-              >
-                PROMPT ENGINEERING
-              </span>
+              <Brain size={30} color="var(--cyan-glow)" />
             </div>
 
-            <h3
+            {/* Main Challenge Phrase */}
+            <h2
               style={{
                 fontFamily: 'var(--font-title)',
-                fontSize: '0.95rem',
+                fontSize: '1.25rem',
+                fontWeight: 900,
                 color: '#ffffff',
-                margin: '0 0 6px 0',
-                letterSpacing: '0.08em',
+                margin: '0 0 8px 0',
+                letterSpacing: '0.12em',
                 lineHeight: 1.25,
-                textShadow: '0 0 10px rgba(0, 243, 255, 0.4)'
+                textTransform: 'uppercase',
+                textShadow: '0 0 15px rgba(0, 243, 255, 0.5)'
               }}
             >
               "YOUR MEMORY IS YOUR POWER"
-            </h3>
+            </h2>
 
-            <p
-              style={{
-                fontFamily: 'var(--font-body)',
-                fontSize: '0.78rem',
-                color: '#9ca3af',
-                lineHeight: 1.45,
-                margin: 0
-              }}
-            >
-              Observe the target reference scene on the arena projector. Formulate a precise prompt, iterate freely using authorized AI tools, and submit your exact final prompt alongside your best generated asset.
-            </p>
-          </div>
-
-          {/* CARD 2: COMPETITION DIRECTIVES & RULES */}
-          <div
-            style={{
-              background: 'rgba(3, 8, 24, 0.9)',
-              border: '1px solid rgba(0, 243, 255, 0.2)',
-              borderRadius: '4px',
-              padding: '12px',
-              boxSizing: 'border-box'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-              <Compass size={14} color="var(--magenta-glow)" />
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.68rem',
-                  color: 'var(--magenta-glow)',
-                  letterSpacing: '0.12em',
-                  fontWeight: 800
-                }}
-              >
-                TACTICAL DIRECTIVES & RULES
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '8px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.7rem',
-                  color: '#d1d5db'
-                }}
-              >
-                <span
-                  style={{
-                    color: 'var(--lime-accent)',
-                    fontWeight: 700,
-                    background: 'rgba(57, 255, 20, 0.12)',
-                    padding: '1px 5px',
-                    borderRadius: '2px',
-                    fontSize: '0.62rem',
-                    flexShrink: 0
-                  }}
-                >
-                  [ ∞ PERMITTED ]
-                </span>
-                <span>
-                  <strong>UNLIMITED GENERATIONS:</strong> Experiment with as many prompts and image runs as needed in ChatGPT / Gemini.
-                </span>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '8px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.7rem',
-                  color: '#d1d5db'
-                }}
-              >
-                <span
-                  style={{
-                    color: 'var(--magenta-glow)',
-                    fontWeight: 700,
-                    background: 'rgba(224, 38, 255, 0.12)',
-                    padding: '1px 5px',
-                    borderRadius: '2px',
-                    fontSize: '0.62rem',
-                    flexShrink: 0
-                  }}
-                >
-                  [ 01 / 01 LOCK ]
-                </span>
-                <span>
-                  <strong>SINGLE SUBMISSION ATTEMPT:</strong> When satisfied, lock your final selected prompt + final asset pair.
-                </span>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '8px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.7rem',
-                  color: '#d1d5db'
-                }}
-              >
-                <span
-                  style={{
-                    color: 'var(--cyan-glow)',
-                    fontWeight: 700,
-                    background: 'rgba(0, 243, 255, 0.12)',
-                    padding: '1px 5px',
-                    borderRadius: '2px',
-                    fontSize: '0.62rem',
-                    flexShrink: 0
-                  }}
-                >
-                  [ PAIR MATCH ]
-                </span>
-                <span>
-                  <strong>EXACT PAIRING REQUIRED:</strong> The submitted prompt must be the complete final prompt used to create the uploaded image.
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* CARD 3: MISSION GAME LOOP PROGRESSION */}
-          <div
-            style={{
-              background: 'rgba(3, 8, 24, 0.9)',
-              border: '1px solid rgba(0, 243, 255, 0.2)',
-              borderRadius: '4px',
-              padding: '12px',
-              boxSizing: 'border-box'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Repeat size={14} color="var(--cyan-glow)" />
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.68rem',
-                    color: 'var(--cyan-glow)',
-                    letterSpacing: '0.12em',
-                    fontWeight: 800
-                  }}
-                >
-                  MISSION PROGRESSION LOOP
-                </span>
-              </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: '#9ca3af' }}>
-                STAGE STATUS
-              </span>
-            </div>
-
-            {/* Workflow Step Grid */}
+            {/* Supporting Line */}
             <div
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '6px'
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.72rem',
+                color: 'var(--cyan-glow)',
+                letterSpacing: '0.18em',
+                fontWeight: 700,
+                background: 'rgba(0, 243, 255, 0.08)',
+                border: '1px solid rgba(0, 243, 255, 0.25)',
+                padding: '4px 12px',
+                borderRadius: '2px'
               }}
             >
-              {workflowSteps.map((step) => (
-                <div
-                  key={step.id}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px 4px',
-                    background: step.done
-                      ? 'rgba(57, 255, 20, 0.08)'
-                      : step.current
-                      ? 'rgba(0, 243, 255, 0.12)'
-                      : 'rgba(2, 6, 18, 0.6)',
-                    border: step.done
-                      ? '1px solid rgba(57, 255, 20, 0.3)'
-                      : step.current
-                      ? '1px solid var(--cyan-glow)'
-                      : '1px solid rgba(0, 243, 255, 0.12)',
-                    borderRadius: '2px',
-                    textAlign: 'center'
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.6rem',
-                      fontWeight: 800,
-                      color: step.done ? 'var(--lime-accent)' : step.current ? 'var(--cyan-glow)' : '#6b7280'
-                    }}
-                  >
-                    {step.done ? '✓' : step.current ? '●' : '○'} {step.label}
-                  </div>
-                </div>
-              ))}
+              RECALL // FORMULATE // RECONSTRUCT
             </div>
           </div>
+        </div>
 
-          {/* CARD 4: LIVE TELEMETRY READOUT */}
-          <div
+        {/* C. CHALLENGE ACTIVE STATE */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 14px',
+            background: 'rgba(2, 6, 20, 0.9)',
+            border: '1px solid rgba(0, 243, 255, 0.25)',
+            borderRadius: '3px',
+            flexShrink: 0
+          }}
+        >
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#9ca3af', letterSpacing: '0.1em' }}>
+            STATUS READOUT:
+          </span>
+          <span
             style={{
-              background: 'rgba(3, 8, 24, 0.9)',
-              border: '1px solid rgba(0, 243, 255, 0.2)',
-              borderRadius: '4px',
-              padding: '12px',
-              boxSizing: 'border-box',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              color: isSubmitted ? 'var(--lime-accent)' : isTimeUp ? '#ef4444' : 'var(--cyan-glow)',
+              letterSpacing: '0.12em'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Activity size={14} color="var(--cyan-glow)" />
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.68rem',
-                    color: 'var(--cyan-glow)',
-                    letterSpacing: '0.12em',
-                    fontWeight: 800
-                  }}
-                >
-                  LIVE SYSTEM TELEMETRY
-                </span>
-              </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--lime-accent)' }}>
-                SYS // ACTIVE
-              </span>
-            </div>
+            {isSubmitted ? 'SUBMISSION RECORDED' : isTimeUp ? 'TIME EXPIRED' : 'CHALLENGE ACTIVE'}
+          </span>
+        </div>
 
-            {/* ROW 1: SESSION */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-              <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldCheck size={12} color="var(--cyan-glow)" /> SESSION
-              </span>
-              <span style={{ color: sessionColor, fontWeight: 700 }}>{sessionLabel}</span>
-            </div>
-
-            {/* ROW 2: EXPERIMENTATION RUNS */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-              <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={12} color="var(--lime-accent)" /> EXPERIMENTATION
-              </span>
-              <span style={{ color: 'var(--lime-accent)', fontWeight: 700 }}>UNLIMITED (∞)</span>
-            </div>
-
-            {/* ROW 3: FINAL PROMPT LENGTH */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-              <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <HardDrive size={12} color="var(--cyan-glow)" /> PROMPT COUNTER
-              </span>
-              <span style={{ color: promptLength > 0 ? 'var(--cyan-glow)' : '#9ca3af', fontWeight: 700 }}>
-                {promptLength} / 2000 CHARS
-              </span>
-            </div>
-
-            {/* ROW 4: FINAL IMAGE STATUS */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-              <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {isImageReady ? <CheckCircle2 size={12} color="var(--lime-accent)" /> : <AlertCircle size={12} color="#f59e0b" />} IMAGE ASSET
-              </span>
-              <span style={{ color: isImageReady ? 'var(--lime-accent)' : '#f59e0b', fontWeight: 700 }}>
-                {isImageReady ? '1 / 1 ATTACHED' : '0 / 1 ATTACHED'}
-              </span>
-            </div>
-
-            {/* ROW 5: SUBMISSION ATTEMPT LOCK */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
-              <span style={{ color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Lock size={12} color="var(--magenta-glow)" /> ATTEMPT LOCK
-              </span>
-              <span style={{ color: 'var(--magenta-glow)', fontWeight: 700 }}>01 / 01 SUBMISSION</span>
-            </div>
-          </div>
-
-          {/* CARD 5: PRE-FLIGHT MISSION READINESS CHECKLIST */}
+        {/* D. MISSION DIRECTIVES SECTION */}
+        <div
+          style={{
+            background: 'rgba(3, 8, 24, 0.9)',
+            border: '1px solid rgba(0, 243, 255, 0.2)',
+            borderRadius: '4px',
+            padding: '14px',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+          }}
+        >
           <div
             style={{
-              background: isMissionReady
-                ? 'rgba(57, 255, 20, 0.08)'
-                : 'rgba(3, 8, 24, 0.9)',
-              border: isMissionReady
-                ? '1px solid rgba(57, 255, 20, 0.4)'
-                : '1px solid rgba(0, 243, 255, 0.2)',
-              borderRadius: '4px',
-              padding: '12px',
-              boxSizing: 'border-box'
+              fontFamily: 'var(--font-title)',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              color: 'var(--cyan-glow)',
+              letterSpacing: '0.12em',
+              marginBottom: '2px'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <FileCheck size={14} color={isMissionReady ? 'var(--lime-accent)' : 'var(--cyan-glow)'} />
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.68rem',
-                    color: isMissionReady ? 'var(--lime-accent)' : 'var(--cyan-glow)',
-                    letterSpacing: '0.12em',
-                    fontWeight: 800
-                  }}
-                >
-                  PRE-FLIGHT READINESS CHECK
-                </span>
-              </div>
-              <span
-                style={{
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.62rem',
-                  fontWeight: 800,
-                  color: isMissionReady ? 'var(--lime-accent)' : '#f59e0b'
-                }}
-              >
-                {isMissionReady ? '100% READY' : 'INCOMPLETE'}
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: isPromptReady ? 'var(--lime-accent)' : '#9ca3af' }}>
-                {isPromptReady ? '✓ PROMPT ENTERED' : '○ PROMPT REQUIRED'}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: isImageReady ? 'var(--lime-accent)' : '#9ca3af' }}>
-                {isImageReady ? '✓ IMAGE ATTACHED' : '○ IMAGE REQUIRED'}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: !isTimeUp ? 'var(--lime-accent)' : '#ef4444' }}>
-                {!isTimeUp ? '✓ TIMER ACTIVE' : '✕ TIME EXPIRED'}
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.66rem', color: !isSubmitted ? 'var(--lime-accent)' : '#9ca3af' }}>
-                {!isSubmitted ? '✓ SUBMISSION OPEN' : '🔒 LOCKED'}
-              </div>
-            </div>
+            MISSION DIRECTIVES
           </div>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.78rem', color: '#d1d5db', lineHeight: 1.4, fontFamily: 'var(--font-sub)' }}>
+              <span style={{ color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>•</span>
+              <span>Observe the visual scene displayed on the lab projector screen.</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.78rem', color: '#d1d5db', lineHeight: 1.4, fontFamily: 'var(--font-sub)' }}>
+              <span style={{ color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>•</span>
+              <span>Recall composition, lighting, camera angles, color palettes & cyberpunk motifs.</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.78rem', color: '#d1d5db', lineHeight: 1.4, fontFamily: 'var(--font-sub)' }}>
+              <span style={{ color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>•</span>
+              <span>Formulate your reconstruction prompt and upload your output image assets.</span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.78rem', color: '#d1d5db', lineHeight: 1.4, fontFamily: 'var(--font-sub)' }}>
+              <span style={{ color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>•</span>
+              <span>Once submitted, your response is locked and sent for manual admin scoring.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* E. ONE ATTEMPT ONLY FOOTER BADGE */}
+        <div
+          style={{
+            marginTop: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '8px 12px',
+            background: 'rgba(224, 38, 255, 0.08)',
+            border: '1px solid rgba(224, 38, 255, 0.3)',
+            borderRadius: '3px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.7rem',
+            color: 'var(--magenta-glow)',
+            letterSpacing: '0.14em',
+            fontWeight: 800,
+            textTransform: 'uppercase'
+          }}
+        >
+          <ShieldAlert size={14} color="var(--magenta-glow)" />
+          <span>ONE ATTEMPT ONLY // FINAL SUBMISSION LOCK</span>
         </div>
       </div>
     </div>
