@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Code, Bot, Folder, FileCode, Bug, CheckSquare, ArrowLeft, ShieldAlert, Terminal, Layers } from 'lucide-react';
+import { Play, Bot, Folder, FileCode, Bug, CheckSquare, ArrowLeft, ShieldAlert, Terminal, Layers } from 'lucide-react';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
 import ThreeBackground from '../../../shared/components/ThreeBackground';
 

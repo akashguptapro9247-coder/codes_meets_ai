@@ -90,6 +90,9 @@ function App() {
 
   // Navigate helper that pushes or replaces browser history
   const navigateTo = useCallback((path, newRoute, replace = false) => {
+    if (newRoute === 'arena') {
+      setSelectedRound(null);
+    }
     if (typeof window !== 'undefined' && window.history) {
       if (replace && window.history.replaceState) {
         window.history.replaceState({}, '', path);

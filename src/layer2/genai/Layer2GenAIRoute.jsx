@@ -13,6 +13,11 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
   const [stage, setStage] = useState(skipIntro ? 'workspace' : 'intro'); // 'intro' | 'instructions' | 'workspace'
   const [hasStarted, setHasStarted] = useState(skipIntro);
 
+  const handleBackToArena = () => {
+    setStage('intro');
+    if (onBack) onBack();
+  };
+
   // Real-time lock listener on landing screen
   const prevLockStateRef = useRef(null);
   useEffect(() => {
@@ -23,7 +28,7 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
       const wasActive = prev.layer2?.active;
       const isNowActive = state.layer2?.active;
       if (wasActive && !isNowActive) {
-        if (onBack) onBack();
+        handleBackToArena();
       }
     });
     return () => unsubscribe();
@@ -48,7 +53,7 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
       
       if (existing) {
         setAssignment(existing);
-        // If already submitted or started workspace, jump directly to workspace
+        // If already submitted, jump directly to workspace
         if (existing.submitted) {
           setHasStarted(true);
           setStage('workspace');
@@ -118,13 +123,13 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
     );
   }
 
-  // 4. STAGE 3: Detailed Instructions Page
+  // 4. STAGE 3: Detailed Instructions / Briefing Page
   if (stage === 'instructions') {
     return (
       <div style={{ position: 'absolute', inset: 0, zIndex: 100, backgroundColor: '#030712', overflowY: 'auto' }}>
         <GenAIInstructions 
           participant={participant}
-          onBack={onBack}
+          onBack={handleBackToArena}
           onBegin={handleBeginChallenge} 
         />
       </div>
@@ -135,7 +140,7 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
   return (
     <GenAIIntro 
       participant={participant} 
-      onBack={onBack} 
+      onBack={handleBackToArena} 
       onBegin={() => setStage('instructions')} 
     />
   );
