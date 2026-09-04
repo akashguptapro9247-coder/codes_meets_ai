@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Clock, AlertTriangle } from 'lucide-react';
+import { soundEngine } from '../../../shared/utils/SoundEngine';
 
 const ROUND_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -28,10 +30,10 @@ export default function GenAITimer({ assignedAt, onExpire }) {
     }
 
     const interval = setInterval(() => {
-      const remaining = calculateTimeLeft();
-      setTimeLeft(remaining);
+      const rem = calculateTimeLeft();
+      setTimeLeft(rem);
       
-      if (remaining === 0) {
+      if (rem === 0) {
         clearInterval(interval);
         if (!isExpired) {
           setIsExpired(true);
@@ -46,29 +48,69 @@ export default function GenAITimer({ assignedAt, onExpire }) {
   const minutes = Math.floor(timeLeft / 60000);
   const seconds = Math.floor((timeLeft % 60000) / 1000);
   
-  const isWarning = timeLeft <= 300000; // 5 minutes warning
+  const isWarning = timeLeft <= 300000 && timeLeft > 0; // 5 minutes warning
+  const isCritical = timeLeft <= 60000 && timeLeft > 0; // 1 minute critical
 
   return (
-    <div 
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ 
+        opacity: 1, 
+        scale: 1,
+        boxShadow: isExpired 
+          ? '0 0 20px rgba(239, 68, 68, 0.3)' 
+          : isCritical 
+          ? ['0 0 15px rgba(239, 68, 68, 0.4)', '0 0 30px rgba(239, 68, 68, 0.7)', '0 0 15px rgba(239, 68, 68, 0.4)']
+          : isWarning 
+          ? ['0 0 10px rgba(245, 158, 11, 0.3)', '0 0 20px rgba(245, 158, 11, 0.5)', '0 0 10px rgba(245, 158, 11, 0.3)']
+          : '0 0 15px rgba(0, 243, 255, 0.15)'
+      }}
+      transition={isWarning || isCritical ? { repeat: Infinity, duration: isCritical ? 1 : 2 } : { duration: 0.3 }}
+      onMouseEnter={() => soundEngine.playHover()}
       className="cyber-card" 
       style={{ 
         display: 'flex', 
         alignItems: 'center', 
         gap: '12px', 
-        padding: '12px 24px', 
-        background: isExpired ? 'rgba(239, 68, 68, 0.1)' : isWarning ? 'rgba(245, 158, 11, 0.1)' : 'rgba(0, 0, 0, 0.5)',
-        borderColor: isExpired ? '#ef4444' : isWarning ? '#f59e0b' : 'var(--cyan-glow)'
+        padding: '10px 20px', 
+        background: isExpired 
+          ? 'rgba(239, 68, 68, 0.12)' 
+          : isCritical 
+          ? 'rgba(239, 68, 68, 0.1)' 
+          : isWarning 
+          ? 'rgba(245, 158, 11, 0.1)' 
+          : 'rgba(2, 6, 20, 0.85)',
+        borderColor: isExpired 
+          ? '#ef4444' 
+          : isCritical 
+          ? '#ef4444' 
+          : isWarning 
+          ? '#f59e0b' 
+          : 'var(--cyan-glow)',
+        borderRadius: '4px',
+        boxSizing: 'border-box'
       }}
     >
-      <Clock size={24} color={isExpired ? '#ef4444' : isWarning ? '#f59e0b' : 'var(--cyan-glow)'} />
+      {isCritical || isExpired ? (
+        <AlertTriangle size={22} color="#ef4444" />
+      ) : (
+        <Clock size={22} color={isWarning ? '#f59e0b' : 'var(--cyan-glow)'} />
+      )}
       <div style={{ 
         fontFamily: 'var(--font-mono)', 
-        fontSize: '1.5rem', 
-        fontWeight: 'bold',
-        color: isExpired ? '#ef4444' : isWarning ? '#f59e0b' : '#fff'
+        fontSize: '1.4rem', 
+        fontWeight: 800,
+        color: isExpired 
+          ? '#ef4444' 
+          : isCritical 
+          ? '#ef4444' 
+          : isWarning 
+          ? '#f59e0b' 
+          : 'var(--cyan-glow)',
+        letterSpacing: '0.08em'
       }}>
         {isExpired ? '00:00' : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`}
       </div>
-    </div>
+    </motion.div>
   );
 }
