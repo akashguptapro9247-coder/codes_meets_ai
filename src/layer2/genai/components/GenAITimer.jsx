@@ -58,12 +58,12 @@ export default function GenAITimer({ assignedAt, onExpire }) {
         opacity: 1, 
         scale: 1,
         boxShadow: isExpired 
-          ? '0 0 20px rgba(239, 68, 68, 0.3)' 
+          ? '0 0 15px rgba(239, 68, 68, 0.3)' 
           : isCritical 
-          ? ['0 0 15px rgba(239, 68, 68, 0.4)', '0 0 30px rgba(239, 68, 68, 0.7)', '0 0 15px rgba(239, 68, 68, 0.4)']
+          ? ['0 0 12px rgba(239, 68, 68, 0.4)', '0 0 24px rgba(239, 68, 68, 0.7)', '0 0 12px rgba(239, 68, 68, 0.4)']
           : isWarning 
-          ? ['0 0 10px rgba(245, 158, 11, 0.3)', '0 0 20px rgba(245, 158, 11, 0.5)', '0 0 10px rgba(245, 158, 11, 0.3)']
-          : '0 0 15px rgba(0, 243, 255, 0.15)'
+          ? ['0 0 8px rgba(245, 158, 11, 0.3)', '0 0 16px rgba(245, 158, 11, 0.5)', '0 0 8px rgba(245, 158, 11, 0.3)']
+          : '0 0 12px rgba(0, 243, 255, 0.15)'
       }}
       transition={isWarning || isCritical ? { repeat: Infinity, duration: isCritical ? 1 : 2 } : { duration: 0.3 }}
       onMouseEnter={() => soundEngine.playHover()}
@@ -71,8 +71,8 @@ export default function GenAITimer({ assignedAt, onExpire }) {
       style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '12px', 
-        padding: '10px 20px', 
+        gap: '8px', 
+        padding: '5px 14px', 
         background: isExpired 
           ? 'rgba(239, 68, 68, 0.12)' 
           : isCritical 
@@ -87,18 +87,18 @@ export default function GenAITimer({ assignedAt, onExpire }) {
           : isWarning 
           ? '#f59e0b' 
           : 'var(--cyan-glow)',
-        borderRadius: '4px',
+        borderRadius: '3px',
         boxSizing: 'border-box'
       }}
     >
       {isCritical || isExpired ? (
-        <AlertTriangle size={22} color="#ef4444" />
+        <AlertTriangle size={16} color="#ef4444" />
       ) : (
-        <Clock size={22} color={isWarning ? '#f59e0b' : 'var(--cyan-glow)'} />
+        <Clock size={16} color={isWarning ? '#f59e0b' : 'var(--cyan-glow)'} />
       )}
       <div style={{ 
         fontFamily: 'var(--font-mono)', 
-        fontSize: '1.4rem', 
+        fontSize: '1.1rem', 
         fontWeight: 800,
         color: isExpired 
           ? '#ef4444' 
@@ -107,7 +107,8 @@ export default function GenAITimer({ assignedAt, onExpire }) {
           : isWarning 
           ? '#f59e0b' 
           : 'var(--cyan-glow)',
-        letterSpacing: '0.08em'
+        letterSpacing: '0.08em',
+        lineHeight: 1
       }}>
         {isExpired ? '00:00' : `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`}
       </div>
