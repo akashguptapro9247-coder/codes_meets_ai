@@ -19,7 +19,7 @@ export default function Layer1GenAIChallenge({
   participant,
   onBack,
   challengeImage = '/assets/layer1_genai.jpeg',
-  challengeTitle = 'LAYER 01 // PROMPT ENGINEERING & SCENE RECONSTRUCTION'
+  challengeTitle = 'LAYER 01 // GENAI TRACK'
 }) {
   const [prompt, setPrompt] = useState('');
   const [images, setImages] = useState([]);

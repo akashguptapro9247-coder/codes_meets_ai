@@ -82,7 +82,7 @@ export default function ChallengeHeader({ participant, onBack, isCompleted = fal
                 textShadow: '0 0 12px rgba(0, 243, 255, 0.6)'
               }}
             >
-              LAYER 01 / GENAI CHALLENGE
+              LAYER 01 // GENAI TRACK
             </h1>
           </div>
         </div>
