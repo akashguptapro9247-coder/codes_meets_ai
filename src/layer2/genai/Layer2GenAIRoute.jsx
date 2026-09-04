@@ -1,15 +1,33 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
+import GenAIIntro from './components/GenAIIntro';
 import GenAIInstructions from './components/GenAIInstructions';
 import Layer2GenAIChallenge from './Layer2GenAIChallenge';
 import { genaiService } from './services/genaiService';
+import { eventStateService } from '../../shared/services/eventStateService';
 
-export default function Layer2GenAIRoute({ participant, onBack }) {
+export default function Layer2GenAIRoute({ participant, onBack, skipIntro = false }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [assignment, setAssignment] = useState(null);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [stage, setStage] = useState(skipIntro ? 'workspace' : 'intro'); // 'intro' | 'instructions' | 'workspace'
+  const [hasStarted, setHasStarted] = useState(skipIntro);
+
+  // Real-time lock listener on landing screen
+  const prevLockStateRef = useRef(null);
+  useEffect(() => {
+    const unsubscribe = eventStateService.subscribeToEventState((state) => {
+      const prev = prevLockStateRef.current;
+      prevLockStateRef.current = state;
+      if (!prev) return;
+      const wasActive = prev.layer2?.active;
+      const isNowActive = state.layer2?.active;
+      if (wasActive && !isNowActive) {
+        if (onBack) onBack();
+      }
+    });
+    return () => unsubscribe();
+  }, [onBack]);
 
   useEffect(() => {
     if (!participant) return;
@@ -17,8 +35,10 @@ export default function Layer2GenAIRoute({ participant, onBack }) {
     const initializeAssignment = async () => {
       setLoading(true);
       
-      // Try fetching existing assignment
-      const { data: existing, error: fetchErr } = await genaiService.fetchParticipantSubmission(participant.userId || participant.user_id);
+      // Fetch existing assignment if present
+      const { data: existing, error: fetchErr } = await genaiService.fetchParticipantSubmission(
+        participant.userId || participant.user_id
+      );
       
       if (fetchErr) {
         setError(fetchErr.message);
@@ -28,11 +48,14 @@ export default function Layer2GenAIRoute({ participant, onBack }) {
       
       if (existing) {
         setAssignment(existing);
-        setLoading(false);
-      } else {
-        // If not started yet, we'll assign it when they click BEGIN
-        setLoading(false);
+        // If already submitted or started workspace, jump directly to workspace
+        if (existing.submitted) {
+          setHasStarted(true);
+          setStage('workspace');
+        }
       }
+      
+      setLoading(false);
     };
     
     initializeAssignment();
@@ -41,20 +64,22 @@ export default function Layer2GenAIRoute({ participant, onBack }) {
   const handleBeginChallenge = async () => {
     if (assignment) {
       setHasStarted(true);
+      setStage('workspace');
       return;
     }
     
     setLoading(true);
-    const { data, error } = await genaiService.assignRandomQuestion(participant);
+    const { data, error: assignErr } = await genaiService.assignRandomQuestion(participant);
     
-    if (error) {
-      setError(error.message);
+    if (assignErr) {
+      setError(assignErr.message);
       setLoading(false);
       return;
     }
     
     setAssignment(data);
     setHasStarted(true);
+    setStage('workspace');
     setLoading(false);
   };
 
@@ -62,69 +87,56 @@ export default function Layer2GenAIRoute({ participant, onBack }) {
     setAssignment(updatedAssignment);
   };
 
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 100,
-        backgroundColor: '#030712',
-        display: 'flex',
-        flexDirection: 'column',
-        overflowY: 'auto'
-      }}
-    >
-      {/* Top Bar */}
-      <div 
-        style={{
-          padding: '20px 32px',
-          borderBottom: '1px solid rgba(0, 243, 255, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          background: 'rgba(3, 7, 18, 0.95)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10
-        }}
-      >
-        <button
-          onClick={onBack}
-          className="cyber-btn"
-          style={{
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'transparent',
-            borderColor: 'rgba(0, 243, 255, 0.3)'
-          }}
-        >
-          <ArrowLeft size={16} />
-          <span>BACK TO ARENA</span>
-        </button>
+  // 1. Loading State
+  if (loading) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 100, backgroundColor: '#030712', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', color: 'var(--cyan-glow)' }}>
+        <Loader2 size={48} className="animate-spin" />
+        <div style={{ fontFamily: 'var(--font-mono)' }}>INITIALIZING GEN AI PROTOCOL...</div>
       </div>
+    );
+  }
 
-      <div style={{ flex: 1, padding: '24px', display: 'flex', justifyContent: 'center' }}>
-        {loading ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', gap: '16px', color: 'var(--cyan-glow)' }}>
-            <Loader2 size={48} className="animate-spin" />
-            <div style={{ fontFamily: 'var(--font-mono)' }}>INITIALIZING GEN AI PROTOCOL...</div>
-          </div>
-        ) : error ? (
-          <div style={{ color: '#ef4444', padding: '20px', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
-            <h2>Initialization Error</h2>
-            <p>{error}</p>
-          </div>
-        ) : !hasStarted && !assignment?.submitted ? (
-          <GenAIInstructions onBegin={handleBeginChallenge} />
-        ) : (
-          <Layer2GenAIChallenge 
-            participant={participant} 
-            assignment={assignment} 
-            onSubmissionComplete={handleSubmissionComplete}
-          />
-        )}
+  // 2. Error State
+  if (error) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 100, backgroundColor: '#030712', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#ef4444', padding: '20px', textAlign: 'center' }}>
+        <h2>Initialization Error</h2>
+        <p>{error}</p>
       </div>
-    </div>
+    );
+  }
+
+  // 3. STAGE 4: Actual Workspace Page
+  if (stage === 'workspace' || hasStarted || assignment?.submitted) {
+    return (
+      <Layer2GenAIChallenge 
+        participant={participant} 
+        assignment={assignment} 
+        onSubmissionComplete={handleSubmissionComplete}
+      />
+    );
+  }
+
+  // 4. STAGE 3: Detailed Instructions Page
+  if (stage === 'instructions') {
+    return (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 100, backgroundColor: '#030712', overflowY: 'auto' }}>
+        <GenAIInstructions 
+          participant={participant}
+          onBack={onBack}
+          onBegin={handleBeginChallenge} 
+        />
+      </div>
+    );
+  }
+
+  // 5. STAGE 2: Compact Intro Page (Default)
+  return (
+    <GenAIIntro 
+      participant={participant} 
+      onBack={onBack} 
+      onBegin={() => setStage('instructions')} 
+    />
   );
 }

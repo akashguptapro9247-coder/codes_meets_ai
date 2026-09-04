@@ -1,17 +1,45 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Play, Code, Bot, Folder, FileCode, Bug, CheckSquare } from 'lucide-react';
+import { Play, Code, Bot, Folder, FileCode, Bug, CheckSquare, ArrowLeft } from 'lucide-react';
+import { soundEngine } from '../../../shared/utils/SoundEngine';
 
-export default function GenAIInstructions({ onBegin }) {
+export default function GenAIInstructions({ onBack, onBegin }) {
   return (
     <div style={{ width: '100%', maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px', padding: '20px', paddingBottom: '80px' }}>
       
+      {/* Top Bar - Back to Arena */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+        <button
+          onClick={() => {
+            soundEngine.playClick();
+            if (onBack) onBack();
+          }}
+          onMouseEnter={() => soundEngine.playHover()}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(0, 243, 255, 0.08)',
+            border: '1px solid rgba(0, 243, 255, 0.3)',
+            color: 'var(--cyan-glow)',
+            padding: '8px 16px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.8rem',
+            letterSpacing: '0.1em',
+            cursor: 'pointer'
+          }}
+        >
+          <ArrowLeft size={16} />
+          <span>BACK TO ARENA</span>
+        </button>
+      </div>
+
       {/* Header */}
       <div className="cyber-card" style={{ padding: '30px', textAlign: 'center', background: 'rgba(0,0,0,0.6)' }}>
-        <h1 style={{ fontFamily: 'var(--font-title)', fontSize: '2.5rem', color: '#ffffff', margin: '0 0 10px 0' }}>
+        <h1 style={{ fontFamily: 'var(--font-title)', fontSize: '2.2rem', color: '#ffffff', margin: '0 0 10px 0' }}>
           LAYER 2 <span style={{ color: 'var(--cyan-glow)' }}>GEN AI WEBSITE BUILDING</span>
         </h1>
-        <p style={{ fontFamily: 'var(--font-mono)', color: '#9ca3af', fontSize: '1.1rem', margin: 0 }}>
+        <p style={{ fontFamily: 'var(--font-mono)', color: '#9ca3af', fontSize: '1rem', margin: 0 }}>
           Build a small working application using AI-assisted development.
         </p>
       </div>
@@ -91,8 +119,12 @@ export default function GenAIInstructions({ onBegin }) {
           whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(0, 243, 255, 0.4)' }}
           whileTap={{ scale: 0.95 }}
           className="cyber-btn"
-          onClick={onBegin}
-          style={{ padding: '16px 48px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px' }}
+          onClick={() => {
+            soundEngine.playBoot();
+            if (onBegin) onBegin();
+          }}
+          onMouseEnter={() => soundEngine.playHover()}
+          style={{ padding: '16px 48px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
         >
           <Play size={24} />
           BEGIN GEN AI CHALLENGE
