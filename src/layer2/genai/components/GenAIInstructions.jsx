@@ -1,9 +1,23 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Code, Bot, Folder, FileCode, Bug, CheckSquare, ArrowLeft, ShieldAlert, Terminal, Layers } from 'lucide-react';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
+import ThreeBackground from '../../../shared/components/ThreeBackground';
 
 export default function GenAIInstructions({ participant, onBack, onBegin }) {
+  const mousePosition = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      mousePosition.current = {
+        x: (e.clientX / window.innerWidth) * 2 - 1,
+        y: -(e.clientY / window.innerHeight) * 2 + 1
+      };
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
   return (
     <div
       style={{
@@ -19,6 +33,22 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
         boxSizing: 'border-box'
       }}
     >
+      {/* 3D Animated Background (Sits behind the HUD card) */}
+      <ThreeBackground mousePosition={mousePosition} />
+
+      {/* Scanline Overlay for Cybernetic HUD feel */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 2,
+          pointerEvents: 'none',
+          background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))',
+          backgroundSize: '100% 4px, 6px 100%'
+        }}
+      />
+
+      {/* Main Mission Briefing HUD Container (Sits in front at zIndex 10) */}
       <motion.div
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -26,17 +56,19 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
         transition={{ duration: 0.35, ease: 'easeOut' }}
         className="cyber-card"
         style={{
+          position: 'relative',
+          zIndex: 10,
           width: '100%',
           maxWidth: '1160px',
           padding: '22px 26px',
           boxSizing: 'border-box',
           borderColor: 'var(--cyan-glow)',
-          boxShadow: '0 0 40px rgba(0, 243, 255, 0.15)',
+          boxShadow: '0 0 50px rgba(0, 243, 255, 0.25)',
           display: 'flex',
           flexDirection: 'column',
           gap: '14px',
-          background: 'rgba(3, 7, 18, 0.95)',
-          backdropFilter: 'blur(20px)'
+          background: 'rgba(3, 7, 18, 0.94)',
+          backdropFilter: 'blur(24px)'
         }}
       >
         {/* 1. TOP BAR */}
@@ -96,10 +128,10 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
           </div>
         </div>
 
-        {/* 2. MAIN BRIEFING GRID (2 Columns) */}
+        {/* 2. MAIN BRIEFING GRID (2 Columns — Base: Pic 3) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '14px' }}>
           
-          {/* LEFT COLUMN: Objective, Rules, Responsibilities */}
+          {/* LEFT COLUMN: Objective, Allowed AI Usage, Your Responsibilities */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             
             {/* Mission Objective */}

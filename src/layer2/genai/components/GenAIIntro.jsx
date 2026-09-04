@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Bot, Play } from 'lucide-react';
+import { ArrowLeft, Play, Terminal } from 'lucide-react';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
 
 export default function GenAIIntro({ participant, onBack, onBegin }) {
@@ -61,7 +61,7 @@ export default function GenAIIntro({ participant, onBack, onBegin }) {
           </button>
         </div>
 
-        {/* Challenge Entry Panel */}
+        {/* Challenge Entry Panel (Base: Pic 2) */}
         <div
           className="cyber-card"
           style={{
@@ -78,7 +78,7 @@ export default function GenAIIntro({ participant, onBack, onBegin }) {
         >
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Bot size={26} color="var(--cyan-glow)" />
+            <Terminal size={26} color="var(--cyan-glow)" />
             <div>
               <h2
                 style={{
@@ -89,7 +89,7 @@ export default function GenAIIntro({ participant, onBack, onBegin }) {
                   letterSpacing: '0.1em'
                 }}
               >
-                LAYER 02 — GEN AI TRACK
+                LAYER 02 - GEN AI TRACK
               </h2>
               <div
                 style={{
@@ -100,7 +100,7 @@ export default function GenAIIntro({ participant, onBack, onBegin }) {
                   letterSpacing: '0.1em'
                 }}
               >
-                AI-ASSISTED APPLICATION DEVELOPMENT
+                WEBSITE BUILDING CHALLENGE
               </div>
             </div>
           </div>
@@ -125,29 +125,23 @@ export default function GenAIIntro({ participant, onBack, onBegin }) {
             {participant?.name || 'Participant'} — {participant?.rollNumber || participant?.roll_number || 'N/A'}
           </div>
 
-          {/* Challenge Briefing */}
+          {/* High-Level Challenge Overview Box */}
           <div
             style={{
-              padding: '16px 20px',
+              padding: '18px 20px',
               background: 'rgba(2, 6, 18, 0.95)',
               border: '1px solid rgba(0, 243, 255, 0.18)',
               borderRadius: '4px',
               fontFamily: 'var(--font-body)',
               fontSize: '0.88rem',
               color: '#d1d5db',
-              lineHeight: 1.55
+              lineHeight: 1.6
             }}
           >
-            Build a small working application using AI-assisted development.<br/><br/>
-            • Select your assigned web application project.<br/>
-            • Use AI tools (ChatGPT / Gemini) to generate and structure code.<br/>
-            • Create and organize files in VS Code.<br/>
-            • Run and test your application locally.<br/>
-            • Explain what you built and submit your project.<br/>
-            • The complete round has one 30-minute timer.
+            Build a complete project using AI tools and explain your development process. You will be assigned a project topic. Zip your project and submit it along with a detailed explanation of what you built and how AI helped you.
           </div>
 
-          {/* 3 Information Cards */}
+          {/* 3 Track Fact Cards */}
           <div
             style={{
               display: 'flex',
@@ -156,26 +150,26 @@ export default function GenAIIntro({ participant, onBack, onBegin }) {
             }}
           >
             {[
-              { label: '30 MINUTES', desc: 'Total Round Time' },
-              { label: '1 ASSIGNED PROJECT', desc: 'AI Web App Challenge' },
-              { label: 'CHATGPT / GEMINI', desc: 'AI Tools Allowed' }
+              { label: '30 MIN', desc: 'Time Limit' },
+              { label: '1 SUBMISSION', desc: 'One Attempt' },
+              { label: 'EXPLANATION', desc: 'Required' }
             ].map((item) => (
               <div
                 key={item.label}
                 style={{
                   flex: '1 1 0px',
                   minWidth: '160px',
-                  padding: '10px 14px',
+                  padding: '12px 14px',
                   background: 'rgba(0, 243, 255, 0.06)',
                   border: '1px solid rgba(0, 243, 255, 0.2)',
                   borderRadius: '3px',
                   textAlign: 'center'
                 }}
               >
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 800, color: 'var(--cyan-glow)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem', fontWeight: 800, color: 'var(--cyan-glow)' }}>
                   {item.label}
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: '#9ca3af', marginTop: '2px' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#9ca3af', marginTop: '3px' }}>
                   {item.desc}
                 </div>
               </div>
