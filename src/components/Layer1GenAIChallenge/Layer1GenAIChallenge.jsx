@@ -249,7 +249,19 @@ export default function Layer1GenAIChallenge({
 
     if (!prompt.trim()) {
       soundEngine.playClick();
-      setValidationError('Please formulate your prompt before submitting.');
+      setValidationError('Please formulate your prompt before submitting (at least 200 characters required).');
+      return;
+    }
+
+    if (prompt.trim().length < 200) {
+      soundEngine.playClick();
+      setValidationError(`Prompt must contain at least 200 characters (currently ${prompt.trim().length} / 200).`);
+      return;
+    }
+
+    if (prompt.trim().length > 5000) {
+      soundEngine.playClick();
+      setValidationError('Prompt cannot exceed 5,000 characters.');
       return;
     }
 
