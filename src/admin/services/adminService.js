@@ -48,6 +48,7 @@ export const adminService = {
 
     try {
       const rollNumber = (userData.rollNumber || userData.roll_number || '').trim().toUpperCase();
+      const clientSessionId = userData.sessionId || userData.active_session_id || ('sess_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now());
 
       // Enforce strict 10-character alphanumeric roll number starting with 25 or 26
       if (rollNumber.length !== 10) {
@@ -79,34 +80,119 @@ export const adminService = {
 
       const yearNumber = rollNumber.startsWith('26') ? 1 : rollNumber.startsWith('25') ? 2 : (parseInt(userData.year, 10) || 1);
 
+      // 1. CHECK IF USER WITH THIS ROLL NUMBER ALREADY EXISTS
+      let existingUser = null;
+      try {
+        const { data: foundUser } = await supabase
+          .from('users')
+          .select('user_id, roll_number, name, branch, year, section, serial_number, active_session_id, last_seen_at')
+          .eq('roll_number', rollNumber)
+          .maybeSingle();
+        existingUser = foundUser;
+      } catch (checkErr) {
+        // Fallback for basic schema without presence columns
+        const { data: foundUserFallback } = await supabase
+          .from('users')
+          .select('user_id, roll_number, name, branch, year, section, serial_number')
+          .eq('roll_number', rollNumber)
+          .maybeSingle();
+        existingUser = foundUserFallback;
+      }
+
+      // 2. IF USER EXISTS: DETERMINE IF SESSION IS ACTIVE OR RECOVERABLE
+      if (existingUser) {
+        const now = Date.now();
+        const lastSeenMs = existingUser.last_seen_at ? new Date(existingUser.last_seen_at).getTime() : 0;
+        const isRecent = (now - lastSeenMs) < (60 * 1000); // 60s active session timeout grace period
+        const hasActiveSessionId = Boolean(existingUser.active_session_id && existingUser.active_session_id.trim() !== '');
+        const isSameSession = Boolean(clientSessionId && existingUser.active_session_id === clientSessionId);
+
+        // CASE A: ACTIVE SESSION ON ANOTHER DEVICE -> BLOCK REGISTRATION!
+        if (hasActiveSessionId && isRecent && !isSameSession) {
+          return {
+            data: null,
+            error: {
+              code: 'ACTIVE_SESSION_EXISTS',
+              message: 'ROLL NUMBER ALREADY REGISTERED // This roll number is currently active on another device. Please use your existing active session.'
+            }
+          };
+        }
+
+        // CASE B: OFFLINE / EXPIRED SESSION OR SAME BROWSER RE-LOGIN -> REUSE USER RECORD!
+        try {
+          const { data: updatedUser } = await supabase
+            .from('users')
+            .update({
+              active_session_id: clientSessionId,
+              last_seen_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', existingUser.user_id)
+            .select()
+            .single();
+
+          const finalUser = updatedUser || { ...existingUser, active_session_id: clientSessionId };
+          return {
+            data: {
+              ...finalUser,
+              active_session_id: clientSessionId
+            },
+            error: null,
+            isReturning: true,
+            isRecovered: true
+          };
+        } catch (updateErr) {
+          // Schema fallback if active_session_id column isn't present
+          return {
+            data: {
+              ...existingUser,
+              active_session_id: clientSessionId
+            },
+            error: null,
+            isReturning: true
+          };
+        }
+      }
+
+      // 3. NEW ROLL NUMBER -> INSERT ONE USER RECORD
       const payload = {
         name: userData.name.trim(),
         roll_number: rollNumber,
         branch: userData.branch,
         year: yearNumber,
-        section: userData.section
+        section: userData.section,
+        active_session_id: clientSessionId,
+        last_seen_at: new Date().toISOString()
       };
 
-      // Check if player with this roll number already exists
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('user_id, roll_number, name')
-        .eq('roll_number', payload.roll_number)
-        .maybeSingle();
+      let data = null;
+      let error = null;
 
-      if (existingUser) {
-        return {
-          data: existingUser,
-          error: null,
-          isReturning: true
-        };
+      try {
+        const res = await supabase
+          .from('users')
+          .insert([payload])
+          .select()
+          .single();
+        data = res.data;
+        error = res.error;
+      } catch (insertErr) {
+        error = insertErr;
       }
 
-      const { data, error } = await supabase
-        .from('users')
-        .insert([payload])
-        .select()
-        .single();
+      // Schema fallback if presence columns aren't in PostgREST schema cache
+      if (error && (error.message?.includes('active_session_id') || error.message?.includes('schema cache'))) {
+        const fallbackPayload = {
+          name: userData.name.trim(),
+          roll_number: rollNumber,
+          branch: userData.branch,
+          year: yearNumber,
+          section: userData.section
+        };
+        const res = await supabase.from('users').insert([fallbackPayload]).select().single();
+        data = res.data;
+        error = res.error;
+      }
 
       if (error) {
         if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
@@ -114,7 +200,7 @@ export const adminService = {
             data: null,
             error: {
               code: '23505',
-              message: 'Roll number is already registered.'
+              message: 'ROLL NUMBER ALREADY REGISTERED // This roll number is currently active on another device.'
             }
           };
         }
@@ -122,7 +208,13 @@ export const adminService = {
         return { data: null, error };
       }
 
-      return { data, error: null };
+      return {
+        data: {
+          ...data,
+          active_session_id: clientSessionId
+        },
+        error: null
+      };
     } catch (err) {
       console.error('[Supabase::registerUser] Exception:', err);
       return { data: null, error: err };

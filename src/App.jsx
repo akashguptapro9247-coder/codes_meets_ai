@@ -134,6 +134,40 @@ function App() {
     };
   }, [participant?.userId, participant?.user_id, handleForceExit]);
 
+  // 1b. Periodic Session Presence Heartbeat (every 15 seconds)
+  useEffect(() => {
+    const activeUserId = participant?.userId || participant?.user_id;
+    const activeSessionId = participant?.active_session_id || participant?.activeSessionId;
+    if (!activeUserId) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        const { supabase, isSupabaseConfigured } = await import('./shared/services/supabaseClient');
+        if (isSupabaseConfigured() && supabase) {
+          const updateData = { last_seen_at: new Date().toISOString() };
+          if (activeSessionId) {
+            await supabase
+              .from('users')
+              .update(updateData)
+              .eq('user_id', activeUserId)
+              .eq('active_session_id', activeSessionId);
+          } else {
+            await supabase
+              .from('users')
+              .update(updateData)
+              .eq('user_id', activeUserId);
+          }
+        }
+      } catch (e) {
+        // Ignore heartbeat update errors
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 15000);
+    return () => clearInterval(interval);
+  }, [participant?.userId, participant?.user_id, participant?.active_session_id]);
+
   // 2. Strict Route Guard on Route Changes & Page Focus
   useEffect(() => {
     const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai';

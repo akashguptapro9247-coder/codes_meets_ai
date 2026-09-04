@@ -116,7 +116,7 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
       if (isSupabaseConfigured() && supabase) {
         const { data, error } = await supabase
           .from('users')
-          .select('*')
+          .select('user_id, roll_number, name, branch, year, section, active_session_id, last_seen_at')
           .eq('roll_number', roll)
           .maybeSingle();
 
@@ -126,12 +126,38 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
         existingUser = data;
       }
 
-      setErrors((prev) => ({ ...prev, rollNumber: false }));
-      setGlobalError('');
-      setRollVerified(true);
-
       if (existingUser) {
-        setRollSuccessMessage('✓ PARTICIPANT VERIFIED (RETURNING PLAYER)');
+        const now = Date.now();
+        const lastSeenMs = existingUser.last_seen_at ? new Date(existingUser.last_seen_at).getTime() : 0;
+        const isRecent = (now - lastSeenMs) < (60 * 1000);
+        const hasActiveSessionId = Boolean(existingUser.active_session_id && existingUser.active_session_id.trim() !== '');
+
+        let clientSessionId = null;
+        if (typeof window !== 'undefined') {
+          const stored = sessionStorage.getItem('cma_participant_session') || localStorage.getItem('cma_participant_session');
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              clientSessionId = parsed?.active_session_id || parsed?.activeSessionId || parsed?.sessionId;
+            } catch (e) {}
+          }
+        }
+
+        const isSameSession = Boolean(clientSessionId && existingUser.active_session_id === clientSessionId);
+
+        if (hasActiveSessionId && isRecent && !isSameSession) {
+          setErrors((prev) => ({ ...prev, rollNumber: true }));
+          setGlobalError('ROLL NUMBER ALREADY REGISTERED // THIS ROLL NUMBER IS CURRENTLY ACTIVE ON ANOTHER DEVICE');
+          setRollVerified(false);
+          setRollSuccessMessage('');
+          rollRef.current?.focus();
+          return false;
+        }
+
+        setErrors((prev) => ({ ...prev, rollNumber: false }));
+        setGlobalError('');
+        setRollVerified(true);
+        setRollSuccessMessage('✓ PARTICIPANT VERIFIED (RECOVERABLE SESSION)');
         setFormData((prev) => ({
           ...prev,
           name: prev.name.trim() ? prev.name : existingUser.name || prev.name,
@@ -140,6 +166,9 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
           section: prev.section || existingUser.section || 'A'
         }));
       } else {
+        setErrors((prev) => ({ ...prev, rollNumber: false }));
+        setGlobalError('');
+        setRollVerified(true);
         const autoYear = roll.startsWith('26') ? '1st Year' : '2nd Year';
         setFormData((prev) => ({
           ...prev,
@@ -264,18 +293,29 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
     setIsSubmitting(true);
 
     try {
+      let clientSessionId = null;
+      if (typeof window !== 'undefined') {
+        clientSessionId = sessionStorage.getItem('cma_client_session_id');
+        if (!clientSessionId) {
+          clientSessionId = 'sess_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+          sessionStorage.setItem('cma_client_session_id', clientSessionId);
+        }
+      }
+
       // Register or retrieve participant in Supabase users table
       const { data, error } = await adminService.registerUser({
         name: formData.name.trim(),
         rollNumber: roll,
         branch: formData.branch,
         year: roll.startsWith('26') ? 1 : roll.startsWith('25') ? 2 : (formData.year.includes('1') ? 1 : 2),
-        section: formData.section
+        section: formData.section,
+        sessionId: clientSessionId
       });
 
       if (error || !data) {
         setErrors({ rollNumber: true });
         setGlobalError(error?.message || 'REGISTRATION REJECTED // UNABLE TO AUTHORIZE ROLL NUMBER');
+        setRollVerified(false);
         return;
       }
 
@@ -286,7 +326,8 @@ export default function RegistrationForm({ onSubmit, onFormChange }) {
         branch: data.branch,
         year: data.year,
         section: data.section,
-        serialNumber: data.serial_number || 1
+        serialNumber: data.serial_number || 1,
+        active_session_id: data.active_session_id || clientSessionId
       };
 
       onSubmit(participantPayload);
