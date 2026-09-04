@@ -77,7 +77,7 @@ export default function PromptInput({
             letterSpacing: '0.08em'
           }}
         >
-          <span>{currentLength}</span> / <span>{maxLength}</span>
+          <span>{currentLength}</span> / <span>{maxLength}</span> CHARS (MIN : 200 CHAR)
         </div>
       </div>
 
