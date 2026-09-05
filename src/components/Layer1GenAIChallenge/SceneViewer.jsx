@@ -85,7 +85,7 @@ export default function SceneViewer({
         </div>
       </div>
 
-      {/* 2. LARGE CENTRAL REFERENCE / MISSION DISPLAY SCREEN */}
+      {/* 2. LARGE CENTRAL REFERENCE / MISSION DISPLAY SCREEN CONTAINER */}
       <div
         style={{
           flex: 1,
@@ -104,85 +104,37 @@ export default function SceneViewer({
           marginBottom: '14px'
         }}
       >
-        {/* Cyber Screen Grid Overlay */}
+        {/* Responsive Image Display Container */}
         <div
           style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage:
-              'linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-            pointerEvents: 'none',
-            zIndex: 1
+            position: 'relative',
+            zIndex: 2,
+            width: '100%',
+            height: 'calc(100% - 32px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            background: '#000000'
           }}
-        />
-
-        {/* Center Glowing Hub & Text */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 20px' }}>
-          {/* Cyan/Magenta Glow Aura behind Brain Icon */}
-          <div style={{ position: 'relative', marginBottom: '20px' }}>
-            <div
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: '90px',
-                height: '90px',
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(224, 38, 255, 0.35) 0%, rgba(0, 243, 255, 0.15) 50%, transparent 75%)',
-                filter: 'blur(12px)',
-                pointerEvents: 'none'
-              }}
-            />
-            <div
-              style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                background: 'rgba(2, 8, 24, 0.9)',
-                border: '1.5px solid var(--cyan-glow)',
-                boxShadow: '0 0 20px rgba(0, 243, 255, 0.5), inset 0 0 10px rgba(0, 243, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                zIndex: 2
-              }}
-            >
-              <Brain size={32} color="var(--cyan-glow)" />
-            </div>
-          </div>
-
-          {/* Large Title */}
-          <h2
+        >
+          <img
+            src="/assets/layer1_genai_reference.jpg"
+            alt="GENAI MEMORY RECONSTRUCTION REFERENCE"
             style={{
-              fontFamily: 'var(--font-title)',
-              fontSize: '1.35rem',
-              fontWeight: 900,
-              color: '#ffffff',
-              margin: '0 0 10px 0',
-              letterSpacing: '0.14em',
-              lineHeight: 1.25,
-              textTransform: 'uppercase',
-              textShadow: '0 0 15px rgba(0, 243, 255, 0.6), 0 0 30px rgba(0, 243, 255, 0.3)'
+              width: '100%',
+              height: '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              objectPosition: 'center',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              display: 'block'
             }}
-          >
-            "YOUR MEMORY IS YOUR POWER"
-          </h2>
-
-          {/* Subtitle */}
-          <div
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.72rem',
-              color: 'rgba(0, 243, 255, 0.8)',
-              letterSpacing: '0.2em',
-              fontWeight: 700
-            }}
-          >
-            RECALL // FORMULATE // RECONSTRUCT
-          </div>
+          />
         </div>
 
         {/* Bottom Full-Width Challenge Status Bar inside Grid Screen */}
