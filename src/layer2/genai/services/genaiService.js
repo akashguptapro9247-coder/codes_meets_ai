@@ -93,6 +93,28 @@ class GenAIService {
       return { data: null, error: err };
     }
   }
+
+  async recordTimeout(userId, explanation) {
+    if (!isSupabaseConfigured() || !supabase) return { data: null, error: null };
+    try {
+      const { data, error } = await supabase
+        .from('layer_2_genai_submissions')
+        .update({
+          explanation: explanation || '',
+          submitted: false,
+          status: 'time_expired',
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) return { data: null, error };
+      return { data, error: null };
+    } catch (err) {
+      return { data: null, error: err };
+    }
+  }
 }
 
 export const genaiService = new GenAIService();

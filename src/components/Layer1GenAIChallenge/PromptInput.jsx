@@ -2,14 +2,27 @@ import React, { useState } from 'react';
 import { Terminal, AlignLeft, AlertCircle } from 'lucide-react';
 
 export default function PromptInput({
-  value = '',
+  value,
+  prompt,
   onChange,
+  onChangePrompt,
   disabled = false,
-  maxLength = 2000
+  maxLength = 5000,
+  minLength = 200
 }) {
   const [isFocused, setIsFocused] = useState(false);
-  const currentLength = value.length;
-  const isNearLimit = currentLength > maxLength * 0.85;
+  const textValue = value !== undefined ? value : prompt !== undefined ? prompt : '';
+  const currentLength = textValue.length;
+  const isNearLimit = currentLength > maxLength * 0.9;
+  const isUnderMin = currentLength > 0 && currentLength < minLength;
+
+  const handleChange = (e) => {
+    const newVal = e.target.value;
+    if (newVal.length <= maxLength) {
+      if (typeof onChange === 'function') onChange(newVal);
+      if (typeof onChangePrompt === 'function') onChangePrompt(newVal);
+    }
+  };
 
   return (
     <div
@@ -52,7 +65,7 @@ export default function PromptInput({
               fontWeight: 700
             }}
           >
-            PROMPT FORMULATION // INPUT TERMINAL
+            FINAL PROMPT // SUBMISSION
           </span>
         </div>
 
@@ -60,26 +73,23 @@ export default function PromptInput({
           style={{
             fontFamily: 'var(--font-mono)',
             fontSize: '0.68rem',
-            color: isNearLimit ? '#f59e0b' : 'rgba(0, 243, 255, 0.6)',
+            color: isNearLimit ? '#f59e0b' : isUnderMin ? '#ef4444' : 'rgba(0, 243, 255, 0.6)',
             letterSpacing: '0.08em'
           }}
         >
-          <span>{currentLength}</span> / <span>{maxLength}</span> CHARS
+          <span>{currentLength}</span> / <span>{maxLength}</span> CHARS (MIN : 200 CHAR)
         </div>
       </div>
 
       {/* Large Cyber Monospace Textarea */}
       <textarea
-        value={value}
-        onChange={(e) => {
-          if (e.target.value.length <= maxLength) {
-            onChange(e.target.value);
-          }
-        }}
+        value={textValue}
+        onChange={handleChange}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         disabled={disabled}
-        placeholder="Describe the exact prompt, camera angle, atmospheric lighting, artistic style, and negative constraints you would use to reconstruct the target scene with maximum accuracy..."
+        maxLength={maxLength}
+        placeholder="Paste the exact final prompt you used to generate your submitted image..."
         style={{
           width: '100%',
           height: '140px',

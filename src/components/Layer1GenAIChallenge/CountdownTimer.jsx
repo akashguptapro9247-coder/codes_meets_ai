@@ -5,16 +5,30 @@ const TOTAL_DURATION = 15 * 60; // 15 minutes in seconds
 
 export default function CountdownTimer({
   participantId = 'default',
-  onTimeUp
+  onTimeUp,
+  disabled = false
 }) {
+<<<<<<< HEAD
   const getTimerKey = (id) => `cma_l1_genai_timer_start_${id || 'player'}`;
   const timerKey = getTimerKey(participantId);
+=======
+  const timerKey = `cma_l1_genai_timer_start_${participantId}`;
+  const expiredKey = `cma_l1_genai_timer_expired_${participantId}`;
+>>>>>>> origin/ui-akhil-v2
 
   // Initialize or retrieve start timestamp from storage
   const [secondsRemaining, setSecondsRemaining] = useState(() => {
     if (typeof window === 'undefined') return TOTAL_DURATION;
 
+<<<<<<< HEAD
     const storedStart = localStorage.getItem(timerKey) || sessionStorage.getItem(timerKey);
+=======
+    if (disabled || localStorage.getItem(expiredKey) === 'true') {
+      return 0;
+    }
+
+    const storedStart = localStorage.getItem(timerKey);
+>>>>>>> origin/ui-akhil-v2
     const now = Date.now();
 
     if (storedStart) {
@@ -54,8 +68,10 @@ export default function CountdownTimer({
   }, [participantId]);
 
   useEffect(() => {
-    if (secondsRemaining <= 0) {
-      if (onTimeUpRef.current) onTimeUpRef.current();
+    if (disabled || secondsRemaining <= 0 || localStorage.getItem(expiredKey) === 'true') {
+      if (secondsRemaining <= 0 && onTimeUpRef.current) {
+        onTimeUpRef.current();
+      }
       return;
     }
 
@@ -76,125 +92,130 @@ export default function CountdownTimer({
     }, 1000);
 
     return () => clearInterval(interval);
+<<<<<<< HEAD
   }, [participantId, secondsRemaining]);
+=======
+  }, [timerKey, secondsRemaining, disabled, expiredKey]);
+>>>>>>> origin/ui-akhil-v2
 
   // Format MM:SS
   const minutes = Math.floor(secondsRemaining / 60);
   const seconds = secondsRemaining % 60;
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
-  // Progress fraction (1 -> 0)
-  const progress = Math.max(0, Math.min(1, secondsRemaining / TOTAL_DURATION));
+  // Progress percentage (100% at start, 0% at timeout)
+  const progressPercent = (secondsRemaining / TOTAL_DURATION) * 100;
+  const strokeDashoffset = 283 - (283 * progressPercent) / 100;
 
-  // Determine alert level
-  const isExpired = secondsRemaining === 0;
-  const isUrgent = secondsRemaining > 0 && secondsRemaining <= 2 * 60; // <= 2 mins
-  const isWarning = secondsRemaining > 2 * 60 && secondsRemaining <= 5 * 60; // <= 5 mins
-
-  const themeColor = isExpired
-    ? '#ef4444'
-    : isUrgent
-    ? '#ef4444'
-    : isWarning
-    ? '#f59e0b'
-    : 'var(--cyan-glow)';
-
-  // SVG Circular Meter calculations
-  const size = 52;
-  const strokeWidth = 4;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - progress * circumference;
+  const isUrgent = secondsRemaining <= 60 && secondsRemaining > 0;
+  const isExpired = secondsRemaining <= 0;
 
   return (
     <div
       style={{
+        width: '100%',
+        background: isExpired
+          ? 'rgba(239, 68, 68, 0.08)'
+          : isUrgent
+          ? 'rgba(245, 158, 11, 0.08)'
+          : 'rgba(2, 6, 18, 0.95)',
+        border: isExpired
+          ? '1px solid rgba(239, 68, 68, 0.4)'
+          : isUrgent
+          ? '1px solid rgba(245, 158, 11, 0.4)'
+          : '1px solid rgba(0, 243, 255, 0.25)',
+        borderRadius: '4px',
+        padding: '12px 16px',
+        boxSizing: 'border-box',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        padding: '8px 14px',
-        background: isUrgent ? 'rgba(30, 4, 8, 0.95)' : 'rgba(2, 6, 18, 0.9)',
-        border: `1px solid ${isUrgent ? 'rgba(239, 68, 68, 0.6)' : isWarning ? 'rgba(245, 158, 11, 0.5)' : 'rgba(0, 243, 255, 0.3)'}`,
-        borderRadius: '3px',
-        boxShadow: isUrgent
-          ? '0 0 20px rgba(239, 68, 68, 0.35)'
-          : isWarning
-          ? '0 0 15px rgba(245, 158, 11, 0.25)'
-          : '0 0 15px rgba(0, 243, 255, 0.15)',
-        boxSizing: 'border-box'
+        justifyContent: 'space-between',
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
-      {/* Circular SVG Gauge */}
-      <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-        <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-          {/* Background circle track */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="rgba(255, 255, 255, 0.08)"
-            strokeWidth={strokeWidth}
-            fill="transparent"
-          />
-          {/* Active progress arc */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke={themeColor}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            fill="transparent"
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* SVG Circular Gauge */}
+        <div style={{ position: 'relative', width: '44px', height: '44px' }}>
+          <svg width="44" height="44" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.1)"
+              strokeWidth="8"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke={isExpired ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--cyan-glow)'}
+              strokeWidth="8"
+              strokeDasharray="283"
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 1s linear' }}
+            />
+          </svg>
+          <div
             style={{
-              transition: 'stroke-dashoffset 1s linear, stroke 0.4s ease'
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
-          />
-        </svg>
+          >
+            {isExpired ? (
+              <ShieldAlert size={18} color="#ef4444" />
+            ) : isUrgent ? (
+              <AlertTriangle size={18} color="#f59e0b" />
+            ) : (
+              <Clock size={18} color="var(--cyan-glow)" />
+            )}
+          </div>
+        </div>
 
-        {/* Center Clock / Alert Icon */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: themeColor
-          }}
-        >
-          {isExpired ? <ShieldAlert size={18} /> : <Clock size={16} />}
+        <div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.66rem',
+              color: isExpired ? '#ef4444' : isUrgent ? '#f59e0b' : '#9ca3af',
+              letterSpacing: '0.12em',
+              fontWeight: 700
+            }}
+          >
+            {isExpired ? 'CHALLENGE TIME EXPIRED' : isUrgent ? 'FINAL COUNTDOWN' : 'CHALLENGE TIMER'}
+          </div>
+          <div
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '1.3rem',
+              fontWeight: 800,
+              color: isExpired ? '#ef4444' : isUrgent ? '#f59e0b' : '#ffffff',
+              letterSpacing: '0.08em',
+              lineHeight: 1.1
+            }}
+          >
+            {formattedTime}
+          </div>
         </div>
       </div>
 
-      {/* Numerical Time Display & Status */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div
+      <div style={{ textAlign: 'right' }}>
+        <span
+          className="cyber-badge"
           style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.62rem',
-            color: isExpired ? '#ef4444' : isUrgent ? '#f87171' : isWarning ? '#fbbf24' : 'rgba(0, 243, 255, 0.7)',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase'
+            fontSize: '0.65rem',
+            borderColor: isExpired ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--cyan-glow)',
+            color: isExpired ? '#ef4444' : isUrgent ? '#f59e0b' : 'var(--cyan-glow)'
           }}
         >
-          {isExpired ? 'TIME EXPIRED' : isUrgent ? 'URGENT // TIME LEFT' : isWarning ? 'WARNING // TIME LEFT' : 'CHALLENGE TIMER'}
-        </div>
-
-        <div
-          style={{
-            fontFamily: 'var(--font-title)',
-            fontSize: '1.4rem',
-            lineHeight: 1.1,
-            color: themeColor,
-            letterSpacing: '0.08em',
-            textShadow: `0 0 12px ${themeColor}`,
-            animation: isUrgent && !isExpired ? 'pulse 1s infinite' : 'none'
-          }}
-        >
-          {formattedTime}
-        </div>
+          {isExpired ? 'LOCKED' : isUrgent ? 'URGENT' : 'ACTIVE'}
+        </span>
       </div>
     </div>
   );

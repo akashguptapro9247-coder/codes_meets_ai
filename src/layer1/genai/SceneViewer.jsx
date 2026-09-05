@@ -1,8 +1,14 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { Brain, Sparkles, Cpu, Eye, Radio, Shield, Zap } from 'lucide-react';
+import { Brain } from 'lucide-react';
 
-export default function SceneViewer() {
+export default function SceneViewer({
+  isTimeUp = false,
+  submissionSuccess = false,
+  existingSubmission = null
+}) {
+  const isSubmitted = Boolean(submissionSuccess || existingSubmission);
+  const sessionStatusText = isSubmitted ? 'SUBMITTED & LOCKED' : isTimeUp ? 'TIME EXPIRED' : 'CHALLENGE ACTIVE';
+
   return (
     <div
       style={{
@@ -10,41 +16,40 @@ export default function SceneViewer() {
         flexDirection: 'column',
         height: '100%',
         width: '100%',
-        background: 'rgba(3, 7, 20, 0.85)',
-        border: '1px solid rgba(0, 243, 255, 0.25)',
-        borderRadius: '3px',
-        padding: '14px',
+        background: 'rgba(4, 9, 24, 0.95)',
+        border: '1px solid rgba(0, 243, 255, 0.3)',
+        borderRadius: '2px',
+        padding: '16px',
         boxSizing: 'border-box',
         overflow: 'hidden',
         position: 'relative'
       }}
     >
-      {/* Corner Brackets */}
+      {/* Four HUD Corner Brackets */}
       <div className="hud-corner hud-top-left" style={{ width: '10px', height: '10px' }} />
       <div className="hud-corner hud-top-right" style={{ width: '10px', height: '10px' }} />
       <div className="hud-corner hud-bottom-left" style={{ width: '10px', height: '10px' }} />
       <div className="hud-corner hud-bottom-right" style={{ width: '10px', height: '10px' }} />
 
-      {/* Section Header */}
+      {/* 1. PANEL HEADER */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '10px',
-          paddingBottom: '8px',
-          borderBottom: '1px solid rgba(0, 243, 255, 0.15)'
+          marginBottom: '12px',
+          flexShrink: 0
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Brain size={16} color="var(--cyan-glow)" />
+          <Brain size={17} color="var(--cyan-glow)" />
           <span
             style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.74rem',
+              fontFamily: 'var(--font-title)',
+              fontSize: '0.82rem',
+              fontWeight: 900,
               color: 'var(--cyan-glow)',
-              letterSpacing: '0.15em',
-              fontWeight: 800
+              letterSpacing: '0.12em'
             }}
           >
             GENAI CHALLENGE // MEMORY RECONSTRUCTION
@@ -56,8 +61,8 @@ export default function SceneViewer() {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(57, 255, 20, 0.1)',
-            border: '1px solid var(--lime-accent)',
+            background: 'rgba(57, 255, 20, 0.08)',
+            border: '1px solid rgba(57, 255, 20, 0.4)',
             padding: '2px 8px',
             borderRadius: '2px',
             fontFamily: 'var(--font-mono)',
@@ -80,192 +85,139 @@ export default function SceneViewer() {
         </div>
       </div>
 
-      {/* Main Visual Arena Card */}
+      {/* 2. LARGE CENTRAL REFERENCE / MISSION DISPLAY SCREEN CONTAINER */}
       <div
         style={{
-          position: 'relative',
           flex: 1,
           width: '100%',
-          minHeight: '200px',
-          background: 'linear-gradient(135deg, rgba(2, 6, 20, 0.98) 0%, rgba(10, 18, 45, 0.95) 100%)',
-          border: '1px solid rgba(0, 243, 255, 0.3)',
-          borderRadius: '4px',
-          overflow: 'hidden',
+          position: 'relative',
+          background: 'linear-gradient(180deg, rgba(2, 6, 20, 0.98) 0%, rgba(5, 12, 32, 0.98) 100%)',
+          border: '1px solid rgba(0, 243, 255, 0.25)',
+          borderRadius: '2px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px',
-          boxSizing: 'border-box'
+          textAlign: 'center',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
+          marginBottom: '14px'
         }}
       >
-        {/* Subtle Cyber Grid Background Overlay */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage:
-              'linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-            pointerEvents: 'none',
-            zIndex: 1
-          }}
-        />
-
-        {/* Ambient Glowing Radial Halos */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '20%',
-            left: '30%',
-            width: '220px',
-            height: '220px',
-            background: 'radial-gradient(circle, rgba(0, 243, 255, 0.12) 0%, transparent 70%)',
-            pointerEvents: 'none',
-            zIndex: 1
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '15%',
-            right: '25%',
-            width: '260px',
-            height: '260px',
-            background: 'radial-gradient(circle, rgba(224, 38, 255, 0.12) 0%, transparent 70%)',
-            pointerEvents: 'none',
-            zIndex: 1
-          }}
-        />
-
-        {/* Animated Cybernetic Centerpiece */}
+        {/* Responsive Image Display Container */}
         <div
           style={{
             position: 'relative',
-            zIndex: 3,
+            zIndex: 2,
+            width: '100%',
+            height: 'calc(100% - 32px)',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
-            textAlign: 'center',
-            gap: '14px',
-            maxWidth: '90%'
+            justifyContent: 'center',
+            padding: '0',
+            boxSizing: 'border-box',
+            overflow: 'hidden',
+            background: '#000000'
           }}
         >
-          {/* Glowing Neural Ring Badge */}
-          <motion.div
-            animate={{
-              boxShadow: [
-                '0 0 20px rgba(0, 243, 255, 0.3)',
-                '0 0 40px rgba(224, 38, 255, 0.4)',
-                '0 0 20px rgba(0, 243, 255, 0.3)'
-              ]
-            }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          <img
+            src="/assets/layer1_genai_reference.jpg"
+            alt="GENAI MEMORY RECONSTRUCTION REFERENCE"
             style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: 'rgba(5, 15, 35, 0.9)',
-              border: '2px solid var(--cyan-glow)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+              width: '100%',
+              height: '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'contain',
+              objectPosition: 'center',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              display: 'block'
             }}
-          >
-            <Brain size={32} color="var(--cyan-glow)" />
-          </motion.div>
-
-          {/* Challenge Motto */}
-          <div>
-            <h2
-              style={{
-                fontFamily: 'var(--font-title)',
-                fontSize: '1.5rem',
-                letterSpacing: '0.12em',
-                margin: 0,
-                color: '#ffffff',
-                textShadow: '0 0 25px rgba(0, 243, 255, 0.6), 0 0 50px rgba(224, 38, 255, 0.4)',
-                lineHeight: 1.2
-              }}
-            >
-              "YOUR MEMORY IS YOUR POWER"
-            </h2>
-
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.72rem',
-                color: '#9ca3af',
-                letterSpacing: '0.1em',
-                marginTop: '6px'
-              }}
-            >
-              RECALL // FORMULATE // RECONSTRUCT
-            </div>
-          </div>
+          />
         </div>
 
-        {/* Bottom Status Bar */}
+        {/* Bottom Full-Width Challenge Status Bar inside Grid Screen */}
         <div
           style={{
             position: 'absolute',
-            bottom: '8px',
-            left: '12px',
-            right: '12px',
-            zIndex: 3,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '32px',
+            background: 'rgba(2, 6, 18, 0.95)',
+            borderTop: '1px solid rgba(0, 243, 255, 0.2)',
             display: 'flex',
-            justifyContent: 'center',
             alignItems: 'center',
-            padding: '4px 10px',
-            background: 'rgba(2, 6, 18, 0.85)',
-            border: '1px solid rgba(0, 243, 255, 0.25)',
-            borderRadius: '2px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.62rem',
-            color: 'var(--cyan-glow)'
+            justifyContent: 'center',
+            zIndex: 3
           }}
         >
-          <span>CHALLENGE ACTIVE</span>
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.68rem',
+              color: 'var(--cyan-glow)',
+              letterSpacing: '0.15em',
+              fontWeight: 800
+            }}
+          >
+            {sessionStatusText}
+          </span>
         </div>
       </div>
 
-      {/* Challenge Directives & Guidance Card */}
-      <div
-        style={{
-          marginTop: '10px',
-          padding: '10px 12px',
-          background: 'rgba(2, 6, 18, 0.9)',
-          border: '1px solid rgba(0, 243, 255, 0.15)',
-          borderRadius: '2px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px',
-          boxSizing: 'border-box'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', fontWeight: 800, color: 'var(--cyan-glow)' }}>
+      {/* 3. MISSION DIRECTIVES SECTION AT BOTTOM */}
+      <div style={{ flexShrink: 0 }}>
+        {/* Directives Header & One Attempt Only Badge */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: '0.74rem',
+              fontWeight: 900,
+              color: 'var(--cyan-glow)',
+              letterSpacing: '0.12em'
+            }}
+          >
             MISSION DIRECTIVES:
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.64rem', color: 'var(--lime-accent)' }}>
+
+          <span
+            style={{
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.64rem',
+              color: 'var(--lime-accent)',
+              letterSpacing: '0.1em',
+              fontWeight: 700
+            }}
+          >
             ONE ATTEMPT ONLY
           </span>
         </div>
-        <ul
-          style={{
-            margin: '4px 0 0 0',
-            paddingLeft: '14px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.68rem',
-            color: '#9ca3af',
-            lineHeight: 1.4
-          }}
-        >
-          <li>Observe the visual scene displayed on the lab projector screen.</li>
-          <li>Recall composition, lighting, camera angles, color palettes & cyberpunk motifs.</li>
-          <li>Formulate your reconstruction prompt and upload your output image assets.</li>
-          <li>Once submitted, your response is locked and sent for manual admin scoring.</li>
-        </ul>
+
+        {/* Bulleted List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.74rem', color: '#9ca3af', lineHeight: 1.35, fontFamily: 'var(--font-mono)' }}>
+            <span style={{ color: 'var(--cyan-glow)' }}>•</span>
+            <span>Observe the visual scene displayed on the lab projector screen.</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.74rem', color: '#9ca3af', lineHeight: 1.35, fontFamily: 'var(--font-mono)' }}>
+            <span style={{ color: 'var(--cyan-glow)' }}>•</span>
+            <span>Recall composition, lighting, camera angles, color palettes & cyberpunk motifs.</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.74rem', color: '#9ca3af', lineHeight: 1.35, fontFamily: 'var(--font-mono)' }}>
+            <span style={{ color: 'var(--cyan-glow)' }}>•</span>
+            <span>Formulate your reconstruction prompt and upload your output image assets.</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.74rem', color: '#9ca3af', lineHeight: 1.35, fontFamily: 'var(--font-mono)' }}>
+            <span style={{ color: 'var(--cyan-glow)' }}>•</span>
+            <span>Once submitted, your response is locked and sent for manual admin scoring.</span>
+          </div>
+        </div>
       </div>
     </div>
   );

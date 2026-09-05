@@ -48,6 +48,7 @@ export const adminService = {
 
     try {
       const rollNumber = (userData.rollNumber || userData.roll_number || '').trim().toUpperCase();
+      const clientSessionId = userData.sessionId || userData.active_session_id || ('sess_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now());
 
       // Enforce strict 10-character alphanumeric roll number starting with 25 or 26
       if (rollNumber.length !== 10) {
@@ -90,20 +91,11 @@ export const adminService = {
       // Check if player with this roll number already exists
       const { data: existingUser } = await supabase
         .from('users')
-        .select('user_id, roll_number, name, is_removed, promoted_to_layer2, promoted_to_layer3')
+        .select('user_id, roll_number, name')
         .eq('roll_number', payload.roll_number)
         .maybeSingle();
 
       if (existingUser) {
-        if (existingUser.is_removed) {
-          return {
-            data: null,
-            error: {
-              message: 'This roll number has already completed its participation in the event and cannot re-register.'
-            }
-          };
-        }
-
         return {
           data: existingUser,
           error: null,
@@ -123,7 +115,7 @@ export const adminService = {
             data: null,
             error: {
               code: '23505',
-              message: 'Roll number is already registered.'
+              message: 'ROLL NUMBER ALREADY REGISTERED // This roll number is currently active on another device.'
             }
           };
         }
@@ -131,7 +123,13 @@ export const adminService = {
         return { data: null, error };
       }
 
-      return { data, error: null };
+      return {
+        data: {
+          ...data,
+          active_session_id: clientSessionId
+        },
+        error: null
+      };
     } catch (err) {
       console.error('[Supabase::registerUser] Exception:', err);
       return { data: null, error: err };
@@ -356,7 +354,7 @@ export const adminService = {
   /**
    * Participant Submits GenAI Prompt & Image Assets (Single Submission Only)
    */
-  async submitLayer1GenAi({ userId, username, rollNumber, prompt, imageItems, timeTaken, timeTakenSeconds, startedAt, submittedAt }) {
+  async submitLayer1GenAi({ userId, username, rollNumber, prompt, imageItems, timeTaken, timeTakenSeconds }) {
     if (!isSupabaseConfigured() || !supabase) {
       return { error: { message: 'Database client not initialized' } };
     }
@@ -365,7 +363,7 @@ export const adminService = {
       return { error: { message: 'Participant session identity missing. Please re-register.' } };
     }
 
-    if (!prompt || !prompt.trim()) {
+    if (!isTimeout && (!prompt || !prompt.trim())) {
       return { error: { message: 'Please write a reconstruction prompt before submitting.' } };
     }
 
@@ -373,14 +371,15 @@ export const adminService = {
       // 1. Check if user already has an active submission (One submission only enforcement)
       const { data: existing } = await supabase
         .from('layer_1_genai_submissions')
-        .select('id, user_id')
+        .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (existing) {
+        // Do NOT overwrite a previously recorded manual or timeout submission
         return {
-          data: null,
-          error: { message: 'You have already submitted your Layer 1 GenAI challenge. Duplicate submissions are not allowed.' }
+          data: existing,
+          error: isTimeout ? null : { message: 'You have already submitted your Layer 1 GenAI challenge. Duplicate submissions are not allowed.' }
         };
       }
 
@@ -391,7 +390,9 @@ export const adminService = {
           uploadedImages = await imagekitClient.uploadMultipleImages(imageItems, userId);
         } catch (uploadErr) {
           console.error('[Supabase::submitLayer1GenAi] ImageKit upload error:', uploadErr);
-          return { error: { message: `Image upload failed: ${uploadErr.message || 'Please check your connection.'}` } };
+          if (!isTimeout) {
+            return { error: { message: `Image upload failed: ${uploadErr.message || 'Please check your connection.'}` } };
+          }
         }
       }
 
@@ -441,16 +442,14 @@ export const adminService = {
         user_id: userId,
         username: username || 'Participant',
         roll_number: rollNumber || '',
-        prompt: prompt.trim(),
+        prompt: (prompt || '').trim(),
         image_urls: imageUrls,
         image_file_ids: imageFileIds,
         image_paths: imagePaths,
-        time_taken: calculatedTimeTaken,
-        time_taken_seconds: calculatedSeconds,
-        started_at: startedAt || null,
+        time_taken: timeTaken || '00:00',
         status: 'pending',
-        submitted_at: submissionTimestamp,
-        updated_at: submissionTimestamp
+        submitted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
       let { data, error } = await supabase
@@ -476,9 +475,15 @@ export const adminService = {
 
       if (error) {
         if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
+          const { data: existingAfterDup } = await supabase
+            .from('layer_1_genai_submissions')
+            .select('*')
+            .eq('user_id', userId)
+            .maybeSingle();
+
           return {
-            data: null,
-            error: { message: 'You have already submitted your Layer 1 GenAI challenge.' }
+            data: existingAfterDup,
+            error: isTimeout ? null : { message: 'You have already submitted your Layer 1 GenAI challenge.' }
           };
         }
         console.error('[Supabase::submitLayer1GenAi] Error saving submission:', error);
@@ -494,6 +499,22 @@ export const adminService = {
       console.error('[Supabase::submitLayer1GenAi] Exception:', err);
       return { data: null, error: err };
     }
+  },
+
+  /**
+   * Auto-finalize GenAI attempt on 15-minute timer expiration (timeout)
+   */
+  async autoFinalizeLayer1GenAiTimeout({ userId, username, rollNumber, prompt, imageItems }) {
+    return this.submitLayer1GenAi({
+      userId,
+      username,
+      rollNumber,
+      prompt: prompt || '',
+      imageItems: imageItems || [],
+      timeTaken: '15:00',
+      timeTakenSeconds: 900,
+      isTimeout: true
+    });
   },
 
   /**
