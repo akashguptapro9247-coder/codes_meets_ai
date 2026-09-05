@@ -112,13 +112,14 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
     );
   }
 
-  // 3. STAGE 4: Actual Workspace Page
-  if (stage === 'workspace' || hasStarted || assignment?.submitted) {
+  // 3. STAGE 4: Actual Workspace Page / Result Page
+  if (stage === 'workspace' || hasStarted || assignment?.submitted || assignment?.status === 'time_expired') {
     return (
       <Layer2GenAIChallenge 
         participant={participant} 
         assignment={assignment} 
         onSubmissionComplete={handleSubmissionComplete}
+        onBack={handleBackToArena}
       />
     );
   }

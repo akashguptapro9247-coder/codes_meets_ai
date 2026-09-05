@@ -22,18 +22,32 @@ import { soundEngine } from '../../shared/utils/SoundEngine';
 import ThreeBackground from '../../shared/components/ThreeBackground';
 import GenAITimer from './components/GenAITimer';
 import Layer2AiTools from './components/Layer2AiTools';
+import Layer2SuccessResult from './components/Layer2SuccessResult';
+import Layer2TimeoutResult from './components/Layer2TimeoutResult';
 import { genaiService } from './services/genaiService';
 
 export default function Layer2GenAIChallenge({
   participant,
   assignment,
   onSubmissionComplete,
-  _onBack = null
+  onBack = null
 }) {
   const [explanation, setExplanation] = useState(assignment?.explanation || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [error, setError] = useState(null);
-  const [isExpired, setIsExpired] = useState(false);
+  const [isExpired, setIsExpired] = useState(() => {
+    if (assignment?.status === 'time_expired') return true;
+    const activeId = participant?.userId || participant?.user_id;
+    if (activeId && typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem(`cma_l2_genai_expired_${activeId}`) === 'true';
+      } catch (e) {
+        return false;
+      }
+    }
+    return false;
+  });
   const [loadedFile, setLoadedFile] = useState(null);
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -41,6 +55,7 @@ export default function Layer2GenAIChallenge({
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
   const mousePosition = useRef({ x: 0, y: 0 });
+  const isFinalizingTimeoutRef = useRef(false);
 
   // 1. Mouse Parallax Listener
   useEffect(() => {
@@ -94,19 +109,57 @@ export default function Layer2GenAIChallenge({
 
   const participantInfo = getActiveParticipantInfo();
   const question = genaiService.getQuestionById(assignment?.question_id);
-  const isSubmitted = assignment?.submitted;
+
+  // Time Expired Handler (idempotent, single execution)
+  const handleTimeExpire = async () => {
+    setIsExpired(true);
+    soundEngine.playClick();
+
+    const activeId = participant?.userId || participant?.user_id;
+    if (activeId && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`cma_l2_genai_expired_${activeId}`, 'true');
+      } catch (e) {}
+    }
+
+    if (isFinalizingTimeoutRef.current) return;
+    isFinalizingTimeoutRef.current = true;
+
+    if (assignment?.submitted || submissionSuccess) return;
+
+    try {
+      const { data } = await genaiService.recordTimeout(activeId, explanation);
+      if (data && onSubmissionComplete) {
+        onSubmissionComplete(data);
+      }
+    } catch (err) {
+      console.error('[Layer2GenAI] Timeout record error:', err);
+    }
+  };
 
   // 4. Final Submission Handler
   const handleSubmit = async () => {
+    if (isExpired || assignment?.status === 'time_expired') {
+      soundEngine.playClick();
+      setError('CHALLENGE TIME HAS EXPIRED // SUBMISSIONS LOCKED');
+      return;
+    }
+
     if (!explanation || explanation.trim().length < 50) {
       soundEngine.playClick();
-      setError('Please provide a meaningful explanation (minimum 50 characters).');
+      setError('Please provide a meaningful explanation (minimum 50 characters required).');
       return;
     }
 
     if (explanation.length > 5000) {
       soundEngine.playClick();
       setError('Explanation is too long (maximum 5000 characters).');
+      return;
+    }
+
+    if (!loadedFile) {
+      soundEngine.playClick();
+      setError('Please upload your project archive (.zip, .rar, .7z) before submitting.');
       return;
     }
 
@@ -123,6 +176,7 @@ export default function Layer2GenAIChallenge({
       setError(submitErr.message || 'Failed to submit project. Please try again.');
     } else {
       toast.success('Project submitted successfully!');
+      setSubmissionSuccess(true);
       if (onSubmissionComplete) onSubmissionComplete(data);
     }
   };
@@ -143,6 +197,68 @@ export default function Layer2GenAIChallenge({
       >
         <AlertTriangle size={24} style={{ marginRight: '10px' }} />
         Error: Assigned question not found.
+      </div>
+    );
+  }
+
+  // 5. Check if in Final Result State (Success or Timeout)
+  const isSubmissionCompleted = Boolean(assignment?.submitted || submissionSuccess);
+  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired') && !isSubmissionCompleted);
+
+  if (isSubmissionCompleted) {
+    return (
+      <div
+        style={{
+          position: 'relative',
+          width: '100vw',
+          height: '100vh',
+          maxHeight: '100vh',
+          backgroundColor: '#030712',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box'
+        }}
+      >
+        <ThreeBackground mousePosition={mousePosition} />
+        <Layer2SuccessResult
+          participantInfo={participantInfo}
+          question={question}
+          explanation={explanation}
+          loadedFile={loadedFile}
+          assignment={assignment}
+          onBack={onBack}
+        />
+      </div>
+    );
+  }
+
+  if (isTimeoutCompleted) {
+    return (
+      <div
+        style={{
+          position: 'relative',
+          width: '100vw',
+          height: '100vh',
+          maxHeight: '100vh',
+          backgroundColor: '#030712',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box'
+        }}
+      >
+        <ThreeBackground mousePosition={mousePosition} />
+        <Layer2TimeoutResult
+          participantInfo={participantInfo}
+          question={question}
+          hasValidExplanation={Boolean(explanation && explanation.trim().length >= 50)}
+          hasFile={Boolean(loadedFile)}
+          explanationLength={explanation?.trim()?.length || 0}
+          fileName={loadedFile?.name || ''}
+          fileSize={loadedFile?.size ? `${(loadedFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
+          onBack={onBack}
+        />
       </div>
     );
   }
@@ -607,7 +723,7 @@ export default function Layer2GenAIChallenge({
           </motion.div>
 
           {/* Card C: Dedicated AI Generation Tools Section (Below Problem Statement) */}
-          <Layer2AiTools disabled={isSubmitted || isExpired || isSubmitting} />
+          <Layer2AiTools disabled={isSubmitting} />
         </section>
 
         {/* ================================================================== */}
@@ -656,12 +772,10 @@ export default function Layer2GenAIChallenge({
               PHASE 2: BUILD, EXPLAIN & PACKAGE
             </div>
 
-            {!isSubmitted && (
-              <GenAITimer
-                assignedAt={assignment?.assigned_at}
-                onExpire={() => setIsExpired(true)}
-              />
-            )}
+            <GenAITimer
+              assignedAt={assignment?.assigned_at}
+              onExpire={handleTimeExpire}
+            />
           </div>
 
           {/* Card C: Technical Debrief / Explanation (Controlled Height, Internal Scroll) */}
