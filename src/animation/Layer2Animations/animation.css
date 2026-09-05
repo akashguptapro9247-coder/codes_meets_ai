@@ -1,0 +1,45 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   ANIMATION SYSTEM CSS
+   All animation-specific keyframes and classes for Stage 1, 2, 3
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── SCREEN SHAKE (Impact) ───────────────────────────────────────────────────── */
+.anim-impact-shake {
+  animation: animImpactShake 0.75s ease-in-out;
+}
+
+@keyframes animImpactShake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-8px, 6px) rotate(-1deg); }
+  20% { transform: translate(8px, -6px) rotate(1deg); }
+  30% { transform: translate(-6px, -5px) rotate(-0.5deg); }
+  40% { transform: translate(6px, 5px) rotate(0.5deg); }
+  50% { transform: translate(-4px, 3px); }
+  60% { transform: translate(4px, -3px); }
+  80% { transform: translate(-2px, 1px); }
+}
+
+/* ── CODE LINE IMPACT SHAKE ──────────────────────────────────────────────────── */
+.anim-line-impact-shake {
+  animation: animLineImpactShake 0.75s ease-in-out;
+}
+
+@keyframes animLineImpactShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-9px) rotate(-1.2deg); }
+  40% { transform: translateX(9px) rotate(1.2deg); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+/* ── BOMB ANIMATION LAYER (Viewport-fixed overlay) ───────────────────────────── */
+.anim-bomb-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+}

@@ -5,7 +5,7 @@ import { cpp } from '@codemirror/lang-cpp';
 import { java } from '@codemirror/lang-java';
 import { python } from '@codemirror/lang-python';
 import { Play, RotateCcw } from 'lucide-react';
-
+import { BugSwarm } from '../../../animation/Layer2Animations';
 export default function SyntaxErrorQuestion({ question, language, onCheck, disabled, isEvaluating }) {
   const [code, setCode] = useState('');
 
@@ -35,7 +35,7 @@ export default function SyntaxErrorQuestion({ question, language, onCheck, disab
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflow: 'auto', background: '#1e1e1e' }}>
+      <div style={{ flex: 1, overflow: 'auto', background: '#1e1e1e', position: 'relative' }}>
         <CodeMirror
           value={code}
           height="100%"
@@ -70,6 +70,7 @@ export default function SyntaxErrorQuestion({ question, language, onCheck, disab
             lintKeymap: true
           }}
         />
+        <BugSwarm />
       </div>
       
       <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)' }}>

@@ -48,19 +48,19 @@ export default function ShortLogicQuestion({ question, language, onCheck, disabl
   const isLineLimitExceeded = question.maxAnswerLines && currentLines > question.maxAnswerLines;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {question.maxAnswerLines && (
-        <div style={{ padding: '8px 16px', background: isLineLimitExceeded ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 0, 0, 0.5)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: isLineLimitExceeded ? '#fca5a5' : '#9ca3af', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ padding: '8px 16px', background: isLineLimitExceeded ? 'rgba(239, 68, 68, 0.2)' : 'rgba(0, 0, 0, 0.5)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: isLineLimitExceeded ? '#fca5a5' : '#9ca3af', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
           <span>Complete the missing logic.</span>
           <span>LINES: {currentLines} / {question.maxAnswerLines}</span>
         </div>
       )}
       
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#1e1e1e' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#1e1e1e', overflowY: 'auto' }}>
         
         {/* Read-only Code Before */}
         {question.codeBefore && (
-          <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
             <pre style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#6b7280', whiteSpace: 'pre-wrap' }}>
               {question.codeBefore}
             </pre>
@@ -68,7 +68,7 @@ export default function ShortLogicQuestion({ question, language, onCheck, disabl
         )}
 
         {/* Editable Area */}
-        <div style={{ flex: 1, overflow: 'auto', borderLeft: '3px solid var(--magenta-glow)' }}>
+        <div style={{ borderLeft: '3px solid var(--magenta-glow)', flexShrink: 0 }}>
           <CodeMirror
             value={code}
             theme={vscodeDark}
@@ -106,7 +106,7 @@ export default function ShortLogicQuestion({ question, language, onCheck, disabl
 
         {/* Read-only Code After */}
         {question.codeAfter && (
-          <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.02)', borderTop: '1px solid rgba(255,255,255,0.05)', flexShrink: 0 }}>
             <pre style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#6b7280', whiteSpace: 'pre-wrap' }}>
               {question.codeAfter}
             </pre>
@@ -115,7 +115,7 @@ export default function ShortLogicQuestion({ question, language, onCheck, disabl
 
       </div>
       
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)' }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', flexShrink: 0 }}>
         <button
           className="cyber-btn"
           onClick={handleReset}
