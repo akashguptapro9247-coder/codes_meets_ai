@@ -354,7 +354,18 @@ export const adminService = {
   /**
    * Participant Submits GenAI Prompt & Image Assets (Single Submission Only)
    */
-  async submitLayer1GenAi({ userId, username, rollNumber, prompt, imageItems, timeTaken, timeTakenSeconds }) {
+  async submitLayer1GenAi({
+    userId,
+    username,
+    rollNumber,
+    prompt,
+    imageItems,
+    timeTaken,
+    timeTakenSeconds,
+    startedAt,
+    submittedAt,
+    isTimeout = false
+  }) {
     if (!isSupabaseConfigured() || !supabase) {
       return { error: { message: 'Database client not initialized' } };
     }
@@ -446,9 +457,11 @@ export const adminService = {
         image_urls: imageUrls,
         image_file_ids: imageFileIds,
         image_paths: imagePaths,
-        time_taken: timeTaken || '00:00',
-        status: 'pending',
-        submitted_at: new Date().toISOString(),
+        time_taken: calculatedTimeTaken,
+        time_taken_seconds: calculatedSeconds,
+        started_at: startedAt || null,
+        status: isTimeout ? 'TIME_EXPIRED' : 'pending',
+        submitted_at: submissionTimestamp,
         updated_at: new Date().toISOString()
       };
 
@@ -459,7 +472,15 @@ export const adminService = {
         .single();
 
       // Graceful fallback if any new columns (time_taken, time_taken_seconds, started_at) do not exist yet on remote table
-      if (error && (error.code === '42703' || error.message?.includes('does not exist'))) {
+      const isMissingColError = error && (
+        error.code === '42703' ||
+        error.code === 'PGRST204' ||
+        error.message?.includes('does not exist') ||
+        error.message?.includes('Could not find the') ||
+        error.message?.includes('schema cache')
+      );
+
+      if (isMissingColError) {
         const fallbackPayload = { ...payload };
         delete fallbackPayload.time_taken;
         delete fallbackPayload.time_taken_seconds;

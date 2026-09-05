@@ -283,18 +283,11 @@ export default function Layer1GenAIChallenge({
     const activeInfo = getActiveParticipantInfo();
 
     // Calculate actual time taken using the session timer
-<<<<<<< HEAD
-    const timerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
+    const timerKey = `cma_l1_genai_timer_start_${activeId || userId || 'player'}`;
     const storedStart = localStorage.getItem(timerKey) || sessionStorage.getItem(timerKey);
     const startMs = storedStart ? parseInt(storedStart, 10) : (Date.now() - 30000);
     const submitMs = Date.now();
     const elapsedSeconds = Math.max(1, Math.min(900, Math.floor((submitMs - startMs) / 1000)));
-=======
-    const timerKey = `cma_l1_genai_timer_start_${activeId || 'player'}`;
-    const storedStart = localStorage.getItem(timerKey);
-    const startTime = storedStart ? parseInt(storedStart, 10) : Date.now();
-    const elapsedSeconds = Math.max(0, Math.min(900, Math.floor((Date.now() - startTime) / 1000)));
->>>>>>> origin/ui-akhil-v2
     const mins = Math.floor(elapsedSeconds / 60);
     const secs = elapsedSeconds % 60;
     const timeTakenFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -330,7 +323,8 @@ export default function Layer1GenAIChallenge({
       }
     } catch (err) {
       console.error('Submission exception:', err);
-      setValidationError('A network error occurred. Please try again.');
+      const msg = err?.message || (typeof err === 'string' ? err : 'A network error occurred. Please try again.');
+      setValidationError(msg);
     } finally {
       setIsSubmitting(false);
     }

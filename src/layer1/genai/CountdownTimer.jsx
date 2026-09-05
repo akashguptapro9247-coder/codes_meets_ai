@@ -8,27 +8,20 @@ export default function CountdownTimer({
   onTimeUp,
   disabled = false
 }) {
-<<<<<<< HEAD
   const getTimerKey = (id) => `cma_l1_genai_timer_start_${id || 'player'}`;
+  const getExpiredKey = (id) => `cma_l1_genai_timer_expired_${id || 'player'}`;
   const timerKey = getTimerKey(participantId);
-=======
-  const timerKey = `cma_l1_genai_timer_start_${participantId}`;
-  const expiredKey = `cma_l1_genai_timer_expired_${participantId}`;
->>>>>>> origin/ui-akhil-v2
+  const expiredKey = getExpiredKey(participantId);
 
   // Initialize or retrieve start timestamp from storage
   const [secondsRemaining, setSecondsRemaining] = useState(() => {
     if (typeof window === 'undefined') return TOTAL_DURATION;
 
-<<<<<<< HEAD
-    const storedStart = localStorage.getItem(timerKey) || sessionStorage.getItem(timerKey);
-=======
-    if (disabled || localStorage.getItem(expiredKey) === 'true') {
+    if (disabled || localStorage.getItem(expiredKey) === 'true' || sessionStorage.getItem(expiredKey) === 'true') {
       return 0;
     }
 
-    const storedStart = localStorage.getItem(timerKey);
->>>>>>> origin/ui-akhil-v2
+    const storedStart = localStorage.getItem(timerKey) || sessionStorage.getItem(timerKey);
     const now = Date.now();
 
     if (storedStart) {
@@ -92,11 +85,7 @@ export default function CountdownTimer({
     }, 1000);
 
     return () => clearInterval(interval);
-<<<<<<< HEAD
-  }, [participantId, secondsRemaining]);
-=======
-  }, [timerKey, secondsRemaining, disabled, expiredKey]);
->>>>>>> origin/ui-akhil-v2
+  }, [participantId, timerKey, secondsRemaining, disabled, expiredKey]);
 
   // Format MM:SS
   const minutes = Math.floor(secondsRemaining / 60);

@@ -2156,22 +2156,27 @@ export default function AdminDashboard({ onClose }) {
                                 </td>
 
                                 {/* Prompt Preview & Modal Action */}
-                                <td style={{ padding: '12px 14px' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <td style={{ padding: '12px 14px', maxWidth: '280px', width: '26%' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxWidth: '100%' }}>
                                     <div
                                       style={{
                                         color: sub.prompt ? '#d1d5db' : '#ef4444',
                                         fontSize: '0.74rem',
                                         fontStyle: sub.prompt ? 'normal' : 'italic',
                                         lineHeight: 1.4,
+                                        wordBreak: 'break-word',
+                                        overflowWrap: 'break-word',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
                                         display: '-webkit-box',
                                         WebkitLineClamp: 2,
-                                        WebkitBoxOrient: 'vertical',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis'
+                                        WebkitBoxOrient: 'vertical'
                                       }}
+                                      title={sub.prompt || ''}
                                     >
-                                      {sub.prompt ? `"${sub.prompt}"` : '[NOT PROVIDED - TIMEOUT]'}
+                                      {sub.prompt
+                                        ? `"${sub.prompt.length > 65 ? sub.prompt.slice(0, 65).trim() + '...' : sub.prompt}"`
+                                        : '[NOT PROVIDED - TIMEOUT]'}
                                     </div>
                                     <button
                                       type="button"
@@ -3915,9 +3920,16 @@ export default function AdminDashboard({ onClose }) {
                     GENAI PROMPT: {viewingPrompt.username}
                   </h3>
                 </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--cyan-glow)' }}>
-                  ROLL: {viewingPrompt.roll_number || 'N/A'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  {viewingPrompt.time_taken && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: 'var(--lime-accent)', background: 'rgba(57, 255, 20, 0.1)', border: '1px solid rgba(57, 255, 20, 0.3)', padding: '2px 8px', borderRadius: '3px', fontWeight: 700 }}>
+                      ⏱ TIME: {viewingPrompt.time_taken}
+                    </span>
+                  )}
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--cyan-glow)' }}>
+                    ROLL: {viewingPrompt.roll_number || 'N/A'}
+                  </span>
+                </div>
               </div>
 
               <div
@@ -4010,8 +4022,15 @@ export default function AdminDashboard({ onClose }) {
                   <h3 style={{ fontFamily: 'var(--font-title)', fontSize: '1.05rem', margin: 0, color: '#ffffff' }}>
                     SUBMITTED REFERENCE ASSETS: {viewingImages.username}
                   </h3>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--cyan-glow)', marginTop: '2px' }}>
-                    ASSET {(viewingImages.activeIndex || 0) + 1} OF {viewingImages.image_urls.length}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '3px' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--cyan-glow)' }}>
+                      ASSET {(viewingImages.activeIndex || 0) + 1} OF {viewingImages.image_urls.length}
+                    </span>
+                    {viewingImages.time_taken && (
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: 'var(--lime-accent)', background: 'rgba(57, 255, 20, 0.1)', border: '1px solid rgba(57, 255, 20, 0.3)', padding: '1px 6px', borderRadius: '2px', fontWeight: 700 }}>
+                        ⏱ TIME: {viewingImages.time_taken}
+                      </span>
+                    )}
                   </div>
                 </div>
 
