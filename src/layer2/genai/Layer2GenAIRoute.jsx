@@ -7,7 +7,7 @@ import { genaiService } from './services/genaiService';
 import { eventStateService } from '../../shared/services/eventStateService';
 
 export default function Layer2GenAIRoute({ participant, onBack, skipIntro = false }) {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [assignment, setAssignment] = useState(null);
   const [stage, setStage] = useState(skipIntro ? 'workspace' : 'intro'); // 'intro' | 'instructions' | 'workspace'
@@ -35,26 +35,29 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
   }, [onBack]);
 
   useEffect(() => {
-    if (!participant) return;
+    const activeUserId = participant?.userId || participant?.user_id;
+    if (!activeUserId) {
+      setLoading(false);
+      return;
+    }
     
+    let isMounted = true;
     const initializeAssignment = async () => {
       setLoading(true);
       
       // Fetch existing assignment if present
-      const { data: existing, error: fetchErr } = await genaiService.fetchParticipantSubmission(
-        participant.userId || participant.user_id
-      );
+      const { data: existing, error: fetchErr } = await genaiService.fetchParticipantSubmission(activeUserId);
       
+      if (!isMounted) return;
+
       if (fetchErr) {
-        setError(fetchErr.message);
-        setLoading(false);
-        return;
+        console.warn('Error fetching Layer 2 GenAI assignment:', fetchErr);
       }
       
       if (existing) {
         setAssignment(existing);
-        // If already submitted, jump directly to workspace
-        if (existing.submitted) {
+        // If already submitted or expired, jump directly to workspace
+        if (existing.submitted || existing.status === 'time_expired') {
           setHasStarted(true);
           setStage('workspace');
         }
@@ -64,6 +67,9 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
     };
     
     initializeAssignment();
+    return () => {
+      isMounted = false;
+    };
   }, [participant]);
 
   const handleBeginChallenge = async () => {
@@ -77,12 +83,18 @@ export default function Layer2GenAIRoute({ participant, onBack, skipIntro = fals
     const { data, error: assignErr } = await genaiService.assignRandomQuestion(participant);
     
     if (assignErr) {
-      setError(assignErr.message);
-      setLoading(false);
-      return;
+      console.warn('Error assigning random question, using default fallback:', assignErr);
+      const allQs = genaiService.getAllQuestions();
+      const fallback = {
+        question_id: allQs[0]?.id || 'l2_genai_1',
+        status: 'in_progress',
+        assigned_at: new Date().toISOString()
+      };
+      setAssignment(fallback);
+    } else {
+      setAssignment(data);
     }
     
-    setAssignment(data);
     setHasStarted(true);
     setStage('workspace');
     setLoading(false);

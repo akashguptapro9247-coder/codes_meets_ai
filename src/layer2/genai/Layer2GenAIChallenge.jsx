@@ -108,7 +108,10 @@ export default function Layer2GenAIChallenge({
   };
 
   const participantInfo = getActiveParticipantInfo();
-  const question = genaiService.getQuestionById(assignment?.question_id);
+  const question = genaiService.getQuestionById(assignment?.question_id) || genaiService.getAllQuestions()[0];
+  const isSubmitted = Boolean(assignment?.submitted || submissionSuccess);
+  const isSubmissionCompleted = isSubmitted;
+  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired') && !isSubmissionCompleted);
 
   // Time Expired Handler (idempotent, single execution)
   const handleTimeExpire = async () => {
@@ -137,7 +140,7 @@ export default function Layer2GenAIChallenge({
     }
   };
 
-  // 4. Final Submission Handler
+  // Final Submission Handler
   const handleSubmit = async () => {
     if (isExpired || assignment?.status === 'time_expired') {
       soundEngine.playClick();
@@ -180,30 +183,6 @@ export default function Layer2GenAIChallenge({
       if (onSubmissionComplete) onSubmissionComplete(data);
     }
   };
-
-  if (!question) {
-    return (
-      <div
-        style={{
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#030712',
-          color: '#ef4444',
-          fontFamily: 'var(--font-mono)'
-        }}
-      >
-        <AlertTriangle size={24} style={{ marginRight: '10px' }} />
-        Error: Assigned question not found.
-      </div>
-    );
-  }
-
-  // 5. Check if in Final Result State (Success or Timeout)
-  const isSubmissionCompleted = Boolean(assignment?.submitted || submissionSuccess);
-  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired') && !isSubmissionCompleted);
 
   if (isSubmissionCompleted) {
     return (
