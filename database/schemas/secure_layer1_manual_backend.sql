@@ -349,8 +349,8 @@ BEGIN
   IF v_prefix = '26' THEN
     v_batch      := '26';
     v_year_name  := 'First Year';
-    v_easy_count := 10;
-    v_hard_count := 5;
+    v_easy_count := 15;
+    v_hard_count := 0;
   ELSIF v_prefix = '25' THEN
     v_batch      := '25';
     v_year_name  := 'Second Year';

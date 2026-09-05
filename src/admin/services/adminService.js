@@ -90,11 +90,20 @@ export const adminService = {
       // Check if player with this roll number already exists
       const { data: existingUser } = await supabase
         .from('users')
-        .select('user_id, roll_number, name')
+        .select('user_id, roll_number, name, is_removed, promoted_to_layer2, promoted_to_layer3')
         .eq('roll_number', payload.roll_number)
         .maybeSingle();
 
       if (existingUser) {
+        if (existingUser.is_removed) {
+          return {
+            data: null,
+            error: {
+              message: 'This roll number has already completed its participation in the event and cannot re-register.'
+            }
+          };
+        }
+
         return {
           data: existingUser,
           error: null,
@@ -231,7 +240,7 @@ export const adminService = {
   // ------------------------------------------------------------------------
   async fetchLayer1Submissions() {
     if (!isSupabaseConfigured() || !supabase) {
-      return { data: [], error: { message: 'Supabase not configured' } };
+      return { data: [], error: { message: 'Database client not initialized' } };
     }
 
     try {
@@ -244,7 +253,44 @@ export const adminService = {
         console.error('[Supabase::fetchLayer1Submissions] Error:', error);
         return { data: [], error };
       }
-      return { data: data || [], error: null };
+
+      const enriched = (data || []).map((sub) => {
+        let timeTaken = sub.time_taken;
+        let startedAt = sub.started_at;
+        let timeTakenSeconds = sub.time_taken_seconds;
+
+        if (Array.isArray(sub.image_paths)) {
+          if (!timeTaken || timeTaken === '00:00' || timeTaken === '00') {
+            const timeEntry = sub.image_paths.find((p) => typeof p === 'string' && p.startsWith('__TIME_TAKEN__:'));
+            if (timeEntry) timeTaken = timeEntry.replace('__TIME_TAKEN__:', '');
+          }
+          if (!startedAt) {
+            const startedEntry = sub.image_paths.find((p) => typeof p === 'string' && p.startsWith('__STARTED_AT__:'));
+            if (startedEntry) startedAt = startedEntry.replace('__STARTED_AT__:', '');
+          }
+          if (!timeTakenSeconds) {
+            const secEntry = sub.image_paths.find((p) => typeof p === 'string' && p.startsWith('__TIME_TAKEN_SECONDS__:'));
+            if (secEntry) timeTakenSeconds = parseInt(secEntry.replace('__TIME_TAKEN_SECONDS__:', ''), 10);
+          }
+        }
+
+        if ((!timeTaken || timeTaken === '00:00' || timeTaken === '00') && startedAt && sub.submitted_at) {
+          const diff = Math.max(1, Math.floor((new Date(sub.submitted_at).getTime() - new Date(startedAt).getTime()) / 1000));
+          const m = Math.floor(diff / 60);
+          const s = diff % 60;
+          timeTaken = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          timeTakenSeconds = diff;
+        }
+
+        return {
+          ...sub,
+          time_taken: timeTaken || '00:00',
+          started_at: startedAt || null,
+          time_taken_seconds: timeTakenSeconds || null
+        };
+      });
+
+      return { data: enriched, error: null };
     } catch (err) {
       console.error('[Supabase::fetchLayer1Submissions] Exception:', err);
       return { data: [], error: err };
@@ -267,6 +313,40 @@ export const adminService = {
         console.warn('[Supabase::fetchLayer1SubmissionForUser] Query warning:', error);
         return { data: null, error };
       }
+
+      if (data) {
+        let timeTaken = data.time_taken;
+        let startedAt = data.started_at;
+        let timeTakenSeconds = data.time_taken_seconds;
+
+        if (Array.isArray(data.image_paths)) {
+          if (!timeTaken || timeTaken === '00:00' || timeTaken === '00') {
+            const timeEntry = data.image_paths.find((p) => typeof p === 'string' && p.startsWith('__TIME_TAKEN__:'));
+            if (timeEntry) timeTaken = timeEntry.replace('__TIME_TAKEN__:', '');
+          }
+          if (!startedAt) {
+            const startedEntry = data.image_paths.find((p) => typeof p === 'string' && p.startsWith('__STARTED_AT__:'));
+            if (startedEntry) startedAt = startedEntry.replace('__STARTED_AT__:', '');
+          }
+          if (!timeTakenSeconds) {
+            const secEntry = data.image_paths.find((p) => typeof p === 'string' && p.startsWith('__TIME_TAKEN_SECONDS__:'));
+            if (secEntry) timeTakenSeconds = parseInt(secEntry.replace('__TIME_TAKEN_SECONDS__:', ''), 10);
+          }
+        }
+
+        if ((!timeTaken || timeTaken === '00:00' || timeTaken === '00') && startedAt && data.submitted_at) {
+          const diff = Math.max(1, Math.floor((new Date(data.submitted_at).getTime() - new Date(startedAt).getTime()) / 1000));
+          const m = Math.floor(diff / 60);
+          const s = diff % 60;
+          timeTaken = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          timeTakenSeconds = diff;
+        }
+
+        data.time_taken = timeTaken || '00:00';
+        data.started_at = startedAt || null;
+        data.time_taken_seconds = timeTakenSeconds || null;
+      }
+
       return { data, error: null };
     } catch (err) {
       return { data: null, error: err };
@@ -276,7 +356,7 @@ export const adminService = {
   /**
    * Participant Submits GenAI Prompt & Image Assets (Single Submission Only)
    */
-  async submitLayer1GenAi({ userId, username, rollNumber, prompt, imageItems, timeTaken, timeTakenSeconds }) {
+  async submitLayer1GenAi({ userId, username, rollNumber, prompt, imageItems, timeTaken, timeTakenSeconds, startedAt, submittedAt }) {
     if (!isSupabaseConfigured() || !supabase) {
       return { error: { message: 'Database client not initialized' } };
     }
@@ -317,7 +397,44 @@ export const adminService = {
 
       const imageUrls = uploadedImages.map((img) => img.url).filter(Boolean);
       const imageFileIds = uploadedImages.map((img) => img.fileId).filter(Boolean);
-      const imagePaths = uploadedImages.map((img) => img.filePath).filter(Boolean);
+      let imagePaths = uploadedImages.map((img) => img.filePath).filter(Boolean);
+
+      // Server-side authoritative timing verification
+      const submissionTimestamp = submittedAt || new Date().toISOString();
+      let calculatedSeconds = timeTakenSeconds;
+      let calculatedTimeTaken = timeTaken;
+
+      if (startedAt) {
+        const diffMs = new Date(submissionTimestamp).getTime() - new Date(startedAt).getTime();
+        const diffSec = Math.floor(diffMs / 1000);
+
+        // Enforce 15-minute limit (900 seconds) + 20s grace period for upload/network transmission
+        if (diffSec > 920) {
+          return {
+            data: null,
+            error: { message: 'Submission rejected: The 15-minute challenge duration limit has expired.' }
+          };
+        }
+
+        calculatedSeconds = Math.max(1, Math.min(900, diffSec));
+        const m = Math.floor(calculatedSeconds / 60);
+        const s = calculatedSeconds % 60;
+        calculatedTimeTaken = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      } else if (calculatedSeconds && calculatedSeconds > 0) {
+        calculatedSeconds = Math.max(1, Math.min(900, calculatedSeconds));
+        const m = Math.floor(calculatedSeconds / 60);
+        const s = calculatedSeconds % 60;
+        calculatedTimeTaken = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      } else {
+        calculatedSeconds = 60;
+        calculatedTimeTaken = '01:00';
+      }
+
+      // Embed metadata into image_paths as ultra-safe fallback if columns are absent
+      const metadataTag = `__TIME_TAKEN__:${calculatedTimeTaken}`;
+      const startedTag = `__STARTED_AT__:${startedAt || ''}`;
+      const secTag = `__TIME_TAKEN_SECONDS__:${calculatedSeconds}`;
+      imagePaths = [...imagePaths, metadataTag, startedTag, secTag];
 
       // 3. Insert submission record in Supabase (enforced by UNIQUE constraint on user_id)
       const payload = {
@@ -328,10 +445,12 @@ export const adminService = {
         image_urls: imageUrls,
         image_file_ids: imageFileIds,
         image_paths: imagePaths,
-        time_taken: timeTaken || '00:00',
+        time_taken: calculatedTimeTaken,
+        time_taken_seconds: calculatedSeconds,
+        started_at: startedAt || null,
         status: 'pending',
-        submitted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        submitted_at: submissionTimestamp,
+        updated_at: submissionTimestamp
       };
 
       let { data, error } = await supabase
@@ -340,10 +459,12 @@ export const adminService = {
         .select()
         .single();
 
-      // Graceful fallback if time_taken column does not exist yet on remote table
-      if (error && (error.code === '42703' || error.message?.includes('time_taken'))) {
+      // Graceful fallback if any new columns (time_taken, time_taken_seconds, started_at) do not exist yet on remote table
+      if (error && (error.code === '42703' || error.message?.includes('does not exist'))) {
         const fallbackPayload = { ...payload };
         delete fallbackPayload.time_taken;
+        delete fallbackPayload.time_taken_seconds;
+        delete fallbackPayload.started_at;
         const fallbackRes = await supabase
           .from('layer_1_genai_submissions')
           .insert([fallbackPayload])
@@ -362,6 +483,10 @@ export const adminService = {
         }
         console.error('[Supabase::submitLayer1GenAi] Error saving submission:', error);
         return { data: null, error };
+      }
+
+      if (data) {
+        data.time_taken = calculatedTimeTaken;
       }
 
       return { data, error: null };
@@ -585,6 +710,13 @@ export const adminService = {
           };
         }
 
+        // If all questions in pool have already been answered, auto-complete
+        const pool = attempt.questions_pool || [];
+        const answeredCount = Object.keys(attempt.selected_answers || {}).length;
+        if (pool.length > 0 && answeredCount >= pool.length) {
+          return this.completeLayer1ManualSession(attempt.id, userId);
+        }
+
         // If in_progress: compute remaining seconds
         const startTime = new Date(attempt.started_at || attempt.created_at).getTime();
         const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
@@ -601,6 +733,9 @@ export const adminService = {
             expires_at:        new Date(startTime + 900 * 1000).toISOString(),
             remaining_seconds: remainingSeconds,
             questions:         attempt.questions_pool || [],
+            selected_answers:  attempt.selected_answers || {},
+            score:             attempt.score || 0,
+            correct_count:     attempt.correct_count || 0,
             batch:             attempt.batch || batchValidation.batch,
             year_name:         attempt.year || batchValidation.yearName,
             resumed:           true
@@ -692,10 +827,10 @@ export const adminService = {
       const evalRes = evaluateSingleAnswer(questionId, selectedOption);
 
       if (attemptId) {
-        // Fetch current selected_answers
+        // Fetch current selected_answers and questions_pool
         const { data: attempt } = await supabase
           .from('layer_1_manual_attempts')
-          .select('selected_answers')
+          .select('selected_answers, questions_pool')
           .eq('id', attemptId)
           .maybeSingle();
 
@@ -704,13 +839,29 @@ export const adminService = {
           [questionId]: selectedOption
         };
 
+        const totalEval = evaluateManualAnswers(updatedAnswers);
+        const pool = attempt?.questions_pool || [];
+        const isAllAnswered = pool.length > 0 && Object.keys(updatedAnswers).length >= pool.length;
+
         await supabase
           .from('layer_1_manual_attempts')
           .update({
             selected_answers: updatedAnswers,
-            updated_at: new Date().toISOString()
+            score:            totalEval.score,
+            correct_count:    totalEval.correctCount,
+            ...(isAllAnswered ? { status: 'completed', completed_at: new Date().toISOString() } : {}),
+            updated_at:       new Date().toISOString()
           })
           .eq('id', attemptId);
+
+        // If this answer completes the quiz, also sync score to layer_1 table
+        if (isAllAnswered) {
+          try {
+            await this.completeLayer1ManualSession(attemptId, userId);
+          } catch (syncErr) {
+            console.warn('[submitLayer1ManualAnswer] Auto-sync to layer_1 failed:', syncErr);
+          }
+        }
       }
 
       return {
@@ -1311,6 +1462,10 @@ export const adminService = {
         return { error: { message: 'Could not fetch player data. Please try again.' } };
       }
 
+      if (!p1.promoted_to_layer2 || !p2.promoted_to_layer2 || !p1.promoted_to_layer3 || !p2.promoted_to_layer3 || p1.is_removed || p2.is_removed) {
+        return { error: { message: 'Both participants must be actively qualified and promoted from Layer 1 and Layer 2 before they can be formed into a Duo team.' } };
+      }
+
       // Layer 3 Combined = ((P1_L1_Avg + P1_L2_Avg) + (P2_L1_Avg + P2_L2_Avg)) / 2
       const p1Combined = (parseFloat(p1.average_layer_1) || 0) + (parseFloat(p1.average_layer_2) || 0);
       const p2Combined = (parseFloat(p2.average_layer_1) || 0) + (parseFloat(p2.average_layer_2) || 0);
@@ -1731,6 +1886,256 @@ export const adminService = {
       return { error: null };
     } catch (err) {
       return { error: err };
+    }
+  },
+
+  // ------------------------------------------------------------------------
+  // PROMOTION SYSTEM (LAYER 1 -> LAYER 2)
+  // ------------------------------------------------------------------------
+  /**
+   * Saves Layer 1 promotion selections to Supabase.
+   * Promoted participants: promoted_to_layer2 = true, is_removed = false.
+   * Non-promoted participants: promoted_to_layer2 = false, is_removed = true.
+   * Marks event_settings.layer_1_promotion_finalized = true.
+   */
+  async saveLayer1Promotions(promotedUserIds = [], allUserIds = []) {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { error: { message: 'Supabase not configured' } };
+    }
+
+    try {
+      const promotedSet = new Set(promotedUserIds);
+      const nonPromotedIds = allUserIds.filter((id) => !promotedSet.has(id));
+
+      // 1. Update promoted participants
+      if (promotedUserIds.length > 0) {
+        const { error: pErr } = await supabase
+          .from('users')
+          .update({
+            promoted_to_layer2: true,
+            is_removed: false,
+            updated_at: new Date().toISOString()
+          })
+          .in('user_id', promotedUserIds);
+
+        if (pErr) {
+          console.error('[Supabase::saveLayer1Promotions] Error promoting users:', pErr);
+          return { error: pErr };
+        }
+      }
+
+      // 2. Eliminate non-promoted participants
+      if (nonPromotedIds.length > 0) {
+        const { error: npErr } = await supabase
+          .from('users')
+          .update({
+            promoted_to_layer2: false,
+            is_removed: true,
+            updated_at: new Date().toISOString()
+          })
+          .in('user_id', nonPromotedIds);
+
+        if (npErr) {
+          console.error('[Supabase::saveLayer1Promotions] Error eliminating non-promoted users:', npErr);
+          return { error: npErr };
+        }
+      }
+
+      // 3. Mark layer_1_promotion_finalized in event_settings
+      await supabase
+        .from('event_settings')
+        .update({
+          layer_1_promotion_finalized: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+
+      return { data: { promotedCount: promotedUserIds.length, eliminatedCount: nonPromotedIds.length }, error: null };
+    } catch (err) {
+      console.error('[Supabase::saveLayer1Promotions] Exception:', err);
+      return { error: err };
+    }
+  },
+
+  /**
+   * Reset Layer 1 Promotions (allows admin to un-finalize or clear).
+   */
+  async resetLayer1Promotions(allUserIds = []) {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { error: { message: 'Supabase not configured' } };
+    }
+
+    try {
+      if (allUserIds.length > 0) {
+        await supabase
+          .from('users')
+          .update({
+            promoted_to_layer2: false,
+            is_removed: false,
+            updated_at: new Date().toISOString()
+          })
+          .in('user_id', allUserIds);
+      }
+
+      await supabase
+        .from('event_settings')
+        .update({
+          layer_1_promotion_finalized: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+
+      return { success: true, error: null };
+    } catch (err) {
+      console.error('[Supabase::resetLayer1Promotions] Exception:', err);
+      return { error: err };
+    }
+  },
+
+  // ------------------------------------------------------------------------
+  // PROMOTION SYSTEM (LAYER 2 -> LAYER 3/4 / DUOS)
+  // ------------------------------------------------------------------------
+  /**
+   * Saves Layer 2 promotion selections to Supabase.
+   * Promoted participants: promoted_to_layer3 = true, is_removed = false.
+   * Non-promoted Layer 2 participants: promoted_to_layer3 = false, is_removed = true.
+   * Marks event_settings.layer_2_promotion_finalized = true.
+   */
+  async saveLayer2Promotions(promotedUserIds = [], allLayer2UserIds = []) {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { error: { message: 'Supabase not configured' } };
+    }
+
+    try {
+      const promotedSet = new Set(promotedUserIds);
+      const nonPromotedIds = allLayer2UserIds.filter((id) => !promotedSet.has(id));
+
+      // 1. Update promoted participants
+      if (promotedUserIds.length > 0) {
+        const { error: pErr } = await supabase
+          .from('users')
+          .update({
+            promoted_to_layer3: true,
+            is_removed: false,
+            updated_at: new Date().toISOString()
+          })
+          .in('user_id', promotedUserIds);
+
+        if (pErr) {
+          console.error('[Supabase::saveLayer2Promotions] Error promoting to Layer 3:', pErr);
+          return { error: pErr };
+        }
+      }
+
+      // 2. Eliminate non-promoted Layer 2 participants
+      if (nonPromotedIds.length > 0) {
+        const { error: npErr } = await supabase
+          .from('users')
+          .update({
+            promoted_to_layer3: false,
+            is_removed: true,
+            updated_at: new Date().toISOString()
+          })
+          .in('user_id', nonPromotedIds);
+
+        if (npErr) {
+          console.error('[Supabase::saveLayer2Promotions] Error eliminating non-promoted Layer 2 users:', npErr);
+          return { error: npErr };
+        }
+      }
+
+      // 3. Mark layer_2_promotion_finalized in event_settings
+      await supabase
+        .from('event_settings')
+        .update({
+          layer_2_promotion_finalized: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+
+      return { data: { promotedCount: promotedUserIds.length, eliminatedCount: nonPromotedIds.length }, error: null };
+    } catch (err) {
+      console.error('[Supabase::saveLayer2Promotions] Exception:', err);
+      return { error: err };
+    }
+  },
+
+  /**
+   * Reset Layer 2 Promotions.
+   */
+  async resetLayer2Promotions(allLayer2UserIds = []) {
+    if (!isSupabaseConfigured() || !supabase) {
+      return { error: { message: 'Supabase not configured' } };
+    }
+
+    try {
+      if (allLayer2UserIds.length > 0) {
+        await supabase
+          .from('users')
+          .update({
+            promoted_to_layer3: false,
+            is_removed: false,
+            updated_at: new Date().toISOString()
+          })
+          .in('user_id', allLayer2UserIds);
+      }
+
+      await supabase
+        .from('event_settings')
+        .update({
+          layer_2_promotion_finalized: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', 1);
+
+      return { success: true, error: null };
+    } catch (err) {
+      console.error('[Supabase::resetLayer2Promotions] Exception:', err);
+      return { error: err };
+    }
+  },
+
+  /**
+   * Validate Layer 2 Access: participant must have promoted_to_layer2 === true && !is_removed.
+   */
+  async validateLayer2Access(userId) {
+    if (!userId) return false;
+    if (!isSupabaseConfigured() || !supabase) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('promoted_to_layer2, is_removed')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error || !data) return false;
+      return Boolean(data.promoted_to_layer2 && !data.is_removed);
+    } catch (err) {
+      console.warn('[validateLayer2Access] Check warning:', err);
+      return false;
+    }
+  },
+
+  /**
+   * Validate Layer 3 / Layer 4 Access: participant must have promoted_to_layer3 === true && !is_removed.
+   */
+  async validateLayer3Access(userId) {
+    if (!userId) return false;
+    if (!isSupabaseConfigured() || !supabase) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('promoted_to_layer2, promoted_to_layer3, is_removed')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error || !data) return false;
+      return Boolean(data.promoted_to_layer2 && data.promoted_to_layer3 && !data.is_removed);
+    } catch (err) {
+      console.warn('[validateLayer3Access] Check warning:', err);
+      return false;
     }
   }
 };

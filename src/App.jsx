@@ -126,6 +126,15 @@ function App() {
     const unsubscribe = participantGuard.subscribe((event) => {
       if (event.type === 'FORCE_EXIT') {
         handleForceExit(event.message);
+      } else if (event.type === 'PROMOTION_UPDATED') {
+        const stored = getStoredParticipant();
+        if (stored) {
+          setParticipant({
+            ...stored,
+            promoted_to_layer2: event.promoted_to_layer2,
+            promoted_to_layer3: event.promoted_to_layer3
+          });
+        }
       }
     });
 
@@ -144,6 +153,13 @@ function App() {
         // No session exists — immediate bounce to landing
         navigateTo('/', 'landing', true);
       } else {
+        // If attempting to access Layer 2 routes, verify participant is promoted
+        const isL2Route = currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai';
+        if (isL2Route && !stored.promoted_to_layer2) {
+          navigateTo('/play', 'arena', true);
+          return;
+        }
+
         // Active session exists — asynchronously verify against Supabase users table
         participantGuard.validateParticipantExists(stored.userId || stored.user_id).then((valid) => {
           if (!valid) {

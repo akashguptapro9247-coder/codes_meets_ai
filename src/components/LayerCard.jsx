@@ -10,13 +10,16 @@ export default function LayerCard({
   layerNumber = '01',
   layerTitle = 'LAYER 01',
   layerState = { active: false, activeTrack: null },
+  isPromoted = true,
   genAiDesc = 'Prompt Engineering',
   manualDesc = 'Manual Coding',
   genAiImage = '/assets/layer1_genai.jpeg',
   manualImage = '/assets/layer1_manual.jpeg',
   onSelectRound
 }) {
-  const { active, activeTrack } = layerState;
+  const isAccessible = layerKey === 'layer2' ? (Boolean(layerState?.active) && Boolean(isPromoted)) : Boolean(layerState?.active);
+  const active = isAccessible;
+  const activeTrack = isAccessible ? layerState?.activeTrack : null;
   const [isHovered, setIsHovered] = useState(false);
   const [wasJustUnlocked, setWasJustUnlocked] = useState(false);
 
@@ -146,7 +149,7 @@ export default function LayerCard({
       </AnimatePresence>
 
       {/* LOCKED OVERLAY (renders when active === false) */}
-      {!active && <LockedBlurOverlay layerTitle={layerTitle} />}
+      {!active && <LockedBlurOverlay layerTitle={layerKey === 'layer2' && !isPromoted ? 'LAYER 02 // PROMOTION REQUIRED' : layerTitle} />}
 
       {/* MAIN TWO-COLUMN SLASH CONTENT WITH GAMIFIED ARTWORK */}
       <div

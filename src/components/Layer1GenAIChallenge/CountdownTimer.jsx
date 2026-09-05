@@ -7,28 +7,51 @@ export default function CountdownTimer({
   participantId = 'default',
   onTimeUp
 }) {
-  const timerKey = `cma_l1_genai_timer_start_${participantId}`;
+  const getTimerKey = (id) => `cma_l1_genai_timer_start_${id || 'player'}`;
+  const timerKey = getTimerKey(participantId);
 
   // Initialize or retrieve start timestamp from storage
   const [secondsRemaining, setSecondsRemaining] = useState(() => {
     if (typeof window === 'undefined') return TOTAL_DURATION;
 
-    const storedStart = localStorage.getItem(timerKey);
+    const storedStart = localStorage.getItem(timerKey) || sessionStorage.getItem(timerKey);
     const now = Date.now();
 
     if (storedStart) {
       const startTime = parseInt(storedStart, 10);
       const elapsedSeconds = Math.floor((now - startTime) / 1000);
-      const left = Math.max(0, TOTAL_DURATION - elapsedSeconds);
-      return left;
+      return Math.max(0, TOTAL_DURATION - elapsedSeconds);
     } else {
-      localStorage.setItem(timerKey, now.toString());
+      const nowStr = now.toString();
+      try {
+        localStorage.setItem(timerKey, nowStr);
+        sessionStorage.setItem(timerKey, nowStr);
+      } catch (e) {}
       return TOTAL_DURATION;
     }
   });
 
   const onTimeUpRef = useRef(onTimeUp);
   onTimeUpRef.current = onTimeUp;
+
+  // Recalculate if participantId becomes available after initial mount
+  useEffect(() => {
+    if (!participantId || participantId === 'default' || participantId === 'player') return;
+    const currentKey = getTimerKey(participantId);
+    const stored = localStorage.getItem(currentKey) || sessionStorage.getItem(currentKey);
+    const now = Date.now();
+    if (stored) {
+      const startTime = parseInt(stored, 10);
+      const elapsed = Math.floor((now - startTime) / 1000);
+      setSecondsRemaining(Math.max(0, TOTAL_DURATION - elapsed));
+    } else {
+      const nowStr = now.toString();
+      try {
+        localStorage.setItem(currentKey, nowStr);
+        sessionStorage.setItem(currentKey, nowStr);
+      } catch (e) {}
+    }
+  }, [participantId]);
 
   useEffect(() => {
     if (secondsRemaining <= 0) {
@@ -37,7 +60,8 @@ export default function CountdownTimer({
     }
 
     const interval = setInterval(() => {
-      const storedStart = localStorage.getItem(timerKey);
+      const currentKey = getTimerKey(participantId);
+      const storedStart = localStorage.getItem(currentKey) || sessionStorage.getItem(currentKey);
       const now = Date.now();
       const startTime = storedStart ? parseInt(storedStart, 10) : now;
       const elapsed = Math.floor((now - startTime) / 1000);
@@ -52,7 +76,7 @@ export default function CountdownTimer({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timerKey, secondsRemaining]);
+  }, [participantId, secondsRemaining]);
 
   // Format MM:SS
   const minutes = Math.floor(secondsRemaining / 60);

@@ -65,6 +65,10 @@ export default function EventArenaScene({ participant, initialRound = null, onNa
   }, []);
 
   const handleSelectRound = (path, title) => {
+    if ((path.startsWith('/layer2') || path.startsWith('/layer/2')) && !participant?.promoted_to_layer2) {
+      soundEngine.playClick();
+      return;
+    }
     // Only open a new round if it is different from the currently active one
     if (activeRoundRef.current?.path === path) return;
     const round = { path, title };
@@ -212,6 +216,7 @@ export default function EventArenaScene({ participant, initialRound = null, onNa
           layerNumber="02"
           layerTitle="LAYER 02"
           layerState={eventState.layer2}
+          isPromoted={Boolean(participant?.promoted_to_layer2)}
           genAiDesc="Website Building"
           manualDesc="Jumbled Code Challenge"
           genAiImage="/assets/layer2_genai.png"

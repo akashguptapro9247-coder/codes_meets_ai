@@ -43,13 +43,53 @@ class ParticipantGuard {
           table: 'users'
         },
         (payload) => {
-          // If payload.old matches this participant (or all-delete wildcard)
           if (!payload.old || payload.old.user_id === this.currentUserId) {
             this.triggerForceExit('ADMIN_DELETED', 'Your session has been terminated by the event admin.');
           }
         }
       )
-      // 2. Listen for DELETE on duos table (if duo partner or team deleted)
+      // 2. Listen for UPDATE on users table (elimination or promotion)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'users'
+        },
+        (payload) => {
+          if (payload.new && payload.new.user_id === this.currentUserId) {
+            if (payload.new.is_removed) {
+              this.triggerForceExit('PARTICIPANT_REMOVED', 'Your participation in this event has concluded.');
+              return;
+            }
+
+            // Sync promotion status to local session
+            try {
+              const raw = sessionStorage.getItem('cma_participant_session') || localStorage.getItem('cma_participant_session');
+              if (raw) {
+                const stored = JSON.parse(raw);
+                const updated = {
+                  ...stored,
+                  promoted_to_layer2: Boolean(payload.new.promoted_to_layer2),
+                  promoted_to_layer3: Boolean(payload.new.promoted_to_layer3),
+                  is_removed: Boolean(payload.new.is_removed)
+                };
+                sessionStorage.setItem('cma_participant_session', JSON.stringify(updated));
+                localStorage.setItem('cma_participant_session', JSON.stringify(updated));
+              }
+            } catch (e) {
+              console.warn('Error updating session storage on user change:', e);
+            }
+
+            this.notifyListeners({
+              type: 'PROMOTION_UPDATED',
+              promoted_to_layer2: Boolean(payload.new.promoted_to_layer2),
+              promoted_to_layer3: Boolean(payload.new.promoted_to_layer3)
+            });
+          }
+        }
+      )
+      // 3. Listen for DELETE on duos table (if duo partner or team deleted)
       .on(
         'postgres_changes',
         {
@@ -99,8 +139,8 @@ class ParticipantGuard {
   }
 
   /**
-   * Asynchronously validates that the participant record still exists in Supabase.
-   * Used on route change, page load, window focus / visibility change.
+   * Asynchronously validates that the participant record still exists in Supabase
+   * and has not been eliminated.
    */
   async validateParticipantExists(userId) {
     if (!userId) return false;
@@ -109,15 +149,35 @@ class ParticipantGuard {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('user_id')
+        .select('user_id, is_removed, promoted_to_layer2, promoted_to_layer3')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (error || !data) {
-        // Participant no longer exists in Supabase!
         this.triggerForceExit('DATABASE_INVALIDATED', 'Your participant record no longer exists in the event database.');
         return false;
       }
+
+      if (data.is_removed) {
+        this.triggerForceExit('PARTICIPANT_REMOVED', 'Your participation in this event has concluded.');
+        return false;
+      }
+
+      // Keep local session storage in sync with database source of truth
+      try {
+        const raw = sessionStorage.getItem('cma_participant_session') || localStorage.getItem('cma_participant_session');
+        if (raw) {
+          const stored = JSON.parse(raw);
+          const updated = {
+            ...stored,
+            promoted_to_layer2: Boolean(data.promoted_to_layer2),
+            promoted_to_layer3: Boolean(data.promoted_to_layer3),
+            is_removed: Boolean(data.is_removed)
+          };
+          sessionStorage.setItem('cma_participant_session', JSON.stringify(updated));
+          localStorage.setItem('cma_participant_session', JSON.stringify(updated));
+        }
+      } catch (e) {}
 
       return true;
     } catch (err) {

@@ -93,7 +93,7 @@ export default function AdminDashboard({ onClose }) {
   const [layer1Search, setLayer1Search] = useState('');
   const [layer1YearFilter, setLayer1YearFilter] = useState('ALL'); // 'ALL' | '1' | '2'
 
-  const [layer2ActiveSubTab, setLayer2ActiveSubTab] = useState('manual');
+  const [layer2ActiveSubTab, setLayer2ActiveSubTab] = useState('results'); // 'results' | 'genai' | 'manual'
   const [layer2Search, setLayer2Search] = useState('');
   const [layer2YearFilter, setLayer2YearFilter] = useState('ALL'); // 'ALL' | '1' | '2'
 
@@ -101,6 +101,16 @@ export default function AdminDashboard({ onClose }) {
   const [submissionStatusFilter, setSubmissionStatusFilter] = useState('ALL');
   const [manualSearch, setManualSearch] = useState('');
   const [manualBatchFilter, setManualBatchFilter] = useState('ALL');
+
+  // Layer 1 Promotion State
+  const [selectedForPromotion, setSelectedForPromotion] = useState(new Set());
+  const [isSavingLayer1Promotion, setIsSavingLayer1Promotion] = useState(false);
+  const [layer1PromotionSaveStatus, setLayer1PromotionSaveStatus] = useState(null);
+
+  // Layer 2 Promotion State
+  const [selectedForLayer2Promotion, setSelectedForLayer2Promotion] = useState(new Set());
+  const [isSavingLayer2Promotion, setIsSavingLayer2Promotion] = useState(false);
+  const [layer2PromotionSaveStatus, setLayer2PromotionSaveStatus] = useState(null);
 
   // Modals state
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
@@ -210,6 +220,213 @@ export default function AdminDashboard({ onClose }) {
       };
     }
   }, [isAuthenticated]);
+
+  // Sync selected promotion sets when usersList updates
+  useEffect(() => {
+    const l1Promoted = new Set();
+    const l2Promoted = new Set();
+    usersList.forEach((u) => {
+      if (u.promoted_to_layer2) l1Promoted.add(u.user_id);
+      if (u.promoted_to_layer3) l2Promoted.add(u.user_id);
+    });
+    setSelectedForPromotion(l1Promoted);
+    setSelectedForLayer2Promotion(l2Promoted);
+  }, [usersList]);
+
+  // ── LAYER 1 PROMOTION HANDLERS ──
+  const togglePromoteUser = (userId) => {
+    soundEngine.playClick();
+    setSelectedForPromotion((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  const selectTopLayer1 = (count) => {
+    soundEngine.playClick();
+    const topIds = rankedLayer1Results.slice(0, count).map((item) => item.user.user_id);
+    setSelectedForPromotion(new Set(topIds));
+  };
+
+  const selectAllLayer1 = () => {
+    soundEngine.playClick();
+    const allIds = rankedLayer1Results.map((item) => item.user.user_id);
+    setSelectedForPromotion(new Set(allIds));
+  };
+
+  const clearLayer1Selection = () => {
+    soundEngine.playClick();
+    setSelectedForPromotion(new Set());
+  };
+
+  const handleSaveLayer1Promotions = () => {
+    soundEngine.playClick();
+    if (selectedForPromotion.size === 0) {
+      setConfirmModal({
+        isOpen: true,
+        title: 'Zero Participants Selected',
+        message: 'No participants are selected for promotion. If you proceed, ALL participants will be eliminated from Layer 2. Are you sure you want to proceed?',
+        onConfirm: async () => {
+          setConfirmModal({ isOpen: false });
+          executeSaveLayer1Promotions();
+        }
+      });
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Finalize Layer 1 Promotions',
+      message: `You are about to promote ${selectedForPromotion.size} participant(s) to Layer 2. All remaining non-promoted participants will be eliminated from the competition according to event rules. Confirm finalize?`,
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false });
+        executeSaveLayer1Promotions();
+      }
+    });
+  };
+
+  const executeSaveLayer1Promotions = async () => {
+    setIsSavingLayer1Promotion(true);
+    setLayer1PromotionSaveStatus('Saving promotions to Supabase...');
+    try {
+      const allIds = usersList.map((u) => u.user_id);
+      const promotedIds = Array.from(selectedForPromotion);
+
+      const { data, error } = await adminService.saveLayer1Promotions(promotedIds, allIds);
+      if (error) {
+        toast.error(`Promotion save failed: ${error.message || 'Database error'}`);
+        setLayer1PromotionSaveStatus('Save failed');
+      } else {
+        toast.success(`Promotions saved! ${data?.promotedCount ?? promotedIds.length} promoted to Layer 2.`);
+        setLayer1PromotionSaveStatus(`Saved ✓ (${data?.promotedCount ?? promotedIds.length} promoted)`);
+        await loadAllDatabaseData();
+      }
+    } catch (err) {
+      console.error('Error saving promotions:', err);
+      toast.error('Failed to save promotions');
+      setLayer1PromotionSaveStatus('Error saving');
+    } finally {
+      setIsSavingLayer1Promotion(false);
+      setTimeout(() => setLayer1PromotionSaveStatus(null), 4000);
+    }
+  };
+
+  const handleResetLayer1Promotions = () => {
+    soundEngine.playClick();
+    setConfirmModal({
+      isOpen: true,
+      title: 'Reset Layer 1 Promotions',
+      message: 'This will reset all Layer 1 promotions and restore all eliminated participants to active state. Proceed?',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false });
+        const allIds = usersList.map((u) => u.user_id);
+        const { error } = await adminService.resetLayer1Promotions(allIds);
+        if (error) {
+          toast.error('Reset failed: ' + error.message);
+        } else {
+          toast.success('Layer 1 promotions reset successfully.');
+          setSelectedForPromotion(new Set());
+          await loadAllDatabaseData();
+        }
+      }
+    });
+  };
+
+  // ── LAYER 2 PROMOTION HANDLERS ──
+  const togglePromoteLayer2User = (userId) => {
+    soundEngine.playClick();
+    setSelectedForLayer2Promotion((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  const selectTopLayer2 = (count) => {
+    soundEngine.playClick();
+    const topIds = rankedLayer2Results.slice(0, count).map((item) => item.user.user_id);
+    setSelectedForLayer2Promotion(new Set(topIds));
+  };
+
+  const selectAllLayer2 = () => {
+    soundEngine.playClick();
+    const allIds = rankedLayer2Results.map((item) => item.user.user_id);
+    setSelectedForLayer2Promotion(new Set(allIds));
+  };
+
+  const clearLayer2Selection = () => {
+    soundEngine.playClick();
+    setSelectedForLayer2Promotion(new Set());
+  };
+
+  const handleSaveLayer2Promotions = () => {
+    soundEngine.playClick();
+    setConfirmModal({
+      isOpen: true,
+      title: 'Finalize Layer 2 Promotions',
+      message: `You are about to promote ${selectedForLayer2Promotion.size} participant(s) to Layer 3 / Layer 4 (Duo Arena). All remaining non-promoted Layer 2 participants will be eliminated. Confirm finalize?`,
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false });
+        executeSaveLayer2Promotions();
+      }
+    });
+  };
+
+  const executeSaveLayer2Promotions = async () => {
+    setIsSavingLayer2Promotion(true);
+    setLayer2PromotionSaveStatus('Saving Layer 2 promotions...');
+    try {
+      const allL2Ids = rankedLayer2Results.map((item) => item.user.user_id);
+      const promotedIds = Array.from(selectedForLayer2Promotion);
+
+      const { data, error } = await adminService.saveLayer2Promotions(promotedIds, allL2Ids);
+      if (error) {
+        toast.error(`Layer 2 promotion save failed: ${error.message || 'Database error'}`);
+        setLayer2PromotionSaveStatus('Save failed');
+      } else {
+        toast.success(`Layer 2 promotions saved! ${data?.promotedCount ?? promotedIds.length} qualified for Layer 3 & Duos.`);
+        setLayer2PromotionSaveStatus(`Saved ✓ (${data?.promotedCount ?? promotedIds.length} promoted)`);
+        await loadAllDatabaseData();
+      }
+    } catch (err) {
+      console.error('Error saving Layer 2 promotions:', err);
+      toast.error('Failed to save Layer 2 promotions');
+      setLayer2PromotionSaveStatus('Error saving');
+    } finally {
+      setIsSavingLayer2Promotion(false);
+      setTimeout(() => setLayer2PromotionSaveStatus(null), 4000);
+    }
+  };
+
+  const handleResetLayer2Promotions = () => {
+    soundEngine.playClick();
+    setConfirmModal({
+      isOpen: true,
+      title: 'Reset Layer 2 Promotions',
+      message: 'This will reset all Layer 2 promotions to Layer 3. Proceed?',
+      onConfirm: async () => {
+        setConfirmModal({ isOpen: false });
+        const allL2Ids = rankedLayer2Results.map((item) => item.user.user_id);
+        const { error } = await adminService.resetLayer2Promotions(allL2Ids);
+        if (error) {
+          toast.error('Reset failed: ' + error.message);
+        } else {
+          toast.success('Layer 2 promotions reset successfully.');
+          setSelectedForLayer2Promotion(new Set());
+          await loadAllDatabaseData();
+        }
+      }
+    });
+  };
 
   // --------------------------------------------------------------------------
   // LAYER & TRACK LOCK CONTROLS
@@ -673,8 +890,11 @@ export default function AdminDashboard({ onClose }) {
   }, [usersList, layer1List, layer1Search, layer1YearFilter]);
 
   // LAYER 2 RANKED RESULTS (High -> Low by Layer 2 Average, deterministic tie-breakers)
+  // Strictly includes ONLY participants whose Layer 1 promotion was saved (promoted_to_layer2 === true && !is_removed)
   const rankedLayer2Results = useMemo(() => {
-    const mapped = usersList.map((user) => {
+    const eligibleL2Users = usersList.filter((u) => u.promoted_to_layer2 === true && !u.is_removed);
+
+    const mapped = eligibleL2Users.map((user) => {
       const l2Record = layer2List.find((r) => r.user_id === user.user_id) || {};
       const genAi = l2Record.layer_2_gen_ai_marks !== undefined && l2Record.layer_2_gen_ai_marks !== null
         ? parseFloat(l2Record.layer_2_gen_ai_marks)
@@ -749,22 +969,17 @@ export default function AdminDashboard({ onClose }) {
     });
 
     const filtered = mapped.filter((item) => {
-      const d = item.duo;
-      const p1 = item.p1;
-      const p2 = item.p2;
-      const p1Name = d.player_1_name || p1?.name || '';
-      const p2Name = d.player_2_name || p2?.name || '';
-      const p1Roll = p1?.roll_number || '';
-      const p2Roll = p2?.roll_number || '';
+      const p1 = item.p1 || {};
+      const p2 = item.p2 || {};
+      const duo = item.duo || {};
 
       const matchSearch =
         !duoSearch.trim() ||
-        p1Name.toLowerCase().includes(duoSearch.toLowerCase()) ||
-        p2Name.toLowerCase().includes(duoSearch.toLowerCase()) ||
-        p1Roll.toLowerCase().includes(duoSearch.toLowerCase()) ||
-        p2Roll.toLowerCase().includes(duoSearch.toLowerCase()) ||
-        String(d.serial_number || '').includes(duoSearch.trim()) ||
-        (d.duo_id || '').toLowerCase().includes(duoSearch.toLowerCase());
+        (p1.name || '').toLowerCase().includes(duoSearch.toLowerCase()) ||
+        (p1.roll_number || '').toLowerCase().includes(duoSearch.toLowerCase()) ||
+        (p2.name || '').toLowerCase().includes(duoSearch.toLowerCase()) ||
+        (p2.roll_number || '').toLowerCase().includes(duoSearch.toLowerCase()) ||
+        (duo.duo_serial_number ? String(duo.duo_serial_number).includes(duoSearch) : false);
 
       const matchYear =
         duoYearFilter === 'ALL' ||
@@ -776,10 +991,10 @@ export default function AdminDashboard({ onClose }) {
 
     filtered.sort((a, b) => {
       if (b.total !== a.total) return b.total - a.total;
-      if (b.combinedL1 !== a.combinedL1) return b.combinedL1 - a.combinedL1;
-      if (b.l3 !== a.l3) return b.l3 - a.l3;
       if (b.l4 !== a.l4) return b.l4 - a.l4;
-      return (a.duo.serial_number || 0) - (b.duo.serial_number || 0);
+      if (b.l3 !== a.l3) return b.l3 - a.l3;
+      if (b.combinedL1 !== a.combinedL1) return b.combinedL1 - a.combinedL1;
+      return (a.duo.duo_serial_number || 0) - (b.duo.duo_serial_number || 0);
     });
 
     return filtered;
@@ -796,8 +1011,9 @@ export default function AdminDashboard({ onClose }) {
   }, [duosList]);
 
   // Unpaired / Available Players for new Duo creation (Sorted by name)
+  // Strictly includes ONLY participants promoted from Layer 2 to Layer 3 (promoted_to_layer3 === true && !is_removed)
   const unpairedUsers = useMemo(() => {
-    return usersList.filter((u) => !pairedPlayerIds.has(u.user_id));
+    return usersList.filter((u) => u.promoted_to_layer2 === true && u.promoted_to_layer3 === true && !u.is_removed && !pairedPlayerIds.has(u.user_id));
   }, [usersList, pairedPlayerIds]);
 
   const selectedP1 = useMemo(() => usersList.find((u) => u.user_id === duoForm.player1Id), [usersList, duoForm.player1Id]);
@@ -1575,13 +1791,14 @@ export default function AdminDashboard({ onClose }) {
                         <th style={{ padding: '12px 14px' }} title="Formula: (GenAI + Manual) / 2">
                           LAYER 1 AVERAGE
                         </th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', width: '130px' }}>PROMOTION</th>
                         <th style={{ padding: '12px 14px', textAlign: 'right' }}>ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rankedLayer1Results.length === 0 ? (
                         <tr>
-                          <td colSpan={9} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>
+                          <td colSpan={10} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>
                             NO PARTICIPANTS FOUND MATCHING FILTER // RECORD SCORES OR CLEAR FILTERS
                           </td>
                         </tr>
@@ -1642,6 +1859,36 @@ export default function AdminDashboard({ onClose }) {
                                   {item.average.toFixed(2)}
                                 </span>
                               </td>
+                              <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => togglePromoteUser(u.user_id)}
+                                  style={{
+                                    padding: '5px 12px',
+                                    fontSize: '0.72rem',
+                                    fontFamily: 'var(--font-mono)',
+                                    fontWeight: 700,
+                                    letterSpacing: '0.05em',
+                                    cursor: 'pointer',
+                                    borderRadius: '3px',
+                                    transition: 'all 0.2s ease',
+                                    background: selectedForPromotion.has(u.user_id)
+                                      ? 'rgba(57, 255, 20, 0.2)'
+                                      : 'rgba(255, 255, 255, 0.05)',
+                                    border: selectedForPromotion.has(u.user_id)
+                                      ? '1px solid var(--lime-accent)'
+                                      : '1px solid rgba(255, 255, 255, 0.2)',
+                                    color: selectedForPromotion.has(u.user_id)
+                                      ? 'var(--lime-accent)'
+                                      : '#9ca3af',
+                                    boxShadow: selectedForPromotion.has(u.user_id)
+                                      ? '0 0 10px rgba(57, 255, 20, 0.3)'
+                                      : 'none'
+                                  }}
+                                >
+                                  {selectedForPromotion.has(u.user_id) ? 'PROMOTED ✓' : 'PROMOTE'}
+                                </button>
+                              </td>
                               <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                                   <button
@@ -1684,6 +1931,125 @@ export default function AdminDashboard({ onClose }) {
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Layer 1 Promotion Save & Selection Control Bar */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    padding: '12px 18px',
+                    background: 'rgba(2, 6, 20, 0.95)',
+                    border: '1px solid rgba(0, 243, 255, 0.3)',
+                    borderRadius: '4px',
+                    boxShadow: '0 0 20px rgba(0, 0, 0, 0.7)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        color: 'var(--lime-accent)'
+                      }}
+                    >
+                      {selectedForPromotion.size} / {rankedLayer1Results.length} PARTICIPANTS SELECTED FOR LAYER 2
+                    </span>
+
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {[5, 10, 15].map((cnt) => (
+                        <button
+                          key={cnt}
+                          type="button"
+                          onClick={() => selectTopLayer1(cnt)}
+                          className="cyber-btn"
+                          style={{ padding: '4px 8px', fontSize: '0.68rem' }}
+                        >
+                          TOP {cnt}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={selectAllLayer1}
+                        className="cyber-btn"
+                        style={{ padding: '4px 8px', fontSize: '0.68rem' }}
+                      >
+                        ALL
+                      </button>
+                      <button
+                        type="button"
+                        onClick={clearLayer1Selection}
+                        style={{
+                          padding: '4px 8px',
+                          fontSize: '0.68rem',
+                          background: 'transparent',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#9ca3af',
+                          cursor: 'pointer',
+                          borderRadius: '2px',
+                          fontFamily: 'var(--font-mono)'
+                        }}
+                      >
+                        CLEAR
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {layer1PromotionSaveStatus && (
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.78rem',
+                          color: layer1PromotionSaveStatus.includes('failed') || layer1PromotionSaveStatus.includes('Error') ? '#ef4444' : 'var(--lime-accent)'
+                        }}
+                      >
+                        {layer1PromotionSaveStatus}
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleResetLayer1Promotions}
+                      style={{
+                        padding: '8px 14px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid #ef4444',
+                        color: '#ef4444',
+                        fontSize: '0.75rem',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                        borderRadius: '3px'
+                      }}
+                    >
+                      RESET
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveLayer1Promotions}
+                      disabled={isSavingLayer1Promotion}
+                      style={{
+                        padding: '8px 22px',
+                        fontSize: '0.82rem',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 800,
+                        letterSpacing: '0.08em',
+                        color: '#000000',
+                        background: 'linear-gradient(135deg, var(--lime-accent) 0%, #22c55e 100%)',
+                        border: '1px solid var(--lime-accent)',
+                        borderRadius: '3px',
+                        cursor: isSavingLayer1Promotion ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 0 20px rgba(57, 255, 20, 0.4)'
+                      }}
+                    >
+                      {isSavingLayer1Promotion ? 'SAVING...' : 'SAVE PROMOTION'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1749,6 +2115,7 @@ export default function AdminDashboard({ onClose }) {
                         <th style={{ padding: '12px 14px', width: '26%' }}>PROMPT</th>
                         <th style={{ padding: '12px 14px', width: '15%' }}>IMAGES</th>
                         <th style={{ padding: '12px 14px' }}>TIME TAKEN</th>
+                        <th style={{ padding: '12px 14px' }}>SUBMITTED AT</th>
                         <th style={{ padding: '12px 14px', width: '110px' }}>GENAI MARKS</th>
                         <th style={{ padding: '12px 14px' }}>STATUS</th>
                         <th style={{ padding: '12px 14px', textAlign: 'right' }}>SAVE</th>
@@ -1868,12 +2235,19 @@ export default function AdminDashboard({ onClose }) {
 
                                 {/* Time Taken Column */}
                                 <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', color: 'var(--cyan-glow)', fontWeight: 700 }}>
-                                  {sub.time_taken || (sub.submitted_at && sub.created_at ? (() => {
-                                    const diff = Math.max(0, Math.floor((new Date(sub.submitted_at) - new Date(sub.created_at)) / 1000));
-                                    const m = Math.floor(diff / 60);
-                                    const s = diff % 60;
-                                    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-                                  })() : 'N/A')}
+                                  {sub.time_taken && sub.time_taken !== '00:00' && sub.time_taken !== '00'
+                                    ? sub.time_taken
+                                    : (sub.submitted_at && sub.created_at ? (() => {
+                                        const diff = Math.max(1, Math.floor((new Date(sub.submitted_at) - new Date(sub.created_at)) / 1000));
+                                        const m = Math.floor(diff / 60);
+                                        const s = diff % 60;
+                                        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                                      })() : 'N/A')}
+                                </td>
+
+                                {/* Submitted At Column */}
+                                <td style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', color: '#9ca3af', fontSize: '0.74rem' }}>
+                                  {sub.submitted_at ? new Date(sub.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'N/A'}
                                 </td>
 
                                 {/* GenAI Marks Input */}
@@ -2207,12 +2581,12 @@ export default function AdminDashboard({ onClose }) {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.78rem' }}>
                   <thead>
                     <tr style={{ background: 'rgba(0,243,255,0.08)', borderBottom: '1px solid rgba(0,243,255,0.2)' }}>
-                      <th style={{ padding: '12px 14px' }}>RANK</th><th style={{ padding: '12px 14px' }}>PLAYER</th><th style={{ padding: '12px 14px' }}>ROLL NO</th><th style={{ padding: '12px 14px' }}>YEAR</th><th style={{ padding: '12px 14px' }}>BRANCH/SEC</th><th style={{ padding: '12px 14px' }}>GENAI</th><th style={{ padding: '12px 14px' }}>MANUAL</th><th style={{ padding: '12px 14px' }}>L2 AVG</th><th style={{ padding: '12px 14px', textAlign: 'right' }}>ACTIONS</th>
+                      <th style={{ padding: '12px 14px' }}>RANK</th><th style={{ padding: '12px 14px' }}>PLAYER</th><th style={{ padding: '12px 14px' }}>ROLL NO</th><th style={{ padding: '12px 14px' }}>YEAR</th><th style={{ padding: '12px 14px' }}>BRANCH/SEC</th><th style={{ padding: '12px 14px' }}>GENAI</th><th style={{ padding: '12px 14px' }}>MANUAL</th><th style={{ padding: '12px 14px' }}>L2 AVG</th><th style={{ padding: '12px 14px', textAlign: 'center', width: '130px' }}>PROMOTION</th><th style={{ padding: '12px 14px', textAlign: 'right' }}>ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody>
                     {rankedLayer2Results.length === 0 ? (
-                      <tr><td colSpan={9} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>NO DATA — RECORD SCORES OR CLEAR FILTERS</td></tr>
+                      <tr><td colSpan={10} style={{ padding: '36px', textAlign: 'center', color: '#6b7280' }}>NO PARTICIPANTS PROMOTED TO LAYER 2 YET // PROMOTE PARTICIPANTS IN LAYER 1 RESULTS</td></tr>
                     ) : rankedLayer2Results.map((item, idx) => {
                       const u = item.user; const rank = idx + 1; const is1st = item.yearCode === '1';
                       return (
@@ -2225,6 +2599,36 @@ export default function AdminDashboard({ onClose }) {
                           <td style={{ padding: '12px 14px', color: '#38bdf8', fontWeight: 700 }}>{item.genAi.toFixed(1)}</td>
                           <td style={{ padding: '12px 14px', color: '#c084fc', fontWeight: 700 }}>{item.manual.toFixed(1)}</td>
                           <td style={{ padding: '12px 14px' }}><span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.88rem', fontWeight: 800, color: 'var(--lime-accent)' }}>{item.average.toFixed(2)}</span></td>
+                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => togglePromoteLayer2User(u.user_id)}
+                              style={{
+                                padding: '5px 12px',
+                                fontSize: '0.72rem',
+                                fontFamily: 'var(--font-mono)',
+                                fontWeight: 700,
+                                letterSpacing: '0.05em',
+                                cursor: 'pointer',
+                                borderRadius: '3px',
+                                transition: 'all 0.2s ease',
+                                background: selectedForLayer2Promotion.has(u.user_id)
+                                  ? 'rgba(224, 38, 255, 0.2)'
+                                  : 'rgba(255, 255, 255, 0.05)',
+                                border: selectedForLayer2Promotion.has(u.user_id)
+                                  ? '1px solid var(--magenta-glow)'
+                                  : '1px solid rgba(255, 255, 255, 0.2)',
+                                color: selectedForLayer2Promotion.has(u.user_id)
+                                  ? 'var(--magenta-glow)'
+                                  : '#9ca3af',
+                                boxShadow: selectedForLayer2Promotion.has(u.user_id)
+                                  ? '0 0 10px rgba(224, 38, 255, 0.3)'
+                                  : 'none'
+                              }}
+                            >
+                              {selectedForLayer2Promotion.has(u.user_id) ? 'PROMOTED ✓' : 'PROMOTE'}
+                            </button>
+                          </td>
                           <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                               <button onClick={() => setEditingLayer2Marks({ user_id: u.user_id, name: u.name, roll_number: u.roll_number, layer_2_gen_ai_marks: item.genAi, layer_2_manual_marks: item.manual })} className="cyber-btn" style={{ padding: '4px 10px', fontSize: '0.7rem', borderColor: 'var(--magenta-glow)' }}><Edit2 size={11} /> SCORE L2</button>
@@ -2236,6 +2640,125 @@ export default function AdminDashboard({ onClose }) {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Layer 2 Promotion Save & Selection Control Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  padding: '12px 18px',
+                  background: 'rgba(2, 6, 20, 0.95)',
+                  border: '1px solid rgba(224, 38, 255, 0.3)',
+                  borderRadius: '4px',
+                  boxShadow: '0 0 20px rgba(0, 0, 0, 0.7)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      color: 'var(--magenta-glow)'
+                    }}
+                  >
+                    {selectedForLayer2Promotion.size} / {rankedLayer2Results.length} PARTICIPANTS SELECTED FOR LAYER 3 / DUOS
+                  </span>
+
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {[5, 10, 15].map((cnt) => (
+                      <button
+                        key={cnt}
+                        type="button"
+                        onClick={() => selectTopLayer2(cnt)}
+                        className="cyber-btn"
+                        style={{ padding: '4px 8px', fontSize: '0.68rem', borderColor: 'rgba(224, 38, 255, 0.4)' }}
+                      >
+                        TOP {cnt}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={selectAllLayer2}
+                      className="cyber-btn"
+                      style={{ padding: '4px 8px', fontSize: '0.68rem', borderColor: 'rgba(224, 38, 255, 0.4)' }}
+                    >
+                      ALL
+                    </button>
+                    <button
+                      type="button"
+                      onClick={clearLayer2Selection}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '0.68rem',
+                        background: 'transparent',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        borderRadius: '2px',
+                        fontFamily: 'var(--font-mono)'
+                      }}
+                    >
+                      CLEAR
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {layer2PromotionSaveStatus && (
+                    <span
+                      style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.78rem',
+                        color: layer2PromotionSaveStatus.includes('failed') || layer2PromotionSaveStatus.includes('Error') ? '#ef4444' : 'var(--magenta-glow)'
+                      }}
+                    >
+                      {layer2PromotionSaveStatus}
+                    </span>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleResetLayer2Promotions}
+                    style={{
+                      padding: '8px 14px',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid #ef4444',
+                      color: '#ef4444',
+                      fontSize: '0.75rem',
+                      fontFamily: 'var(--font-mono)',
+                      cursor: 'pointer',
+                      borderRadius: '3px'
+                    }}
+                  >
+                    RESET
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveLayer2Promotions}
+                    disabled={isSavingLayer2Promotion}
+                    style={{
+                      padding: '8px 22px',
+                      fontSize: '0.82rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 800,
+                      letterSpacing: '0.08em',
+                      color: '#ffffff',
+                      background: 'linear-gradient(135deg, var(--magenta-glow) 0%, #a855f7 100%)',
+                      border: '1px solid var(--magenta-glow)',
+                      borderRadius: '3px',
+                      cursor: isSavingLayer2Promotion ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 0 20px rgba(224, 38, 255, 0.4)'
+                    }}
+                  >
+                    {isSavingLayer2Promotion ? 'SAVING...' : 'SAVE PROMOTION'}
+                  </button>
+                </div>
               </div>
             </>)}
 

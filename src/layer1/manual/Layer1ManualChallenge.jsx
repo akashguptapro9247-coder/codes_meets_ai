@@ -198,13 +198,36 @@ export default function Layer1ManualChallenge({
       setAttemptId(data.attempt_id);
       setExpiresAt(data.expires_at);
       setRemainingSeconds(data.remaining_seconds ?? 900);
-      setQuestions(data.questions ?? []);
+      const loadedQuestions = data.questions ?? [];
+      const restoredAnswers = data.selected_answers ?? {};
+      setQuestions(loadedQuestions);
+      setSelectedAnswers(restoredAnswers);
 
-      // If resuming, restore answered questions count (questions already answered are in server log)
-      // For UX consistency: start from question 0 again (student sees fresh questions, server tracks answers)
-      setCurrentIndex(0);
-      setSelectedAnswers({});
+      // Determine starting question index:
+      // Find the first question in the loaded pool that has not been answered yet
+      const firstUnansweredIndex = loadedQuestions.findIndex(
+        (q) => !restoredAnswers[q.id]
+      );
+
+      if (firstUnansweredIndex === -1 && loadedQuestions.length > 0) {
+        // All questions already answered! Finalize immediately
+        const { data: compData } = await adminService.completeLayer1ManualSession(data.attempt_id, userId);
+        setEvaluationResult({
+          score:          compData?.score          ?? data.score ?? 0,
+          correctCount:   compData?.correct_count  ?? data.correct_count ?? 0,
+          totalQuestions: compData?.total_questions ?? 15,
+          accuracy:       compData?.accuracy       ?? 0
+        });
+        setIsCompleted(true);
+        setSessionLoading(false);
+        return;
+      }
+
+      const resumeIndex = firstUnansweredIndex >= 0 ? firstUnansweredIndex : 0;
+      setCurrentIndex(resumeIndex);
       setCurrentSelectedOption(null);
+      setFeedbackState('idle');
+      setLastRevealData(null);
       setSessionLoading(false);
     };
 
@@ -410,6 +433,13 @@ export default function Layer1ManualChallenge({
 
   const currentQuestion = questions[currentIndex];
 
+  const answeredIndicesMap = {};
+  questions.forEach((q, idx) => {
+    if (selectedAnswers[q.id] !== undefined) {
+      answeredIndicesMap[idx] = true;
+    }
+  });
+
   return (
     <div
       style={{
@@ -534,7 +564,7 @@ export default function Layer1ManualChallenge({
                   currentIndex={currentIndex}
                   totalQuestions={questions.length}
                   selectedOption={currentSelectedOption}
-                  answeredQuestionsMap={selectedAnswers}
+                  answeredQuestionsMap={answeredIndicesMap}
                   feedbackState={feedbackState}
                   revealData={lastRevealData}
                 />
@@ -650,7 +680,7 @@ export default function Layer1ManualChallenge({
                     onSelectOption={handleOptionSelect}
                     disabled={isSubmitting || feedbackState === 'processing' || feedbackState === 'revealed'}
                     feedbackState={feedbackState}
-                    correctAnswer={currentQuestion.correct_answer}
+                    correctAnswer={lastRevealData?.correct_answer}
                     spiderState={spiderState}
                   />
                 </div>

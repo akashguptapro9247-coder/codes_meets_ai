@@ -12,7 +12,7 @@ import {
   validateRollNumber,
   generateRandomQuestionSet,
   evaluateManualAnswers
-} from '../questions/layer1ManualQuestions';
+} from '../../layer1/questions/layer1ManualQuestions';
 import { adminService } from '../../admin/services/adminService';
 import { eventStateService } from '../../shared/services/eventStateService';
 import { soundEngine } from '../../shared/utils/SoundEngine';

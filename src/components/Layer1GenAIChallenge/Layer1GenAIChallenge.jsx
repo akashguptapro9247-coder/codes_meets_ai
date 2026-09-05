@@ -7,12 +7,12 @@ import AiPlatformButtons from './AiPlatformButtons';
 import ImageUploader from './ImageUploader';
 import CountdownTimer from './CountdownTimer';
 import SubmissionControls from './SubmissionControls';
-import DigitalParticles from '../DigitalParticles';
-import ScanOverlay from '../ScanOverlay';
-import { supabase } from '../../services/supabaseClient';
-import { adminService } from '../../services/adminService';
-import { eventStateService } from '../../services/eventStateService';
-import { soundEngine } from '../../utils/SoundEngine';
+import DigitalParticles from '../../shared/components/DigitalParticles';
+import ScanOverlay from '../../shared/components/ScanOverlay';
+import { supabase } from '../../shared/services/supabaseClient';
+import { adminService } from '../../admin/services/adminService';
+import { eventStateService } from '../../shared/services/eventStateService';
+import { soundEngine } from '../../shared/utils/SoundEngine';
 
 export default function Layer1GenAIChallenge({
   participant,
@@ -84,6 +84,11 @@ export default function Layer1GenAIChallenge({
         },
         (payload) => {
           if (payload.eventType === 'DELETE') {
+            const currentTimerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
+            try {
+              localStorage.removeItem(currentTimerKey);
+              sessionStorage.removeItem(currentTimerKey);
+            } catch (e) {}
             loadSubmission();
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             if (payload.new && payload.new.user_id === userId) {
@@ -142,12 +147,15 @@ export default function Layer1GenAIChallenge({
 
     // Calculate actual time taken using the session timer
     const timerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
-    const storedStart = localStorage.getItem(timerKey);
-    const startTime = storedStart ? parseInt(storedStart, 10) : Date.now();
-    const elapsedSeconds = Math.max(0, Math.min(900, Math.floor((Date.now() - startTime) / 1000)));
+    const storedStart = localStorage.getItem(timerKey) || sessionStorage.getItem(timerKey);
+    const startMs = storedStart ? parseInt(storedStart, 10) : (Date.now() - 30000);
+    const submitMs = Date.now();
+    const elapsedSeconds = Math.max(1, Math.min(900, Math.floor((submitMs - startMs) / 1000)));
     const mins = Math.floor(elapsedSeconds / 60);
     const secs = elapsedSeconds % 60;
     const timeTakenFormatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    const startedAt = new Date(startMs).toISOString();
+    const submittedAt = new Date(submitMs).toISOString();
 
     try {
       const { data, error } = await adminService.submitLayer1GenAi({
@@ -157,7 +165,9 @@ export default function Layer1GenAIChallenge({
         prompt: prompt.trim(),
         imageItems: images,
         timeTaken: timeTakenFormatted,
-        timeTakenSeconds: elapsedSeconds
+        timeTakenSeconds: elapsedSeconds,
+        startedAt,
+        submittedAt
       });
 
       if (error) {
@@ -171,6 +181,7 @@ export default function Layer1GenAIChallenge({
         // Clear local timer on successful submission
         try {
           localStorage.removeItem(timerKey);
+          sessionStorage.removeItem(timerKey);
         } catch (e) {}
 
         // Short success delay, then automatically navigate back to the Event Arena (/play)
