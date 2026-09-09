@@ -8,7 +8,7 @@ export default function PromptInput({
   onChangePrompt,
   disabled = false,
   maxLength = 5000,
-  minLength = 200
+  minLength = 100
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const textValue = value !== undefined ? value : prompt !== undefined ? prompt : '';
@@ -77,7 +77,7 @@ export default function PromptInput({
             letterSpacing: '0.08em'
           }}
         >
-          <span>{currentLength}</span> / <span>{maxLength}</span> CHARS (MIN : 200 CHAR)
+          <span>{currentLength}</span> / <span>{maxLength}</span> CHARS (MIN : 100 CHAR)
         </div>
       </div>
 
