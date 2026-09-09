@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Brain } from 'lucide-react';
+
+const VIDEO_1_SRC = '/vedios/ironman_genai_1.0.mp4';
+const VIDEO_2_SRC = '/vedios/ironman_genai_2.0.mp4';
 
 export default function SceneViewer({
   isTimeUp = false,
@@ -8,6 +11,29 @@ export default function SceneViewer({
 }) {
   const isSubmitted = Boolean(submissionSuccess || existingSubmission);
   const sessionStatusText = isSubmitted ? 'SUBMITTED & LOCKED' : isTimeUp ? 'TIME EXPIRED' : 'CHALLENGE ACTIVE';
+
+  // Video sequence state: 1 for ironman_genai_1.0, 2 for ironman_genai_2.0
+  const [currentVideo, setCurrentVideo] = useState(1);
+  const videoRef = useRef(null);
+
+  // When video 1 ends, transition to video 2
+  const handleVideoEnded = () => {
+    if (currentVideo === 1) {
+      setCurrentVideo(2);
+    }
+  };
+
+  // Ensure playback starts reliably on initial mount and when source transitions
+  useEffect(() => {
+    if (videoRef.current) {
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('[SceneViewer] Video playback catch:', err);
+        });
+      }
+    }
+  }, [currentVideo]);
 
   return (
     <div
@@ -104,7 +130,7 @@ export default function SceneViewer({
           marginBottom: '14px'
         }}
       >
-        {/* Responsive Image Display Container */}
+        {/* Responsive Media Display Container */}
         <div
           style={{
             position: 'relative',
@@ -120,15 +146,21 @@ export default function SceneViewer({
             background: '#000000'
           }}
         >
-          <img
-            src="/assets/layer1_genai_reference.jpg"
-            alt="GENAI MEMORY RECONSTRUCTION REFERENCE"
+          <video
+            ref={videoRef}
+            key={`genai-projector-video-${currentVideo}`}
+            src={currentVideo === 1 ? VIDEO_1_SRC : VIDEO_2_SRC}
+            autoPlay
+            muted
+            playsInline
+            loop={currentVideo === 2}
+            onEnded={handleVideoEnded}
             style={{
               width: '100%',
               height: '100%',
               maxWidth: '100%',
               maxHeight: '100%',
-              objectFit: 'contain',
+              objectFit: 'cover',
               objectPosition: 'center',
               userSelect: 'none',
               pointerEvents: 'none',
