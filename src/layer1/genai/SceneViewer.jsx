@@ -12,28 +12,29 @@ export default function SceneViewer({
   const isSubmitted = Boolean(submissionSuccess || existingSubmission);
   const sessionStatusText = isSubmitted ? 'SUBMITTED & LOCKED' : isTimeUp ? 'TIME EXPIRED' : 'CHALLENGE ACTIVE';
 
-  // Video sequence state: 1 for ironman_genai_1.0, 2 for ironman_genai_2.0
-  const [currentVideo, setCurrentVideo] = useState(1);
-  const videoRef = useRef(null);
+  // Track if we have transitioned to Video 2
+  const [isVideo2Active, setIsVideo2Active] = useState(false);
+  const video1Ref = useRef(null);
+  const video2Ref = useRef(null);
 
-  // When video 1 ends, transition to video 2
-  const handleVideoEnded = () => {
-    if (currentVideo === 1) {
-      setCurrentVideo(2);
+  // Transition to Video 2 seamlessly when Video 1 finishes
+  const handleVideo1Ended = () => {
+    if (video2Ref.current) {
+      video2Ref.current.play().catch((err) => {
+        console.warn('[SceneViewer] Video 2 play error:', err);
+      });
     }
+    setIsVideo2Active(true);
   };
 
-  // Ensure playback starts reliably on initial mount and when source transitions
+  // Initial mount: start Video 1 playback
   useEffect(() => {
-    if (videoRef.current) {
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('[SceneViewer] Video playback catch:', err);
-        });
-      }
+    if (video1Ref.current) {
+      video1Ref.current.play().catch((err) => {
+        console.warn('[SceneViewer] Video 1 autoplay catch:', err);
+      });
     }
-  }, [currentVideo]);
+  }, []);
 
   return (
     <div
@@ -146,16 +147,19 @@ export default function SceneViewer({
             background: '#000000'
           }}
         >
+          {/* VIDEO 1: Plays once, preloaded, visible initially */}
           <video
-            ref={videoRef}
-            key={`genai-projector-video-${currentVideo}`}
-            src={currentVideo === 1 ? VIDEO_1_SRC : VIDEO_2_SRC}
+            ref={video1Ref}
+            src={VIDEO_1_SRC}
             autoPlay
             muted
             playsInline
-            loop={currentVideo === 2}
-            onEnded={handleVideoEnded}
+            preload="auto"
+            loop={false}
+            onEnded={handleVideo1Ended}
             style={{
+              position: 'absolute',
+              inset: 0,
               width: '100%',
               height: '100%',
               maxWidth: '100%',
@@ -164,7 +168,32 @@ export default function SceneViewer({
               objectPosition: 'center',
               userSelect: 'none',
               pointerEvents: 'none',
-              display: 'block'
+              display: isVideo2Active ? 'none' : 'block',
+              zIndex: isVideo2Active ? 1 : 2
+            }}
+          />
+
+          {/* VIDEO 2: Preloaded in background, loops continuously once started */}
+          <video
+            ref={video2Ref}
+            src={VIDEO_2_SRC}
+            muted
+            playsInline
+            preload="auto"
+            loop={true}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              display: 'block',
+              zIndex: isVideo2Active ? 2 : 1
             }}
           />
         </div>
