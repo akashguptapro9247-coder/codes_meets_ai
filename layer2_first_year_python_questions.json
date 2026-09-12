@@ -241,7 +241,11 @@
             "maximum = num"
           ],
           "expectedOutput": "Maximum = 65",
-          "explanation": "Goal: Find Maximum in Array. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Goal: Find Maximum in Array. Identify the two missing lines of code required to make the program complete and correct.",
+          "hints": [
+            "First, compare the current `num` with `maximum` using an `if` statement.",
+            "Inside the `if` block, update `maximum` by assigning `num` to it."
+          ]
         },
         {
           "id": "python-1y-q4-2",
@@ -252,7 +256,11 @@
             "neg_count += 1"
           ],
           "expectedOutput": "Negative Count = 3",
-          "explanation": "Goal: Count Negative Numbers. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Goal: Count Negative Numbers. Identify the two missing lines of code required to make the program complete and correct.",
+          "hints": [
+            "Check if the current value `v` is strictly less than `0`.",
+            "If true, increment `neg_count` by 1."
+          ]
         },
         {
           "id": "python-1y-q4-3",
@@ -263,7 +271,11 @@
             "count += 1"
           ],
           "expectedOutput": "Average = 20.0",
-          "explanation": "Goal: Calculate Average of Positive Numbers. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Goal: Calculate Average of Positive Numbers. Identify the two missing lines of code required to make the program complete and correct.",
+          "hints": [
+            "Add the positive score `s` to the running sum variable `total`.",
+            "Increment the `count` tracking positive values by 1."
+          ]
         },
         {
           "id": "python-1y-q4-4",
@@ -274,7 +286,11 @@
             "found = True"
           ],
           "expectedOutput": "Found = True",
-          "explanation": "Goal: Search for Target Value. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Goal: Search for Target Value. Identify the two missing lines of code required to make the program complete and correct.",
+          "hints": [
+            "Check if the current `element` matches `target` using `==`.",
+            "When matched, set the boolean flag `found` to `True`."
+          ]
         },
         {
           "id": "python-1y-q4-5",
@@ -285,7 +301,11 @@
             "num //= 10"
           ],
           "expectedOutput": "Digit Sum = 10",
-          "explanation": "Goal: Sum of Digits of an Integer. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Goal: Sum of Digits of an Integer. Identify the two missing lines of code required to make the program complete and correct.",
+          "hints": [
+            "Use the modulo operator `% 10` to get the last digit and add it to `digit_sum`.",
+            "Use integer division `//= 10` to strip off the last digit from `num`."
+          ]
         }
       ]
     },
@@ -303,7 +323,11 @@
           "codeAfter": "print(\"Even Count =\", count)",
           "expectedCode": "for num in numbers:\n    if num % 2 == 0:\n        count += 1",
           "expectedOutput": "Even Count = 3",
-          "explanation": "Goal: Check Even Numbers Count. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+          "explanation": "Goal: Check Even Numbers Count. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
+          "hints": [
+            "Iterate through `numbers` with a `for` loop.",
+            "Check if each number has a remainder of 0 when divided by 2 (`num % 2 == 0`) and increment `count`."
+          ]
         },
         {
           "id": "python-1y-q5-2",
@@ -312,7 +336,11 @@
           "codeAfter": "print(\"Minimum =\", minimum)",
           "expectedCode": "for v in values:\n    if v < minimum:\n        minimum = v",
           "expectedOutput": "Minimum = 7",
-          "explanation": "Goal: Find Minimum of List. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+          "explanation": "Goal: Find Minimum of List. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
+          "hints": [
+            "Loop through each element `v` in `values`.",
+            "If `v` is smaller than `minimum`, reassign `minimum = v`."
+          ]
         },
         {
           "id": "python-1y-q5-3",
@@ -321,7 +349,11 @@
           "codeAfter": "print(\"Is Positive =\", is_positive)",
           "expectedCode": "if val > 0:\n    is_positive = True",
           "expectedOutput": "Is Positive = False",
-          "explanation": "Goal: Check Positive Number. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+          "explanation": "Goal: Check Positive Number. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
+          "hints": [
+            "Write an `if` condition to check if `val` is strictly greater than 0.",
+            "Inside the block, update `is_positive` to `True`."
+          ]
         },
         {
           "id": "python-1y-q5-4",
@@ -330,7 +362,11 @@
           "codeAfter": "print(\"Occurrences =\", occurrences)",
           "expectedCode": "for x in items:\n    if x == target:\n        occurrences += 1",
           "expectedOutput": "Occurrences = 3",
-          "explanation": "Goal: Count Target Occurrences. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+          "explanation": "Goal: Count Target Occurrences. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
+          "hints": [
+            "Loop over every item `x` in `items`.",
+            "Compare `x` with `target`; increment `occurrences` whenever they are equal."
+          ]
         },
         {
           "id": "python-1y-q5-5",
@@ -339,7 +375,11 @@
           "codeAfter": "print(\"Result =\", result)",
           "expectedCode": "for word in words:\n    result += word",
           "expectedOutput": "Result = CodeMeetsAI",
-          "explanation": "Goal: Concatenate Strings in List. Write the missing Python code (maximum 4 lines) to solve the given challenge."
+          "explanation": "Goal: Concatenate Strings in List. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
+          "hints": [
+            "Iterate through each `word` in `words`.",
+            "Append each word directly to `result` using `+=`."
+          ]
         }
       ]
     }

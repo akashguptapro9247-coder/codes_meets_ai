@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from '../../../shared/components/Toast';
 import { ConfirmModal } from '../../../shared/components/Modals';
 import JumbledCodeQuestion from './JumbledCodeQuestion';
@@ -8,25 +8,47 @@ import MissingLinesQuestion from './MissingLinesQuestion';
 import ShortLogicQuestion from './ShortLogicQuestion';
 import { executeAndEvaluateCode } from '../execution/ExecutionService';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
+import { Lightbulb } from 'lucide-react';
 
 export default function QuestionRenderer({ question, language, state, onUpdateState }) {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    setShowHint(false);
+  }, [question?.id]);
 
   if (!question || !state) return null;
+
+  const hasHint = Boolean(
+    question.hint || 
+    (question.hints && (Array.isArray(question.hints) ? question.hints.length > 0 : Boolean(question.hints)))
+  );
 
   // Determine scoring and attempt rules based on question type
   const isLimitedAttempts = question._poolKey === 'q1' || question._poolKey === 'q2';
   const maxAttempts = isLimitedAttempts ? 3 : Infinity;
+  const attemptsUsed = state.attempts || 0;
+  const attemptsRemaining = isLimitedAttempts ? Math.max(0, maxAttempts - attemptsUsed) : Infinity;
+  const attemptsExhausted = isLimitedAttempts && (attemptsUsed >= maxAttempts || state.status === 'exhausted');
+
+  const isQuestionDisabled = state.status !== 'pending' || attemptsExhausted;
   
   const handleCheck = async (codeToEvaluate) => {
-    if (state.status !== 'pending' || isEvaluating) return;
+    if (state.status !== 'pending' || attemptsExhausted || isEvaluating) return;
     
     setIsEvaluating(true);
     soundEngine.playBoot();
     
     try {
       const result = await executeAndEvaluateCode(language, codeToEvaluate, question.expectedOutput);
+      
+      // Only increment attempts if it was a real evaluation (not a service error)
+      if (result.status === 'EXECUTION_SERVICE_ERROR') {
+        toast.error(result.message);
+        return; // Do NOT consume attempt
+      }
       
       const newAttemptCount = state.attempts + 1;
       const isCorrect = result.status === 'CORRECT';
@@ -46,12 +68,6 @@ export default function QuestionRenderer({ question, language, state, onUpdateSt
           newStatus = 'exhausted';
           newMarks = 1;
         }
-      }
-      
-      // Only increment attempts if it was a real evaluation (not a service error)
-      if (result.status === 'EXECUTION_SERVICE_ERROR') {
-        toast.error(result.message);
-        return; // Do NOT consume attempt
       }
 
       onUpdateState({
@@ -75,6 +91,7 @@ export default function QuestionRenderer({ question, language, state, onUpdateSt
   };
 
   const handleSkip = () => {
+    if (isQuestionDisabled || isEvaluating) return;
     setSkipConfirmOpen(true);
   };
 
@@ -112,10 +129,42 @@ export default function QuestionRenderer({ question, language, state, onUpdateSt
           <h3 style={{ fontFamily: 'var(--font-title)', color: 'var(--cyan-glow)', margin: 0, fontSize: '1.05rem', letterSpacing: '0.1em' }}>
             {question.title}
           </h3>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {hasHint && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (soundEngine.playClick) soundEngine.playClick();
+                  setShowHint(prev => !prev);
+                }}
+                className="cyber-btn"
+                style={{
+                  padding: '3px 10px',
+                  background: showHint ? 'rgba(245, 158, 11, 0.25)' : 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid #f59e0b',
+                  borderRadius: '2px',
+                  color: '#fbbf24',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  cursor: 'pointer',
+                  boxShadow: showHint ? '0 0 10px rgba(245, 158, 11, 0.4)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+                title={showHint ? "Hide Hint" : "Click to view hint for this question"}
+              >
+                <Lightbulb size={12} color="#fbbf24" />
+                <span>{showHint ? 'HIDE HINT' : 'HINT'}</span>
+              </button>
+            )}
             <div style={{ padding: '3px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,243,255,0.15)', borderRadius: '2px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
               <span style={{ color: '#6b7280' }}>ATTEMPTS: </span>
-              <span style={{ color: 'var(--magenta-glow)', fontWeight: 700 }}>{state.attempts}{isLimitedAttempts ? ` / ${maxAttempts}` : ''}</span>
+              <span style={{ color: isLimitedAttempts && attemptsRemaining === 0 ? '#ef4444' : 'var(--magenta-glow)', fontWeight: 700 }}>
+                {isLimitedAttempts ? `${attemptsRemaining} / ${maxAttempts}` : state.attempts}
+              </span>
             </div>
             <div style={{ padding: '3px 10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(0,243,255,0.15)', borderRadius: '2px', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
               <span style={{ color: '#6b7280' }}>STATUS: </span>
@@ -165,6 +214,40 @@ export default function QuestionRenderer({ question, language, state, onUpdateSt
             </pre>
           </div>
         </div>
+
+        {/* ── HINT PANEL ── */}
+        {showHint && hasHint && (
+          <div style={{
+            marginTop: '6px',
+            padding: '6px 10px',
+            background: 'rgba(245, 158, 11, 0.08)',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            borderLeft: '3px solid #f59e0b',
+            borderRadius: '3px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '8px',
+            boxShadow: '0 0 12px rgba(245, 158, 11, 0.15)'
+          }}>
+            <Lightbulb size={15} color="#fbbf24" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: '#fbbf24', fontWeight: 700, letterSpacing: '0.08em', marginBottom: '2px' }}>
+                HINT
+              </div>
+              {Array.isArray(question.hints) ? (
+                <ul style={{ margin: 0, paddingLeft: '16px', color: '#fef3c7', fontSize: '0.85rem', fontFamily: 'var(--font-body)', lineHeight: 1.35 }}>
+                  {question.hints.map((h, idx) => (
+                    <li key={idx} style={{ marginBottom: idx === question.hints.length - 1 ? 0 : '2px' }}>{h}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ margin: 0, color: '#fef3c7', fontSize: '0.85rem', fontFamily: 'var(--font-body)', lineHeight: 1.35 }}>
+                  {question.hint || question.hints}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── MAIN WORKSPACE SPLIT ── */}
@@ -180,11 +263,11 @@ export default function QuestionRenderer({ question, language, state, onUpdateSt
           display: 'flex',
           flexDirection: 'column'
         }}>
-          {question._poolKey === 'q1' && <JumbledCodeQuestion question={question} onCheck={handleCheck} disabled={state.status !== 'pending'} isEvaluating={isEvaluating} />}
-          {question._poolKey === 'q2' && <SyntaxErrorQuestion question={question} language={language} onCheck={handleCheck} disabled={state.status !== 'pending'} isEvaluating={isEvaluating} />}
-          {question._poolKey === 'q3' && <JumbledSyntaxQuestion question={question} language={language} onCheck={handleCheck} disabled={state.status !== 'pending'} isEvaluating={isEvaluating} />}
-          {question._poolKey === 'q4' && <MissingLinesQuestion question={question} language={language} onCheck={handleCheck} disabled={state.status !== 'pending'} isEvaluating={isEvaluating} />}
-          {question._poolKey === 'q5' && <ShortLogicQuestion question={question} language={language} onCheck={handleCheck} disabled={state.status !== 'pending'} isEvaluating={isEvaluating} />}
+          {question._poolKey === 'q1' && <JumbledCodeQuestion question={question} onCheck={handleCheck} disabled={isQuestionDisabled} isEvaluating={isEvaluating} />}
+          {question._poolKey === 'q2' && <SyntaxErrorQuestion question={question} language={language} onCheck={handleCheck} disabled={isQuestionDisabled} isEvaluating={isEvaluating} />}
+          {question._poolKey === 'q3' && <JumbledSyntaxQuestion question={question} language={language} onCheck={handleCheck} disabled={isQuestionDisabled} isEvaluating={isEvaluating} />}
+          {question._poolKey === 'q4' && <MissingLinesQuestion question={question} language={language} onCheck={handleCheck} disabled={isQuestionDisabled} isEvaluating={isEvaluating} />}
+          {question._poolKey === 'q5' && <ShortLogicQuestion question={question} language={language} onCheck={handleCheck} disabled={isQuestionDisabled} isEvaluating={isEvaluating} />}
         </div>
 
         {/* RIGHT: Output Terminal + Skip */}
@@ -229,16 +312,17 @@ export default function QuestionRenderer({ question, language, state, onUpdateSt
           <button
             className="cyber-btn"
             onClick={handleSkip}
-            disabled={state.status !== 'pending' || isEvaluating}
+            disabled={isQuestionDisabled || isEvaluating}
             style={{
               padding: '11px',
               borderColor: 'rgba(239, 68, 68, 0.5)',
               color: '#fca5a5',
               background: 'rgba(239, 68, 68, 0.05)',
-              opacity: (state.status !== 'pending' || isEvaluating) ? 0.5 : 1,
+              opacity: (isQuestionDisabled || isEvaluating) ? 0.5 : 1,
               fontFamily: 'var(--font-mono)',
               fontSize: '0.78rem',
-              letterSpacing: '0.06em'
+              letterSpacing: '0.06em',
+              cursor: (isQuestionDisabled || isEvaluating) ? 'not-allowed' : 'pointer'
             }}
           >
             SKIP QUESTION (1 MARK)

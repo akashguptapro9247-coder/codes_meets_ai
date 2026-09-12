@@ -271,7 +271,8 @@
             "if (arr[i] > largest)\n        largest = arr[i];"
           ],
           "expectedOutput": "25",
-          "explanation": "Goal: Find Largest Array Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+          "explanation": "Goal: Find Largest Array Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
+          "hint": "Initialize the variable 'largest' with the first element of the array before the loop. Inside the loop, check if the current element 'arr[i]' is greater than 'largest' and update it accordingly."
         },
         {
           "id": "c-1y-q4-2",
@@ -282,7 +283,8 @@
             "count++;"
           ],
           "expectedOutput": "3",
-          "explanation": "Goal: Count Odd Numbers. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+          "explanation": "Goal: Count Odd Numbers. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
+          "hint": "Inside the loop, use an if condition checking if 'arr[i] % 2 != 0'. If true, increment the 'count' variable."
         },
         {
           "id": "c-1y-q4-3",
@@ -293,7 +295,8 @@
             "sum += arr[i];"
           ],
           "expectedOutput": "50",
-          "explanation": "Goal: Calculate Array Sum. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+          "explanation": "Goal: Calculate Array Sum. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
+          "hint": "Declare and initialize the variable 'sum' to 0 before starting the loop. Inside the loop, accumulate the total by adding 'arr[i]' to 'sum'."
         },
         {
           "id": "c-1y-q4-4",
@@ -304,7 +307,8 @@
             "count++;"
           ],
           "expectedOutput": "3",
-          "explanation": "Goal: Count Numbers Greater Than 10. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+          "explanation": "Goal: Count Numbers Greater Than 10. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
+          "hint": "Check if 'arr[i]' is greater than 10 inside the loop using an if statement, then increment 'count'."
         },
         {
           "id": "c-1y-q4-5",
@@ -315,7 +319,8 @@
             "if (arr[i] < smallest)\n        smallest = arr[i];"
           ],
           "expectedOutput": "4",
-          "explanation": "Goal: Find Smallest Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly."
+          "explanation": "Goal: Find Smallest Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
+          "hint": "Set 'smallest' equal to 'arr[0]' before the loop. Inside the loop, check if 'arr[i]' is less than 'smallest' and update the variable if true."
         }
       ]
     },
@@ -332,7 +337,8 @@
           "codeAfter": "\n\n    printf(\"Number checking completed.\");\n    return 0;\n}",
           "expectedCode": "if (n % 2 == 0)\n    printf(\"Even\\n\");\nelse\n    printf(\"Odd\\n\");",
           "expectedOutput": "Odd\nNumber checking completed.",
-          "explanation": "Goal: Even or Odd. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+          "explanation": "Goal: Even or Odd. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
+          "hint": "Use the modulo operator ('%') with 2 in an if-else structure to print \"Even\\n\" or \"Odd\\n\"."
         },
         {
           "id": "c-1y-q5-2",
@@ -341,7 +347,8 @@
           "codeAfter": "\n\n    printf(\"Largest = %d\", largest);\n    return 0;\n}",
           "expectedCode": "if (a > b)\n    largest = a;\nelse\n    largest = b;",
           "expectedOutput": "Largest = 25",
-          "explanation": "Goal: Find Larger Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+          "explanation": "Goal: Find Larger Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
+          "hint": "Compare 'a' and 'b' with an if-else statement and assign the greater value to the 'largest' variable."
         },
         {
           "id": "c-1y-q5-3",
@@ -350,7 +357,8 @@
           "codeAfter": "\n\n    printf(\"Check completed.\");\n    return 0;\n}",
           "expectedCode": "if (n >= 0)\n    printf(\"Positive\\n\");\nelse\n    printf(\"Negative\\n\");",
           "expectedOutput": "Negative\nCheck completed.",
-          "explanation": "Goal: Positive or Negative. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+          "explanation": "Goal: Positive or Negative. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
+          "hint": "Check if 'n' is greater than or equal to 0, and print \"Positive\\n\" or \"Negative\\n\" using an if-else block."
         },
         {
           "id": "c-1y-q5-4",
@@ -359,7 +367,8 @@
           "codeAfter": "\n\n    printf(\"Program completed.\");\n    return 0;\n}",
           "expectedCode": "if (n % 5 == 0)\n    printf(\"Divisible\\n\");\nelse\n    printf(\"Not Divisible\\n\");",
           "expectedOutput": "Divisible\nProgram completed.",
-          "explanation": "Goal: Divisible by 5. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+          "explanation": "Goal: Divisible by 5. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
+          "hint": "Test if 'n % 5 == 0' to determine if the number is divisible by 5, printing \"Divisible\\n\" or \"Not Divisible\\n\" accordingly."
         },
         {
           "id": "c-1y-q5-5",
@@ -368,7 +377,8 @@
           "codeAfter": "\n\n    printf(\"Square = %d\", square);\n    return 0;\n}",
           "expectedCode": "square = n * n;",
           "expectedOutput": "Square = 49",
-          "explanation": "Goal: Square of a Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered."
+          "explanation": "Goal: Square of a Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
+          "hint": "Multiply 'n' by itself and store the result in the 'square' variable."
         }
       ]
     }

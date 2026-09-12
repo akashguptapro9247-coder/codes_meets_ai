@@ -292,6 +292,10 @@
             "if (arr[i] > max)",
             "max = arr[i];"
           ],
+          "hints": [
+            "You need to check if the current array element is larger than 'max'.",
+            "Update 'max' with the current array element 'arr[i]' when the condition is true."
+          ],
           "expectedOutput": "Maximum = 65",
           "explanation": "Goal: Find Maximum Array Element. Exactly two important lines are missing from the program. Fill in both missing sections so that the program works correctly."
         },
@@ -302,6 +306,10 @@
           "missingLines": [
             "int sum = 0;",
             "sum += arr[i];"
+          ],
+          "hints": [
+            "Declare an integer variable named 'sum' initialized to 0 before starting the loop.",
+            "Inside the if condition, add the current positive array element 'arr[i]' to 'sum'."
           ],
           "expectedOutput": "23",
           "explanation": "Goal: Sum of Positive Numbers. Exactly two important lines are missing from the program. Fill in both missing sections so that the program works correctly."
@@ -314,6 +322,10 @@
             "if (digit > 5)",
             "count++;"
           ],
+          "hints": [
+            "Check if the extracted 'digit' is strictly greater than 5.",
+            "Increment the 'count' variable whenever the condition evaluates to true."
+          ],
           "expectedOutput": "3",
           "explanation": "Goal: Count Digits Greater Than 5. Exactly two important lines are missing from the program. Fill in both missing sections so that the program works correctly."
         },
@@ -325,6 +337,10 @@
             "if (arr[i] == target) {",
             "position = i;\n            break;\n        }"
           ],
+          "hints": [
+            "Open an 'if' condition checking if 'arr[i]' matches 'target'.",
+            "Store index 'i' in 'position', exit the loop using 'break', and close the conditional block."
+          ],
           "expectedOutput": "1",
           "explanation": "Goal: Find First Occurrence. Exactly two important lines are missing from the program. Fill in both missing sections so that the program works correctly."
         },
@@ -335,6 +351,10 @@
           "missingLines": [
             "int sum = 0;",
             "sum += arr[i];"
+          ],
+          "hints": [
+            "Declare and initialize the integer accumulator variable 'sum' to 0.",
+            "Accumulate each element into 'sum' inside the loop using the addition assignment operator."
           ],
           "expectedOutput": "30.00",
           "explanation": "Goal: Calculate Average of Array. Exactly two important lines are missing from the program. Fill in both missing sections so that the program works correctly."
@@ -353,6 +373,10 @@
           "codeBefore": "#include <stdio.h>\n\nint main() {\n    int n = 24;\n\n    // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n    printf(\"Check completed.\");\n    return 0;\n}",
           "expectedCode": "if (n % 3 == 0 && n % 4 == 0)\n    printf(\"Divisible by both\\n\");\nelse\n    printf(\"Not divisible by both\\n\");",
+          "hints": [
+            "Use the modulo operator (%) and logical AND (&&) to verify divisibility by both 3 and 4.",
+            "Print 'Divisible by both' on success or 'Not divisible by both' inside an else block."
+          ],
           "expectedOutput": "Divisible by both\nCheck completed.",
           "explanation": "Goal: Check Divisibility. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 5 lines may be entered."
         },
@@ -362,6 +386,10 @@
           "codeBefore": "#include <stdio.h>\n\nint main() {\n    int a = 18, b = 27, c = 21;\n    int max;\n\n    // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n    printf(\"Maximum = %d\", max);\n    return 0;\n}",
           "expectedCode": "max = a;\nif (b > max) max = b;\nif (c > max) max = c;",
+          "hints": [
+            "Start by assigning the value of variable 'a' to 'max'.",
+            "Use conditional statements to compare 'b' and 'c' against 'max' and update 'max' if either is larger."
+          ],
           "expectedOutput": "Maximum = 27",
           "explanation": "Goal: Find Maximum in Three Numbers. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 5 lines may be entered."
         },
@@ -371,6 +399,10 @@
           "codeBefore": "#include <stdio.h>\n\nint main() {\n    int arr[] = {3, 8, 11, 14, 20};\n    int count = 0;\n\n    // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n    printf(\"Even Count = %d\", count);\n    return 0;\n}",
           "expectedCode": "for (int i = 0; i < 5; i++)\n    if (arr[i] % 2 == 0)\n        count++;",
+          "hints": [
+            "Loop through the array from index 0 to 4.",
+            "Check if an element is divisible by 2 using 'arr[i] % 2 == 0' and increment 'count'."
+          ],
           "expectedOutput": "Even Count = 3",
           "explanation": "Goal: Count Even Numbers. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 5 lines may be entered."
         },
@@ -380,6 +412,10 @@
           "codeBefore": "#include <stdio.h>\n\nint main() {\n    int n = 47;\n    int reverse;\n\n    // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n    printf(\"Reverse = %d\", reverse);\n    return 0;\n}",
           "expectedCode": "reverse = (n % 10) * 10;\nreverse += n / 10;",
+          "hints": [
+            "Extract the last digit using `n % 10` and move it to the tens place by multiplying by 10.",
+            "Add the tens digit (obtained using integer division `n / 10`) to complete the reversal."
+          ],
           "expectedOutput": "Reverse = 74",
           "explanation": "Goal: Reverse a Two-Digit Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 5 lines may be entered."
         },
@@ -389,6 +425,10 @@
           "codeBefore": "#include <stdio.h>\n\nint main() {\n    char ch = 'e';\n\n    // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n    printf(\"Character check completed.\");\n    return 0;\n}",
           "expectedCode": "if (ch >= 'a' && ch <= 'z')\n    printf(\"Lowercase\\n\");\nelse\n    printf(\"Not Lowercase\\n\");",
+          "hints": [
+            "Compare character variable 'ch' against ASCII character range bounds `'a'` and `'z'`.",
+            "Print 'Lowercase' if in range, otherwise print 'Not Lowercase'."
+          ],
           "expectedOutput": "Lowercase\nCharacter check completed.",
           "explanation": "Goal: Check Character Type. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 5 lines may be entered."
         }

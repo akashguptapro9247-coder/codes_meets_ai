@@ -101,7 +101,8 @@
           ],
           "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[][] matrix = {{1,2,3},{4,5,6},{7,8,9}};\n        int sum = 0;\n\n        for (int i = 0; i < matrix.length; i++) {\n            sum += matrix[i][i];\n        }\n\n        System.out.println(sum);\n    }\n}",
           "expectedOutput": "15",
-          "explanation": "Goal: Matrix Diagonal Sum. Arrange the given lines in the correct order so that the Java program executes successfully."
+          "explanation": "Goal: Matrix Diagonal Sum. Arrange the given lines in the correct order so that the Java program executes successfully.",
+          "hint": "Iterate through the row index `i` from 0 to `matrix.length - 1` and accumulate the diagonal elements using `matrix[i][i]`."
         },
         {
           "id": "java-2y-q1-5",
@@ -124,7 +125,8 @@
           ],
           "correctCode": "public class Main {\n    public static boolean isPalindrome(int n) {\n        int original = n;\n        int reverse = 0;\n        while (n > 0) {\n            reverse = reverse * 10 + n % 10;\n            n /= 10;\n        }\n        return original == reverse;\n    }\n\n    public static void main(String[] args) {\n        System.out.println(isPalindrome(1221));\n    }\n}",
           "expectedOutput": "true",
-          "explanation": "Goal: Method-Based Palindrome. Arrange the given lines in the correct order so that the Java program executes successfully."
+          "explanation": "Goal: Method-Based Palindrome. Arrange the given lines in the correct order so that the Java program executes successfully.",
+          "hint": "Save the input number into a temporary variable, reverse it digit-by-digit using modulo (`% 10`) and division (`/ 10`), then check if `original == reverse`."
         }
       ],
       "questionCount": 5
@@ -172,7 +174,8 @@
           "expectedOutput": "2 3 4 5 1 ",
           "codeLineCount": 13,
           "intendedErrorCount": 2,
-          "explanation": "Goal: Array Rotation. Correct the intentional Java syntax errors. The program's intended logic is already correct."
+          "explanation": "Goal: Array Rotation. Correct the intentional Java syntax errors. The program's intended logic is already correct.",
+          "hint": "Check the `for` loop header for a missing closing parenthesis `)` and ensure the statement inside the loop ends with a semicolon `;`."
         },
         {
           "id": "java-2y-q2-5",
@@ -182,7 +185,8 @@
           "expectedOutput": "Words = 4",
           "codeLineCount": 13,
           "intendedErrorCount": 2,
-          "explanation": "Goal: Word Count. Correct the intentional Java syntax errors. The program's intended logic is already correct."
+          "explanation": "Goal: Word Count. Correct the intentional Java syntax errors. The program's intended logic is already correct.",
+          "hint": "Look for missing semicolons `;` after statement declarations, specifically near variable assignments and `System.out.println` calls."
         }
       ],
       "questionCount": 5
@@ -285,7 +289,8 @@
           ],
           "correctCode": "public class Main {\n    public static void main(String[] args) {\n        int[][] matrix = {{1,2,3},{4,5,6},{7,8,9}};\n        int sum = 0;\n        for (int i = 0; i < matrix.length; i++) {\n            sum += matrix[i][i];\n        }\n        System.out.println(sum);\n    }\n}",
           "expectedOutput": "15",
-          "explanation": "Goal: Diagonal Sum. Arrange the lines correctly and fix the intentional syntax errors."
+          "explanation": "Goal: Diagonal Sum. Arrange the lines correctly and fix the intentional syntax errors.",
+          "hint": "First declare and initialize `matrix` and `sum`, then fix the loop definition by closing the loop parenthetical `i++)` before accumulating `matrix[i][i]`."
         },
         {
           "id": "java-2y-q3-5",
@@ -306,7 +311,8 @@
           ],
           "correctCode": "public class Main {\n    public static void main(String[] args) {\n        String text = \"level\";\n        String reverse = new StringBuilder(text).reverse().toString();\n\n        if (text.equals(reverse)) {\n            System.out.println(\"Palindrome\");\n        } else {\n            System.out.println(\"Not Palindrome\");\n        }\n    }\n}",
           "expectedOutput": "Palindrome",
-          "explanation": "Goal: Palindrome String. Arrange the lines correctly and fix the intentional syntax errors."
+          "explanation": "Goal: Palindrome String. Arrange the lines correctly and fix the intentional syntax errors.",
+          "hint": "Ensure `text` is declared before calling `StringBuilder(text)`, fix the syntax error by adding a semicolon `;` at the end of the `reverse` definition, and structure the `if-else` block."
         }
       ],
       "questionCount": 5
@@ -358,7 +364,8 @@
             "count++;"
           ],
           "expectedOutput": "2",
-          "explanation": "Goal: Count Positive Odd Numbers. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+          "explanation": "Goal: Count Positive Odd Numbers. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium.",
+          "hint": "Check if `value` is strictly greater than 0 AND has a non-zero remainder when divided by 2 (`value % 2 != 0`), then increment `count`."
         },
         {
           "id": "java-2y-q4-5",
@@ -369,7 +376,8 @@
             "arr[i] = arr[arr.length - 1 - i]; arr[arr.length - 1 - i] = temp;"
           ],
           "expectedOutput": "50 40 30 20 10 ",
-          "explanation": "Goal: Reverse Array In Place. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+          "explanation": "Goal: Reverse Array In Place. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium.",
+          "hint": "Perform a standard variable swap using `temp`: store `arr[i]`, replace `arr[i]` with its symmetric element `arr[arr.length - 1 - i]`, and assign `temp` to the symmetric element."
         }
       ],
       "questionCount": 5
@@ -414,7 +422,8 @@
           "codeAfter": "\n\n        System.out.println(\"Count = \" + count);\n    }\n}",
           "expectedCode": "for (int i = 0; i < text.length(); i++) {\n    if (text.charAt(i) == target) count++;\n}",
           "expectedOutput": "Count = 3",
-          "explanation": "Goal: Character Frequency. Complete only the missing section. Maximum 5 lines may be entered."
+          "explanation": "Goal: Character Frequency. Complete only the missing section. Maximum 5 lines may be entered.",
+          "hint": "Loop through the string indices using `.length()` and check if `text.charAt(i) == target` to increment `count`."
         },
         {
           "id": "java-2y-q5-5",
@@ -423,7 +432,8 @@
           "codeAfter": "\n\n        double average = (double) sum / arr.length;\n        System.out.printf(\"%.2f\", average);\n    }\n}",
           "expectedCode": "for (int value : arr) {\n    sum += value;\n}",
           "expectedOutput": "15.00",
-          "explanation": "Goal: Array Average. Complete only the missing section. Maximum 5 lines may be entered."
+          "explanation": "Goal: Array Average. Complete only the missing section. Maximum 5 lines may be entered.",
+          "hint": "Use a enhanced `for` loop (`for (int value : arr)`) to accumulate the sum of all elements into `sum`."
         }
       ],
       "questionCount": 5

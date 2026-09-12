@@ -70,7 +70,8 @@
           ],
           "correctCode": "words = [\"apple\", \"cat\", \"banana\", \"dog\"]\nmin_len = 3\nfiltered = []\nfor word in words:\n    if len(word) > min_len:\n        filtered.append(word)\nprint(\"Filtered:\", filtered)",
           "expectedOutput": "Filtered: ['apple', 'banana']",
-          "explanation": "Goal: Filter Words by Length. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+          "explanation": "Goal: Filter Words by Length. Arrange the shuffled lines of Python code into the correct order to form a valid program.",
+          "hint": "Start by defining the list of words and minimum length threshold, then iterate over each word using a loop."
         },
         {
           "id": "python-2y-q1-5",
@@ -85,7 +86,8 @@
           ],
           "correctCode": "grid = [[1, 2], [3, 4]]\nflat = []\nfor row in grid:\n    for val in row:\n        flat.append(val)\nprint(\"Flat:\", flat)",
           "expectedOutput": "Flat: [1, 2, 3, 4]",
-          "explanation": "Goal: Flatten 2D List. Arrange the shuffled lines of Python code into the correct order to form a valid program."
+          "explanation": "Goal: Flatten 2D List. Arrange the shuffled lines of Python code into the correct order to form a valid program.",
+          "hint": "Initialize an empty flat list, use nested loops to traverse rows and elements, then append each value."
         }
       ]
     },
@@ -133,7 +135,8 @@
           "expectedOutput": "Diagonal Sum: 15",
           "codeLineCount": 7,
           "intendedErrorCount": 9,
-          "explanation": "Goal: Matrix Diagonal Sum Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+          "explanation": "Goal: Matrix Diagonal Sum Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully.",
+          "hint": "Check for missing closing brackets `]`, missing closing parentheses `)` on `range()` calls, colons `:` after statements, and commas in function calls."
         },
         {
           "id": "python-2y-q2-5",
@@ -143,7 +146,8 @@
           "expectedOutput": "Common: [3, 4, 5]",
           "codeLineCount": 7,
           "intendedErrorCount": 8,
-          "explanation": "Goal: List Intersection Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully."
+          "explanation": "Goal: List Intersection Fix. Identify and fix all syntax errors in the given Python program so that it runs successfully.",
+          "hint": "Ensure all list definitions are properly closed with `]`, loop and condition headers end with `:`, and function parameters are properly closed with `)`."
         }
       ]
     },
@@ -219,7 +223,8 @@
           ],
           "correctCode": "arr = [2, 4, 6, 8]\ntarget = 10\ncount = 0\nfor i in range(len(arr)):\n    for j in range(i + 1, len(arr)):\n        if arr[i] + arr[j] == target:\n            count += 1\nprint(\"Pairs:\", count)",
           "expectedOutput": "Pairs: 2",
-          "explanation": "Goal: Subarray Sum Equals Target. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+          "explanation": "Goal: Subarray Sum Equals Target. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly.",
+          "hint": "Set up initial variables first, fix loop header closing parentheses and colons, and ensure nested indentations align properly."
         },
         {
           "id": "python-2y-q3-5",
@@ -234,7 +239,8 @@
           ],
           "correctCode": "sentence = \"python is fun\"\nwords = sentence.split()\nreversed_words = []\nfor word in words:\n    reversed_words.append(word[::-1])\nprint(\"Result:\", \" \".join(reversed_words))",
           "expectedOutput": "Result: nohtyp si nuf",
-          "explanation": "Goal: Reverse Words in Sentence. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly."
+          "explanation": "Goal: Reverse Words in Sentence. Arrange the shuffled lines in proper order AND correct all syntax errors to make the code execute properly.",
+          "hint": "First split the string into words, iterate over each word to reverse it using slicing `[::-1]`, and join the reversed list with spaces."
         }
       ]
     },
@@ -286,7 +292,8 @@
             "is_prime = False"
           ],
           "expectedOutput": "Is Prime = True",
-          "explanation": "Goal: Check Prime Number. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Goal: Check Prime Number. Identify the two missing lines of code required to make the program complete and correct.",
+          "hint": "Check if `num` is divisible by `i` using the modulo operator `%`, and set `is_prime` to `False` if a divisor is found."
         },
         {
           "id": "python-2y-q4-5",
@@ -297,7 +304,8 @@
             "freq[char] = count + 1"
           ],
           "expectedOutput": "Frequencies = {'b': 1, 'a': 3, 'n': 2}",
-          "explanation": "Goal: Character Frequency Dictionary. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Goal: Character Frequency Dictionary. Identify the two missing lines of code required to make the program complete and correct.",
+          "hint": "Retrieve the current count for `char` using `.get(char, 0)` and update the dictionary key `freq[char]` with the incremented value."
         }
       ]
     },
@@ -342,7 +350,8 @@
           "codeAfter": "print(\"Reversed Words =\", reversed_text)",
           "expectedCode": "words = text.split()\nreversed_text = \" \".join(words[::-1])",
           "expectedOutput": "Reversed Words = AI Meets Code",
-          "explanation": "Goal: Reverse Words in a String. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+          "explanation": "Goal: Reverse Words in a String. Write the missing Python code (maximum 5 lines) to solve the given challenge.",
+          "hint": "Split `text` into words, reverse the list using slice step `[::-1]`, and join them back using `' '.join()`."
         },
         {
           "id": "python-2y-q5-5",
@@ -351,7 +360,8 @@
           "codeAfter": "print(\"Diagonal Sum =\", diag_sum)",
           "expectedCode": "for i in range(len(matrix)):\n    diag_sum += matrix[i][i]",
           "expectedOutput": "Diagonal Sum = 15",
-          "explanation": "Goal: Sum of Main Diagonal in Matrix. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+          "explanation": "Goal: Sum of Main Diagonal in Matrix. Write the missing Python code (maximum 5 lines) to solve the given challenge.",
+          "hint": "Loop through index `i` from `0` to `len(matrix) - 1` and accumulate `matrix[i][i]` into `diag_sum`."
         }
       ]
     }
