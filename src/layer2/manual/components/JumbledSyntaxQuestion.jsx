@@ -6,7 +6,7 @@ import { java } from '@codemirror/lang-java';
 import { python } from '@codemirror/lang-python';
 import { EditorView } from '@codemirror/view';
 import { Play, RotateCcw } from 'lucide-react';
-import { BombSequence, BugSwarm } from '../../../animation/Layer2Animations';
+import { HulkSequence, BugSwarm } from '../../../animation/Layer2Animations';
 const EDGE_ZONE   = 80;   // px from top/bottom edge that activates scroll
 const MAX_SPEED   = 14;   // max px per frame at the very edge
 const MIN_SPEED   = 2;    // min px per frame at the outer boundary of the zone
@@ -15,9 +15,27 @@ export default function JumbledSyntaxQuestion({ question, language, onCheck, dis
   const [lines, setLines] = useState([]);
   const [finalLines, setFinalLines] = useState([]);
   const [code, setCode] = useState('');
+  const [hulkDone, setHulkDone] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // If the cursor is already over the left pane when hulkDone becomes true,
+  // onMouseEnter won't fire again. Detect this case and set isHovered immediately.
+  const leftPaneRef = useRef(null);  // ref to the left workspace
+  useEffect(() => {
+    if (disabled && isHovered) {
+      setIsHovered(false);
+      return;
+    }
+    
+    if (hulkDone && !disabled && leftPaneRef.current) {
+      if (leftPaneRef.current.matches(':hover')) {
+        setIsHovered(true);
+      }
+    }
+  }, [hulkDone, disabled, isHovered]);
 
   const scrollRef  = useRef(null);   // ref to the scrollable lines container
-  const leftPaneRef = useRef(null);  // ref to the left workspace for BombSequence
+  // leftPaneRef declared above near the hulkDone effect
   const rafRef     = useRef(null);   // requestAnimationFrame ID
   const scrollDir  = useRef(0);      // -1 = up, 0 = none, 1 = down
   const scrollSpd  = useRef(0);      // px per frame
@@ -143,10 +161,38 @@ export default function JumbledSyntaxQuestion({ question, language, onCheck, dis
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', minHeight: 0 }}>
       {/* Workspaces container - side by side */}
-      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        
-        {/* LEFT WORKSPACE: REARRANGE CODE */}
-        <div ref={leftPaneRef} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: '1px solid rgba(0, 243, 255, 0.2)' }}>
+      <div className="s3-layout-row" style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'visible', position: 'relative' }}>
+
+        {/* LEFT WORKSPACE — invisible flex placeholder always holds space so the right panel never shifts */}
+        <div style={{ flex: 1, minWidth: 0, position: 'relative', flexShrink: 0 }}>
+
+          {/* Actual left pane — absolutely positioned inside placeholder, can expand beyond it */}
+          <div
+            ref={leftPaneRef}
+            onMouseEnter={() => { if (hulkDone && !disabled) setIsHovered(true); }}
+            onMouseLeave={() => setIsHovered(false)}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top:    (hulkDone && isHovered && !disabled) ? '-15%' : '0',
+              width:  (hulkDone && isHovered && !disabled) ? 'clamp(400px, 70vw, 90vw)' : '100%',
+              height: (hulkDone && isHovered && !disabled) ? '130%' : '100%',
+              zIndex: (hulkDone && isHovered && !disabled) ? 100 : 1,
+              display: 'flex',
+              flexDirection: 'column',
+              background: '#09090b',
+              borderRight: (hulkDone && isHovered && !disabled)
+                ? '2px solid rgba(0, 243, 255, 0.5)'
+                : '1px solid rgba(0, 243, 255, 0.2)',
+              boxShadow: (hulkDone && isHovered && !disabled)
+                ? '6px 0 40px rgba(0, 243, 255, 0.15), 0 0 0 1px rgba(0, 243, 255, 0.08)'
+                : 'none',
+              transition: hulkDone
+                ? 'top 0.35s cubic-bezier(0.22, 1, 0.36, 1), width 0.35s cubic-bezier(0.22, 1, 0.36, 1), height 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.35s ease'
+                : 'none',
+              overflow: 'hidden',
+            }}
+          >
           <div style={{ padding: '8px 16px', background: 'rgba(0, 0, 0, 0.5)', borderBottom: '1px solid rgba(0, 243, 255, 0.1)', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: '#9ca3af', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
             <span>1. REARRANGE CODE</span>
             <span style={{ fontSize: '0.7rem', color: '#f59e0b' }}>Warning: Dragging resets manual edits</span>
@@ -156,6 +202,7 @@ export default function JumbledSyntaxQuestion({ question, language, onCheck, dis
             onDragOver={handleContainerDragOver}
             onDragLeave={stopScrollLoop}
             onDrop={stopScrollLoop}
+            className="stage-3-scroll"
             style={{ flex: 1, padding: '16px', overflowY: 'auto', background: '#09090b', minHeight: 0 }}
           >
             {lines.map((line, idx) => (
@@ -183,7 +230,6 @@ export default function JumbledSyntaxQuestion({ question, language, onCheck, dis
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '12px',
-                  transition: 'border-color 0.15s ease, background 0.15s ease'
                 }}
               >
                 <span style={{
@@ -200,7 +246,25 @@ export default function JumbledSyntaxQuestion({ question, language, onCheck, dis
               </div>
             ))}
           </div>
-          <BombSequence codeBoxRef={leftPaneRef} lineContainerRef={scrollRef} onJumble={() => setLines(finalLines)} lines={lines} finalLines={finalLines} />
+          <HulkSequence
+            codeBoxRef={leftPaneRef}
+            lineContainerRef={scrollRef}
+            onJumble={() => {
+              // Remove shake classes from parent before FLIP runs.
+              // hulk-punch-shake animates transform on this container at the same
+              // millisecond as the FLIP. Concurrent parent transform animation
+              // prevents GPU compositing of child transitions.
+              if (leftPaneRef.current) {
+                leftPaneRef.current.classList.remove('hulk-land-shake');
+                leftPaneRef.current.classList.remove('hulk-punch-shake');
+              }
+              setLines(finalLines);
+            }}
+            lines={lines}
+            finalLines={finalLines}
+            onSequenceDone={() => setHulkDone(true)}
+          />
+          </div>
         </div>
 
         {/* RIGHT WORKSPACE: DEBUG / FIX SYNTAX */}

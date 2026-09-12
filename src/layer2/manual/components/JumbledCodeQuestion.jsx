@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Play } from 'lucide-react';
-import { BombSequence } from '../../../animation/Layer2Animations';
+import { HulkSequence } from '../../../animation/Layer2Animations';
 import '../../../animation/Layer2Animations/animation.css';
 const EDGE_ZONE   = 80;   // px from top/bottom edge that activates scroll
 const MAX_SPEED   = 14;   // max px per frame at the very edge
@@ -134,6 +134,7 @@ export default function JumbledCodeQuestion({ question, onCheck, disabled, isEva
         onDragOver={handleContainerDragOver}
         onDragLeave={stopScrollLoop}
         onDrop={stopScrollLoop}
+        className="stage-1-scroll"
         style={{ flex: 1, minHeight: 0, padding: '12px', overflowY: 'auto' }}
       >
         {lines.map((line, idx) => (
@@ -162,7 +163,6 @@ export default function JumbledCodeQuestion({ question, onCheck, disabled, isEva
               display: 'flex',
               alignItems: 'center',
               gap: '12px',
-              transition: 'border-color 0.15s ease, background 0.15s ease'
             }}
           >
             <span style={{
@@ -205,7 +205,24 @@ export default function JumbledCodeQuestion({ question, onCheck, disabled, isEva
           {isEvaluating ? 'EVALUATING...' : 'RUN / CHECK'}
         </button>
       </div>
-      <BombSequence codeBoxRef={codeBoxRef} lineContainerRef={scrollRef} onJumble={() => setLines(finalLines)} lines={lines} finalLines={finalLines} />
+      <HulkSequence
+        codeBoxRef={codeBoxRef}
+        lineContainerRef={scrollRef}
+        onJumble={() => {
+          // Remove shake classes from parent before FLIP runs.
+          // hulk-punch-shake animates transform on this container at the same
+          // millisecond as the FLIP. Concurrent parent transform animation
+          // prevents GPU compositing of child transitions (same pattern as
+          // the original BombSequence.wrappedOnJumble which removed shake before FLIP).
+          if (codeBoxRef.current) {
+            codeBoxRef.current.classList.remove('hulk-land-shake');
+            codeBoxRef.current.classList.remove('hulk-punch-shake');
+          }
+          setLines(finalLines);
+        }}
+        lines={lines}
+        finalLines={finalLines}
+      />
     </div>
   );
 }

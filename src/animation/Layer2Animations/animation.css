@@ -32,14 +32,13 @@
   80% { transform: translateX(5px); }
 }
 
-/* ── BOMB ANIMATION LAYER (Viewport-fixed overlay) ───────────────────────────── */
-.anim-bomb-layer {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 1000;
-  pointer-events: none;
-  overflow: hidden;
+/* ── CODE LINE DEFAULT TRANSITION ───────────────────────────────────────────────
+   IMPORTANT: Do NOT put this as an inline style on the element.
+   The FLIP animation hook writes el.style.transition dynamically.
+   If transition is in inline style, React's reconciler (triggered by setLines)
+   overwrites el.style.transition before the rAF fires, killing the FLIP animation.
+   Keeping it in CSS means it is a stylesheet rule the FLIP hook can override
+   via inline style, and React's reconciler never touches el.style.transition. */
+.anim-target-line {
+  transition: border-color 0.15s ease, background 0.15s ease;
 }

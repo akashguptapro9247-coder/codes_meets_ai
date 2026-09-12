@@ -97,7 +97,7 @@ export default function Layer1ManualChallenge({
   // After 500ms, imperatively reveal the container then start ENTRANCE so
   // the user only ever sees Spider-Man starting from above the viewport.
   useEffect(() => {
-    if (!validation.valid || isCompleted) return;
+    if (!validation.valid || isCompleted || sessionLoading) return;
 
     let raf1, raf2;
 
@@ -123,7 +123,7 @@ export default function Layer1ManualChallenge({
       if (raf1) cancelAnimationFrame(raf1);
       if (raf2) cancelAnimationFrame(raf2);
     };
-  }, [validation.valid, isCompleted]);
+  }, [validation.valid, isCompleted, sessionLoading]);
 
   // Clean up Spider-Man timers
   useEffect(() => {
