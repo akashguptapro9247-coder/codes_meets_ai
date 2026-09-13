@@ -1585,9 +1585,9 @@ export default function AdminDashboard({ onClose }) {
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user) => (
+                    filteredUsers.map((user, idx) => (
                       <tr key={user.user_id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                        <td style={{ padding: '12px 14px', color: '#6b7280' }}>{user.serial_number}</td>
+                        <td style={{ padding: '12px 14px', color: '#6b7280' }}>{idx + 1}</td>
                         <td style={{ padding: '12px 14px', fontWeight: 700, color: '#ffffff' }}>{user.name}</td>
                         <td style={{ padding: '12px 14px', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)' }}>{user.roll_number}</td>
                         <td style={{ padding: '12px 14px' }}>{user.branch || 'N/A'}</td>
