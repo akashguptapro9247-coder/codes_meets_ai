@@ -19,7 +19,6 @@ import {
 import { toast } from '../../shared/components/Toast';
 import { ConfirmModal } from '../../shared/components/Modals';
 import { soundEngine } from '../../shared/utils/SoundEngine';
-import ThreeBackground from '../../shared/components/ThreeBackground';
 import GenAITimer from './components/GenAITimer';
 import Layer2AiTools from './components/Layer2AiTools';
 import Layer2SuccessResult from './components/Layer2SuccessResult';
@@ -208,13 +207,26 @@ export default function Layer2GenAIChallenge({
           height: '100vh',
           maxHeight: '100vh',
           backgroundColor: '#030712',
+          backgroundImage:
+            'radial-gradient(circle at 50% 30%, rgba(57, 255, 20, 0.04) 0%, transparent 60%), linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px)',
+          backgroundSize: '100% 100%, 32px 32px, 32px 32px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box'
         }}
       >
-        <ThreeBackground mousePosition={mousePosition} />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%)',
+            backgroundSize: '100% 4px'
+          }}
+        />
         <Layer2SuccessResult
           participantInfo={participantInfo}
           question={question}
@@ -236,13 +248,26 @@ export default function Layer2GenAIChallenge({
           height: '100vh',
           maxHeight: '100vh',
           backgroundColor: '#030712',
+          backgroundImage:
+            'radial-gradient(circle at 50% 30%, rgba(239, 68, 68, 0.04) 0%, transparent 60%), linear-gradient(rgba(239, 68, 68, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(239, 68, 68, 0.02) 1px, transparent 1px)',
+          backgroundSize: '100% 100%, 32px 32px, 32px 32px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box'
         }}
       >
-        <ThreeBackground mousePosition={mousePosition} />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%)',
+            backgroundSize: '100% 4px'
+          }}
+        />
         <Layer2TimeoutResult
           participantInfo={participantInfo}
           question={question}
