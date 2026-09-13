@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Brain } from 'lucide-react';
 
-const IRONMAN_VIDEO_SRC = '/vedios/ironman_genai_1.0.mp4';
+const VIDEO_1_SRC = '/vedios/ironman_genai_1.0.mp4';
+const VIDEO_2_SRC = '/vedios/ironman_genai_2.0.mp4';
 
 export default function SceneViewer({
   isTimeUp = false,
@@ -11,21 +12,46 @@ export default function SceneViewer({
   const isSubmitted = Boolean(submissionSuccess || existingSubmission);
   const sessionStatusText = isSubmitted ? 'SUBMITTED & LOCKED' : isTimeUp ? 'TIME EXPIRED' : 'CHALLENGE ACTIVE';
 
-  const videoRef = useRef(null);
+  // Video sequence state: Video 1 (1.0) plays once -> Video 2 (2.0) loops continuously
+  const [isVideo2Active, setIsVideo2Active] = useState(false);
+  const video1Ref = useRef(null);
+  const video2Ref = useRef(null);
 
-  // Seamless continuous loop handler ensuring no blank/black screen on loop boundary
-  const handleVideoEnded = () => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
+  // Transition to Video 2 seamlessly when Video 1 finishes
+  const handleVideo1Ended = () => {
+    if (video2Ref.current) {
+      video2Ref.current.currentTime = 0;
+      const playPromise = video2Ref.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsVideo2Active(true);
+          })
+          .catch((err) => {
+            console.warn('[SceneViewer] Video 2 play error:', err);
+            setIsVideo2Active(true);
+          });
+        return;
+      }
+    }
+    setIsVideo2Active(true);
+  };
+
+  // Ensure Video 2 loops continuously and smoothly restarts if it reaches the end
+  const handleVideo2Ended = () => {
+    if (video2Ref.current) {
+      video2Ref.current.currentTime = 0;
+      video2Ref.current.play().catch(() => {});
     }
   };
 
-  // Initial mount: start Iron Man video playback
+  // Initial mount: start Video 1 playback from beginning
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.play().catch((err) => {
-        console.warn('[SceneViewer] Video autoplay catch:', err);
+    setIsVideo2Active(false);
+    if (video1Ref.current) {
+      video1Ref.current.currentTime = 0;
+      video1Ref.current.play().catch((err) => {
+        console.warn('[SceneViewer] Video 1 autoplay catch:', err);
       });
     }
   }, []);
@@ -141,16 +167,41 @@ export default function SceneViewer({
             background: '#000000'
           }}
         >
-          {/* Iron Man Reference Video: Plays and loops continuously */}
+          {/* VIDEO 1: Iron Man GenAI 1.0 — Plays once, visible initially */}
           <video
-            ref={videoRef}
-            src={IRONMAN_VIDEO_SRC}
+            ref={video1Ref}
+            src={VIDEO_1_SRC}
             autoPlay
             muted
             playsInline
             preload="auto"
-            loop
-            onEnded={handleVideoEnded}
+            loop={false}
+            onEnded={handleVideo1Ended}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              userSelect: 'none',
+              pointerEvents: 'none',
+              display: isVideo2Active ? 'none' : 'block',
+              zIndex: isVideo2Active ? 1 : 2
+            }}
+          />
+
+          {/* VIDEO 2: Iron Man GenAI 2.0 — Preloaded in background, loops continuously once started */}
+          <video
+            ref={video2Ref}
+            src={VIDEO_2_SRC}
+            muted
+            playsInline
+            preload="auto"
+            loop={true}
+            onEnded={handleVideo2Ended}
             style={{
               position: 'absolute',
               inset: 0,
@@ -163,7 +214,7 @@ export default function SceneViewer({
               userSelect: 'none',
               pointerEvents: 'none',
               display: 'block',
-              zIndex: 2
+              zIndex: isVideo2Active ? 2 : 1
             }}
           />
         </div>

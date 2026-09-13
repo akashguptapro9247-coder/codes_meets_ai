@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, Mail, Key, ArrowRight, AlertCircle } from 'lucide-react';
+import { Shield, Lock, Mail, Key, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
@@ -16,6 +16,7 @@ async function sha256(message) {
 export default function AdminLoginGate({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -219,24 +220,52 @@ export default function AdminLoginGate({ onLoginSuccess }) {
               <Key size={13} />
               SECURITY KEY / PASSWORD
             </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                background: 'rgba(2, 6, 18, 0.9)',
-                border: '1px solid rgba(224, 38, 255, 0.3)',
-                color: '#ffffff',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.85rem',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
-            />
+            <div style={{ position: 'relative', width: '100%' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{
+                  width: '100%',
+                  padding: '12px 42px 12px 14px',
+                  background: 'rgba(2, 6, 18, 0.9)',
+                  border: '1px solid rgba(224, 38, 255, 0.3)',
+                  color: '#ffffff',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  soundEngine.playClick();
+                  setShowPassword(prev => !prev);
+                }}
+                title={showPassword ? 'Hide password' : 'Show password'}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: showPassword ? 'var(--magenta-glow)' : '#9ca3af',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                  zIndex: 2,
+                  transition: 'color 0.2s ease'
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <button
