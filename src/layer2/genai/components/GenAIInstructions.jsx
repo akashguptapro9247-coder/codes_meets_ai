@@ -80,13 +80,13 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
     };
   }, []);
 
-  // 4. Begin Challenge Transition Trigger
+  // 4. Begin Challenge Transition Trigger (State Flow: BRIEFING -> EXITING -> VIDEO 2 -> PAGE 3)
   const handleBeginClick = () => {
     if (isTransitioning || hasBegun) return;
     soundEngine.playBoot();
     setIsTransitioning(true);
 
-    // Smooth switch to Video 2
+    // Smooth switch to Video 2 after exit animation
     if (video2Ref.current) {
       video2Ref.current.currentTime = 0;
       video2Ref.current.play().then(() => {
@@ -95,7 +95,7 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
           video1Ref.current.pause();
         }
       }).catch((err) => {
-        console.warn('[GenAIInstructions] Video 2 play blocked, switching display state:', err);
+        console.warn('[GenAIInstructions] Video 2 play error, switching display state:', err);
         setCurrentVideo(2);
       });
     } else {
@@ -120,12 +120,13 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
     }
   };
 
-  // 6. Workflow Modules Configuration (P01 - P04)
+  // 6. Workflow Modules Configuration (P01 - P04 ONLY)
   const leftModules = [
     {
       id: 'P01',
       title: 'SETUP',
       icon: <Folder size={14} color="var(--cyan-glow)" />,
+      delay: 0.1,
       bullets: [
         'Open VS Code',
         'Create project folder',
@@ -136,6 +137,7 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
       id: 'P03',
       title: 'BUILD & EXECUTE',
       icon: <FileCode size={14} color="var(--cyan-glow)" />,
+      delay: 0.2,
       bullets: [
         'Create the required files',
         'Add the generated code',
@@ -149,20 +151,22 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
       id: 'P02',
       title: 'PLAN & GENERATE',
       icon: <Bot size={14} color="var(--cyan-glow)" />,
+      delay: 0.15,
       bullets: [
         'Read the assigned task',
         'Plan with ChatGPT / Gemini',
-        'Generate the required code'
+        'Generate required code'
       ]
     },
     {
       id: 'P04',
       title: 'DEBUG & SUBMIT',
       icon: <CheckSquare size={14} color="var(--lime-accent)" />,
+      delay: 0.25,
       bullets: [
         'Test the application',
         'Fix errors and refine the result',
-        'Explain what you built and submit'
+        'Explain what you built & submit'
       ]
     }
   ];
@@ -183,27 +187,23 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
     >
       {/* Dynamic Viewport CSS */}
       <style>{`
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.9; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.95); }
-        }
         .hud-corner-tl {
-          position: absolute; top: -1px; left: -1px; width: 8px; height: 8px;
+          position: absolute; top: -1px; left: -1px; width: 7px; height: 7px;
           border-top: 2px solid var(--cyan-glow); border-left: 2px solid var(--cyan-glow);
           pointer-events: none;
         }
         .hud-corner-tr {
-          position: absolute; top: -1px; right: -1px; width: 8px; height: 8px;
+          position: absolute; top: -1px; right: -1px; width: 7px; height: 7px;
           border-top: 2px solid var(--cyan-glow); border-right: 2px solid var(--cyan-glow);
           pointer-events: none;
         }
         .hud-corner-bl {
-          position: absolute; bottom: -1px; left: -1px; width: 8px; height: 8px;
+          position: absolute; bottom: -1px; left: -1px; width: 7px; height: 7px;
           border-bottom: 2px solid var(--cyan-glow); border-left: 2px solid var(--cyan-glow);
           pointer-events: none;
         }
         .hud-corner-br {
-          position: absolute; bottom: -1px; right: -1px; width: 8px; height: 8px;
+          position: absolute; bottom: -1px; right: -1px; width: 7px; height: 7px;
           border-bottom: 2px solid var(--cyan-glow); border-right: 2px solid var(--cyan-glow);
           pointer-events: none;
         }
@@ -489,24 +489,24 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
                   gap: '24px'
                 }}
               >
-                {/* LEFT COLUMN: P01 & P03 */}
-                <motion.div
-                  initial={{ opacity: 0, x: -35 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -45, transition: { duration: 0.35 } }}
-                  transition={{ duration: 0.45, ease: 'easeOut' }}
+                {/* LEFT COLUMN: P01 (TOP LEFT) & P03 (LOWER LEFT) */}
+                <div
                   className="hud-side-column"
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '24px',
+                    gap: '26px',
                     width: '280px',
                     flexShrink: 0
                   }}
                 >
                   {leftModules.map((mod) => (
-                    <div
+                    <motion.div
                       key={mod.id}
+                      initial={{ opacity: 0, x: -35 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -45, transition: { duration: 0.35 } }}
+                      transition={{ duration: 0.4, delay: mod.delay, ease: 'easeOut' }}
                       className="hud-module-card"
                       style={{
                         position: 'relative',
@@ -585,31 +585,31 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </motion.div>
+                </div>
 
                 {/* CENTER: UNCLUTTERED THOR HERO ZONE */}
                 <div style={{ flex: 1, minWidth: '40px' }} />
 
-                {/* RIGHT COLUMN: P02 & P04 */}
-                <motion.div
-                  initial={{ opacity: 0, x: 35 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 45, transition: { duration: 0.35 } }}
-                  transition={{ duration: 0.45, ease: 'easeOut' }}
+                {/* RIGHT COLUMN: P02 (TOP RIGHT) & P04 (LOWER RIGHT) */}
+                <div
                   className="hud-side-column"
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '24px',
+                    gap: '26px',
                     width: '280px',
                     flexShrink: 0
                   }}
                 >
                   {rightModules.map((mod) => (
-                    <div
+                    <motion.div
                       key={mod.id}
+                      initial={{ opacity: 0, x: 35 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 45, transition: { duration: 0.35 } }}
+                      transition={{ duration: 0.4, delay: mod.delay, ease: 'easeOut' }}
                       className="hud-module-card"
                       style={{
                         position: 'relative',
@@ -688,43 +688,42 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
-                </motion.div>
+                </div>
               </div>
 
-              {/* BOTTOM SECTION: MISSION WORKFLOW PROTOCOL TITLE & BEGIN BUTTON */}
+              {/* BOTTOM SECTION: >_ MISSION WORKFLOW & BEGIN GENAI CHALLENGE BUTTON */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 30, transition: { duration: 0.35 } }}
-                transition={{ duration: 0.45, ease: 'easeOut' }}
+                exit={{ opacity: 0, y: 25, transition: { duration: 0.35 } }}
+                transition={{ duration: 0.45, delay: 0.3, ease: 'easeOut' }}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: '10px',
                   width: '100%',
                   marginTop: '12px'
                 }}
               >
-                {/* Cinematic Title Tag */}
+                {/* HUD Label: >_ MISSION WORKFLOW */}
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
+                    gap: '8px',
                     fontFamily: 'var(--font-mono)',
-                    fontSize: '0.72rem',
-                    color: 'rgba(0, 243, 255, 0.85)',
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase'
+                    fontSize: '0.74rem',
+                    color: 'var(--cyan-glow)',
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    textShadow: '0 0 8px rgba(0, 243, 255, 0.6)'
                   }}
                 >
-                  <span style={{ width: '32px', height: '1px', background: 'linear-gradient(90deg, transparent, var(--cyan-glow))' }} />
-                  <Terminal size={14} color="var(--cyan-glow)" />
-                  <span>MISSION WORKFLOW PROTOCOL</span>
-                  <span style={{ width: '32px', height: '1px', background: 'linear-gradient(90deg, var(--cyan-glow), transparent)' }} />
+                  <span style={{ color: 'var(--lime-accent)', fontWeight: 800 }}>&gt;_</span>
+                  <span>MISSION WORKFLOW</span>
                 </div>
 
                 {/* BEGIN GENAI CHALLENGE BUTTON */}
@@ -751,7 +750,7 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
                     textShadow: '0 0 8px rgba(0, 243, 255, 0.8)'
                   }}
                 >
-                  <Play size={16} fill="var(--cyan-glow)" color="var(--cyan-glow)" />
+                  <Play size={15} fill="var(--cyan-glow)" color="var(--cyan-glow)" />
                   <span>BEGIN GENAI CHALLENGE</span>
                 </motion.button>
               </motion.div>
