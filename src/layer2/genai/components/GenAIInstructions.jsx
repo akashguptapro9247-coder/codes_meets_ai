@@ -1,93 +1,172 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Play, Bot, Folder, FileCode, Bug, CheckSquare, ArrowLeft, ShieldAlert, Terminal, Layers, Cpu, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Sparkles,
+  Shield,
+  Volume2,
+  VolumeX,
+  Play,
+  Terminal,
+  Folder,
+  Bot,
+  FileCode,
+  CheckSquare
+} from 'lucide-react';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
-import ThreeBackground from '../../../shared/components/ThreeBackground';
 
 export default function GenAIInstructions({ participant, onBack, onBegin }) {
-  const mousePosition = useRef({ x: 0, y: 0 });
-  const [activePhase, setActivePhase] = useState('ALL'); // 'ALL' | 1 | 2 | 3 | 4 | 5
-  const [hoveredCapability, setHoveredCapability] = useState(null);
-  const [hoveredDuty, setHoveredDuty] = useState(null);
+  const [muted, setMuted] = useState(soundEngine.isMuted());
+  const [currentVideo, setCurrentVideo] = useState(1); // 1 = background1 (loop), 2 = background2 (cinematic run)
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [hasBegun, setHasBegun] = useState(false);
 
+  const video1Ref = useRef(null);
+  const video2Ref = useRef(null);
+  const fallbackTimeoutRef = useRef(null);
+
+  // 1. Sound State Sync
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      mousePosition.current = {
-        x: (e.clientX / window.innerWidth) * 2 - 1,
-        y: -(e.clientY / window.innerHeight) * 2 + 1
-      };
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    setMuted(soundEngine.isMuted());
+    const unsubscribe = soundEngine.subscribe((newMutedState) => {
+      setMuted(newMutedState);
+    });
+    return unsubscribe;
   }, []);
 
-  const capabilities = [
-    { id: 1, title: 'Understand problem', desc: 'Understand the problem statement & architecture' },
-    { id: 2, title: 'Generate code', desc: 'Generate initial code & implementation files' },
-    { id: 3, title: 'Structure project', desc: 'Ask AI how to structure folder & components' },
-    { id: 4, title: 'Debug runtime errors', desc: 'Use AI assistance to troubleshoot errors' },
-    { id: 5, title: 'Improve UI/UX', desc: 'Refine styling, layout & visual presentation' },
-    { id: 6, title: 'Explain code', desc: 'Ask AI to explain unfamiliar code snippets' }
-  ];
+  const toggleSound = () => {
+    const isNowMuted = soundEngine.toggleMute();
+    if (!isNowMuted) soundEngine.playHover();
+  };
 
-  const duties = [
-    { id: 1, label: 'CREATE FOLDER & FILES', text: 'Create project folder & required files in VS Code' },
-    { id: 2, label: 'ORGANIZE STRUCTURE', text: 'Organize project structure & paste generated code' },
-    { id: 3, label: 'RUN & TROUBLESHOOT', text: 'Run application & troubleshoot issues locally' },
-    { id: 4, label: 'UNDERSTAND & EXPLAIN', text: 'Understand & explain what you built in your own words', highlight: true }
-  ];
+  // 2. Participant Info Resolver (matches Page 3 hierarchy)
+  const getActiveParticipantInfo = () => {
+    let name = participant?.name;
+    let rollNumber = participant?.rollNumber || participant?.roll_number;
 
-  const phases = [
+    if ((!name || !rollNumber) && typeof window !== 'undefined') {
+      try {
+        const storedSession =
+          sessionStorage.getItem('cma_participant_session') ||
+          localStorage.getItem('cma_participant_session');
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession);
+          if (!name) name = parsed.name;
+          if (!rollNumber) rollNumber = parsed.rollNumber || parsed.roll_number;
+        }
+      } catch (e) {}
+    }
+
+    return {
+      name: (name || 'PARTICIPANT').toUpperCase(),
+      rollNumber: rollNumber || 'N/A'
+    };
+  };
+
+  const participantInfo = getActiveParticipantInfo();
+
+  // 3. Autoplay & Video 1 initialization
+  useEffect(() => {
+    if (video1Ref.current) {
+      video1Ref.current.play().catch(() => {});
+    }
+  }, []);
+
+  // Cleanup fallback timers on unmount
+  useEffect(() => {
+    return () => {
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // 4. Begin Challenge Transition Trigger (State Flow: BRIEFING -> EXITING -> VIDEO 2 -> PAGE 3)
+  const handleBeginClick = () => {
+    if (isTransitioning || hasBegun) return;
+    soundEngine.playBoot();
+    setIsTransitioning(true);
+
+    // Smooth switch to Video 2 after exit animation
+    if (video2Ref.current) {
+      video2Ref.current.currentTime = 0;
+      video2Ref.current.play().then(() => {
+        setCurrentVideo(2);
+        if (video1Ref.current) {
+          video1Ref.current.pause();
+        }
+      }).catch((err) => {
+        console.warn('[GenAIInstructions] Video 2 play error, switching display state:', err);
+        setCurrentVideo(2);
+      });
+    } else {
+      setCurrentVideo(2);
+    }
+
+    // Safety fallback: if video fails to emit onEnded within 25 seconds, proceed automatically
+    fallbackTimeoutRef.current = setTimeout(() => {
+      handleVideo2Ended();
+    }, 25000);
+  };
+
+  // 5. Video 2 Completion Handler -> Direct navigation to Page 3
+  const handleVideo2Ended = () => {
+    if (hasBegun) return;
+    setHasBegun(true);
+    if (fallbackTimeoutRef.current) {
+      clearTimeout(fallbackTimeoutRef.current);
+    }
+    if (onBegin) {
+      onBegin();
+    }
+  };
+
+  // 6. Workflow Modules Configuration (P01 - P04 ONLY)
+  const leftModules = [
     {
-      num: '01',
-      id: 1,
+      id: 'P01',
       title: 'SETUP',
-      icon: <Folder size={13} color="var(--cyan-glow)" />,
-      steps: [
-        { num: '1', text: 'Open VS Code' },
-        { num: '2', text: 'Create project folder' },
-        { num: '3', text: 'Open folder in VS Code' }
+      icon: <Folder size={14} color="var(--cyan-glow)" />,
+      delay: 0.1,
+      bullets: [
+        'Open VS Code',
+        'Create project folder',
+        'Prepare required files'
       ]
     },
     {
-      num: '02',
-      id: 2,
-      title: 'PLAN & GENERATE',
-      icon: <Bot size={13} color="var(--cyan-glow)" />,
-      steps: [
-        { num: '4', text: 'Read assigned problem statement carefully' },
-        { num: '5', text: 'Use ChatGPT/Gemini to plan structure & generate code' }
-      ]
-    },
-    {
-      num: '03',
-      id: 3,
+      id: 'P03',
       title: 'BUILD & EXECUTE',
-      icon: <FileCode size={13} color="var(--cyan-glow)" />,
-      steps: [
-        { num: '6', text: 'Create required files in VS Code' },
-        { num: '7', text: 'Paste code into appropriate files' },
-        { num: '8', text: 'Run the project locally' }
+      icon: <FileCode size={14} color="var(--cyan-glow)" />,
+      delay: 0.2,
+      bullets: [
+        'Create the required files',
+        'Add the generated code',
+        'Run the application locally'
+      ]
+    }
+  ];
+
+  const rightModules = [
+    {
+      id: 'P02',
+      title: 'PLAN & GENERATE',
+      icon: <Bot size={14} color="var(--cyan-glow)" />,
+      delay: 0.15,
+      bullets: [
+        'Read the assigned task',
+        'Plan with ChatGPT / Gemini',
+        'Generate required code'
       ]
     },
     {
-      num: '04',
-      id: 4,
-      title: 'TEST & DEBUG',
-      icon: <Bug size={13} color="var(--cyan-glow)" />,
-      steps: [
-        { num: '9', text: 'Test all major requirements from problem' },
-        { num: '10', text: 'Fix errors with debugging & AI assistance' }
-      ]
-    },
-    {
-      num: '05',
-      id: 5,
-      title: 'EXPLAIN & SUBMIT',
-      icon: <CheckSquare size={13} color="var(--lime-accent)" />,
-      steps: [
-        { num: '11', text: 'Explain what you built in your own words' },
-        { num: '12', text: 'Submit the project' }
+      id: 'P04',
+      title: 'DEBUG & SUBMIT',
+      icon: <CheckSquare size={14} color="var(--lime-accent)" />,
+      delay: 0.25,
+      bullets: [
+        'Test the application',
+        'Fix errors and refine the result',
+        'Explain what you built & submit'
       ]
     }
   ];
@@ -98,431 +177,587 @@ export default function GenAIInstructions({ participant, onBack, onBegin }) {
         position: 'relative',
         width: '100vw',
         height: '100vh',
-        overflowY: 'auto',
+        maxHeight: '100vh',
         backgroundColor: '#030712',
+        overflow: 'hidden',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '14px 18px',
+        flexDirection: 'column',
         boxSizing: 'border-box'
       }}
     >
-      {/* 3D Procedural Background */}
-      <ThreeBackground mousePosition={mousePosition} />
+      {/* Dynamic Viewport CSS */}
+      <style>{`
+        .hud-corner-tl {
+          position: absolute; top: -1px; left: -1px; width: 7px; height: 7px;
+          border-top: 2px solid var(--cyan-glow); border-left: 2px solid var(--cyan-glow);
+          pointer-events: none;
+        }
+        .hud-corner-tr {
+          position: absolute; top: -1px; right: -1px; width: 7px; height: 7px;
+          border-top: 2px solid var(--cyan-glow); border-right: 2px solid var(--cyan-glow);
+          pointer-events: none;
+        }
+        .hud-corner-bl {
+          position: absolute; bottom: -1px; left: -1px; width: 7px; height: 7px;
+          border-bottom: 2px solid var(--cyan-glow); border-left: 2px solid var(--cyan-glow);
+          pointer-events: none;
+        }
+        .hud-corner-br {
+          position: absolute; bottom: -1px; right: -1px; width: 7px; height: 7px;
+          border-bottom: 2px solid var(--cyan-glow); border-right: 2px solid var(--cyan-glow);
+          pointer-events: none;
+        }
+        @media (max-width: 1024px) {
+          .hud-side-column {
+            width: 220px !important;
+          }
+          .hud-module-card {
+            padding: 10px 12px !important;
+          }
+        }
+      `}</style>
 
-      {/* Cybernetic Scanline Overlay */}
+      {/* ==================================================================== */}
+      {/* 1. FIXED GLOBAL HEADER — EXACT MATCH WITH PAGE 3 (REMAINS FIXED)     */}
+      {/* ==================================================================== */}
+      <header
+        style={{
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 20px',
+          borderBottom: '1px solid rgba(0, 243, 255, 0.25)',
+          background: 'rgba(2, 6, 18, 0.94)',
+          backdropFilter: 'blur(8px)',
+          boxSizing: 'border-box',
+          zIndex: 30,
+          gap: '12px',
+          height: '52px'
+        }}
+      >
+        {/* Left: Branding & Layer Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Sparkles
+            size={18}
+            color="var(--cyan-glow)"
+            style={{ filter: 'drop-shadow(0 0 6px var(--cyan-glow))' }}
+          />
+          <div>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.62rem',
+                color: 'rgba(0, 243, 255, 0.7)',
+                letterSpacing: '0.2em',
+                lineHeight: 1
+              }}
+            >
+              CODE MEETS AI // STAGE 02
+            </div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-title)',
+                fontSize: '1.05rem',
+                margin: 0,
+                color: '#ffffff',
+                letterSpacing: '0.12em',
+                lineHeight: 1.2,
+                textShadow: '0 0 12px rgba(0, 243, 255, 0.6)'
+              }}
+            >
+              LAYER 02 // GENAI TRACK
+            </h1>
+          </div>
+        </div>
+
+        {/* Center: Live Status Indicator */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '4px 12px',
+            background: 'rgba(57, 255, 20, 0.08)',
+            border: '1px solid rgba(57, 255, 20, 0.4)',
+            borderRadius: '2px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.7rem',
+            letterSpacing: '0.12em',
+            color: 'var(--lime-accent)'
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--lime-accent)',
+              boxShadow: '0 0 8px var(--lime-accent)',
+              animation: 'pulse 2s infinite'
+            }}
+          />
+          <span>CHALLENGE ACTIVE // APPLICATION DEVELOPMENT TRACK</span>
+        </div>
+
+        {/* Right: Operator Identity & SFX Toggle */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.72rem'
+          }}
+        >
+          {/* Operator Info Tag */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '5px 10px',
+              background: 'rgba(5, 12, 28, 0.9)',
+              border: '1px solid rgba(0, 243, 255, 0.2)',
+              borderRadius: '2px',
+              color: '#d1d5db'
+            }}
+          >
+            <Shield size={13} color="var(--lime-accent)" />
+            <span>
+              OPERATOR: <strong style={{ color: '#ffffff' }}>{participantInfo.name}</strong>
+            </span>
+            <span style={{ color: 'rgba(0, 243, 255, 0.4)' }}>|</span>
+            <span style={{ color: 'var(--cyan-glow)' }}>ROLL: {participantInfo.rollNumber}</span>
+          </div>
+
+          {/* Audio Mute Toggle */}
+          <button
+            onClick={toggleSound}
+            onMouseEnter={() => soundEngine.playHover()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(5, 10, 24, 0.8)',
+              border: '1px solid rgba(0, 243, 255, 0.3)',
+              color: muted ? '#6b7280' : 'var(--cyan-glow)',
+              padding: '5px 11px',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '0.72rem',
+              letterSpacing: '0.08em',
+              borderRadius: '2px',
+              transition: 'all 0.2s ease'
+            }}
+            title="Toggle SFX"
+          >
+            {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ==================================================================== */}
+      {/* 2. CINEMATIC VIDEO PLAYERS (SEAMLESS DUAL-VIDEO ARCHITECTURE)        */}
+      {/* ==================================================================== */}
       <div
         style={{
           position: 'absolute',
-          inset: 0,
-          zIndex: 2,
-          pointerEvents: 'none',
-          background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))',
-          backgroundSize: '100% 4px, 6px 100%'
-        }}
-      />
-
-      {/* Main Floating Glassmorphism HUD Briefing Panel */}
-      <motion.div
-        initial={{ opacity: 0, y: 12, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.96 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
-        className="cyber-card"
-        style={{
-          position: 'relative',
-          zIndex: 10,
-          width: '100%',
-          maxWidth: '1160px',
-          padding: '20px 24px',
-          boxSizing: 'border-box',
-          borderColor: 'var(--cyan-glow)',
-          boxShadow: '0 0 50px rgba(0, 243, 255, 0.22), inset 0 0 20px rgba(0, 243, 255, 0.05)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          background: 'rgba(3, 7, 18, 0.95)',
-          backdropFilter: 'blur(24px)'
+          top: '52px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: 'hidden',
+          zIndex: 0,
+          backgroundColor: '#030712'
         }}
       >
-        {/* 1. HUD HEADER BAR */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={() => {
-                soundEngine.playClick();
-                if (onBack) onBack();
-              }}
-              onMouseEnter={() => soundEngine.playHover()}
+        {/* VIDEO 1: Idle Thor Looping Ambient Video */}
+        <video
+          ref={video1Ref}
+          src="/vedios/layer2Genai.thor.backgound1.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center center',
+            opacity: currentVideo === 1 ? 1 : 0,
+            transition: 'opacity 0.35s ease',
+            pointerEvents: 'none',
+            zIndex: 1
+          }}
+        />
+
+        {/* VIDEO 2: Cinematic Mission Start Animation Video (Plays Once -> Page 3) */}
+        <video
+          ref={video2Ref}
+          src="/vedios/layer2Genai.thor.backgound2.mp4"
+          muted
+          playsInline
+          preload="auto"
+          onEnded={handleVideo2Ended}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center center',
+            opacity: currentVideo === 2 ? 1 : 0,
+            transition: 'opacity 0.35s ease',
+            pointerEvents: 'none',
+            zIndex: 2
+          }}
+        />
+
+        {/* Subtle Ambient Readability Tint */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: isTransitioning ? 'rgba(2, 6, 18, 0.15)' : 'rgba(2, 6, 18, 0.32)',
+            transition: 'background-color 0.5s ease',
+            zIndex: 3,
+            pointerEvents: 'none'
+          }}
+        />
+
+        {/* Futuristic Scanline Overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 4,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.02))',
+            backgroundSize: '100% 4px, 6px 100%'
+          }}
+        />
+      </div>
+
+      {/* ==================================================================== */}
+      {/* 3. FLOATING HUD WORKFLOW OVERLAY (ANIMATES OUT ON BEGIN)             */}
+      {/* ==================================================================== */}
+      <div
+        style={{
+          position: 'relative',
+          flex: 1,
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '16px 28px 24px 28px',
+          boxSizing: 'border-box',
+          pointerEvents: isTransitioning ? 'none' : 'auto'
+        }}
+      >
+        <AnimatePresence>
+          {!isTransitioning && (
+            <motion.div
+              key="workflow-hud-content"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.35 } }}
               style={{
+                width: '100%',
+                height: '100%',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'rgba(0, 243, 255, 0.08)',
-                border: '1px solid rgba(0, 243, 255, 0.3)',
-                color: 'var(--cyan-glow)',
-                padding: '6px 14px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.74rem',
-                letterSpacing: '0.1em',
-                cursor: 'pointer',
-                borderRadius: '3px'
+                flexDirection: 'column',
+                justifyContent: 'space-between'
               }}
             >
-              <ArrowLeft size={14} />
-              <span>BACK TO ARENA</span>
-            </button>
-
-            <div>
-              <div style={{ fontFamily: 'var(--font-title)', fontSize: '1.2rem', color: '#ffffff', letterSpacing: '0.08em', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Cpu size={18} color="var(--cyan-glow)" />
-                LAYER 02 <span style={{ color: 'var(--cyan-glow)' }}>// GEN AI TRACK</span>
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.64rem', color: 'rgba(0, 243, 255, 0.75)', letterSpacing: '0.14em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--cyan-glow)', display: 'inline-block', boxShadow: '0 0 6px var(--cyan-glow)' }} />
-                TACTICAL MISSION BRIEFING PROTOCOL
-              </div>
-            </div>
-          </div>
-
-          {/* Participant Tag */}
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '5px 12px',
-              background: 'rgba(57, 255, 20, 0.08)',
-              border: '1px solid rgba(57, 255, 20, 0.35)',
-              borderRadius: '3px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.74rem',
-              color: 'var(--lime-accent)'
-            }}
-          >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: 'var(--lime-accent)', display: 'inline-block', boxShadow: '0 0 6px var(--lime-accent)' }} />
-            {participant?.name || 'Participant'} — {participant?.rollNumber || participant?.roll_number || 'N/A'}
-          </div>
-        </div>
-
-        {/* 2. HERO MISSION OBJECTIVE NODE (Primary Visual Anchor) */}
-        <motion.div
-          whileHover={{ borderColor: 'rgba(0, 243, 255, 0.4)' }}
-          style={{
-            position: 'relative',
-            padding: '12px 16px',
-            background: 'linear-gradient(90deg, rgba(0, 243, 255, 0.08) 0%, rgba(2, 6, 20, 0.95) 100%)',
-            border: '1px solid rgba(0, 243, 255, 0.25)',
-            borderRadius: '4px',
-            overflow: 'hidden'
-          }}
-        >
-          {/* Animated Scanning Beam Top Border */}
-          <motion.div
-            animate={{ x: ['-100%', '100%'] }}
-            transition={{ repeat: Infinity, duration: 4, ease: 'linear' }}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '40%',
-              height: '2px',
-              background: 'linear-gradient(90deg, transparent, var(--cyan-glow), transparent)'
-            }}
-          />
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-            <div style={{ fontFamily: 'var(--font-title)', fontSize: '0.78rem', color: 'var(--cyan-glow)', letterSpacing: '0.12em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Layers size={14} /> MISSION OBJECTIVE
-            </div>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'var(--lime-accent)', background: 'rgba(57, 255, 20, 0.1)', padding: '2px 8px', borderRadius: '2px', letterSpacing: '0.1em' }}>
-              ACTIVE PROTOCOL
-            </span>
-          </div>
-
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: '#e5e7eb', lineHeight: 1.45 }}>
-            Build a small working web application using AI-assisted development (ChatGPT / Gemini). Use AI for code generation, structure & debugging, while taking full responsibility for local setup, execution, and explaining your build.
-          </div>
-        </motion.div>
-
-        {/* 3. MIDDLE DUAL SECTION: Authorized AI Capabilities & Player Duties */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          
-          {/* LEFT: AUTHORIZED AI CAPABILITIES (Permission System / Chips) */}
-          <div
-            style={{
-              padding: '12px 14px',
-              background: 'rgba(57, 255, 20, 0.03)',
-              border: '1px solid rgba(57, 255, 20, 0.2)',
-              borderRadius: '4px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-title)', fontSize: '0.74rem', color: 'var(--lime-accent)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Bot size={14} /> ALLOWED AI USAGE
-              </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--lime-accent)', letterSpacing: '0.08em' }}>
-                6 PERMISSIONS UNLOCKED
-              </span>
-            </div>
-
-            {/* Interactive Capability Chips Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              {capabilities.map((cap) => {
-                const isHovered = hoveredCapability === cap.id;
-                return (
-                  <motion.div
-                    key={cap.id}
-                    onMouseEnter={() => {
-                      setHoveredCapability(cap.id);
-                      soundEngine.playHover();
-                    }}
-                    onMouseLeave={() => setHoveredCapability(null)}
-                    whileHover={{ scale: 1.02 }}
-                    style={{
-                      padding: '6px 8px',
-                      background: isHovered ? 'rgba(57, 255, 20, 0.12)' : 'rgba(57, 255, 20, 0.05)',
-                      border: isHovered ? '1px solid var(--lime-accent)' : '1px solid rgba(57, 255, 20, 0.2)',
-                      borderRadius: '3px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s, border 0.2s'
-                    }}
-                  >
-                    <CheckCircle2 size={12} color="var(--lime-accent)" />
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: isHovered ? '#ffffff' : '#d1d5db', fontWeight: 600 }}>
-                      {cap.title}
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* RIGHT: YOUR RESPONSIBILITIES (Player Duty Interface) */}
-          <div
-            style={{
-              padding: '12px 14px',
-              background: 'rgba(239, 68, 68, 0.03)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              borderRadius: '4px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontFamily: 'var(--font-title)', fontSize: '0.74rem', color: '#ef4444', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldAlert size={14} /> YOUR RESPONSIBILITIES
-              </div>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: '#ef4444', letterSpacing: '0.08em' }}>
-                MANDATORY PLAYER DUTIES
-              </span>
-            </div>
-
-            {/* Tactical Duty Nodes List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              {duties.map((duty) => {
-                const isHovered = hoveredDuty === duty.id;
-                return (
-                  <motion.div
-                    key={duty.id}
-                    onMouseEnter={() => {
-                      setHoveredDuty(duty.id);
-                      soundEngine.playHover();
-                    }}
-                    onMouseLeave={() => setHoveredDuty(null)}
-                    whileHover={{ scale: 1.01 }}
-                    style={{
-                      padding: '5px 8px',
-                      background: duty.highlight
-                        ? isHovered ? 'rgba(57, 255, 20, 0.15)' : 'rgba(57, 255, 20, 0.08)'
-                        : isHovered ? 'rgba(239, 68, 68, 0.12)' : 'rgba(2, 6, 20, 0.7)',
-                      border: duty.highlight
-                        ? '1px solid rgba(57, 255, 20, 0.35)'
-                        : isHovered ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(239, 68, 68, 0.15)',
-                      borderRadius: '3px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s, border 0.2s'
-                    }}
-                  >
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', fontWeight: 800, color: duty.highlight ? 'var(--lime-accent)' : '#ef4444' }}>
-                      0{duty.id}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.67rem', color: duty.highlight ? 'var(--lime-accent)' : '#d1d5db', lineHeight: 1.35 }}>
-                      {duty.highlight ? <strong>{duty.text}</strong> : duty.text}
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-        </div>
-
-        {/* 4. MISSION WORKFLOW PROTOCOL (Interactive Connected Phase Rail) */}
-        <div
-          style={{
-            padding: '12px 14px',
-            background: 'rgba(2, 6, 18, 0.92)',
-            border: '1px solid rgba(0, 243, 255, 0.2)',
-            borderRadius: '4px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}
-        >
-          {/* Header & Interactive Phase Rail Filter Tabs */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ fontFamily: 'var(--font-title)', fontSize: '0.78rem', color: 'var(--cyan-glow)', letterSpacing: '0.12em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Terminal size={15} /> MISSION WORKFLOW PROTOCOL
-            </div>
-
-            {/* Interactive Phase Rail Selector */}
-            <div style={{ display: 'flex', gap: '4px', background: 'rgba(0, 243, 255, 0.05)', padding: '2px', borderRadius: '3px', border: '1px solid rgba(0, 243, 255, 0.15)' }}>
-              <button
-                onClick={() => setActivePhase('ALL')}
+              {/* TOP/MAIN AREA: SYMMETRICAL FLOATING WORKFLOW MODULES */}
+              <div
                 style={{
-                  padding: '2px 8px',
-                  fontSize: '0.62rem',
-                  fontFamily: 'var(--font-mono)',
-                  color: activePhase === 'ALL' ? '#ffffff' : '#9ca3af',
-                  background: activePhase === 'ALL' ? 'var(--cyan-glow)' : 'transparent',
-                  border: 'none',
-                  borderRadius: '2px',
-                  cursor: 'pointer',
-                  fontWeight: activePhase === 'ALL' ? 800 : 400
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  maxWidth: '1540px',
+                  margin: '0 auto',
+                  gap: '24px'
                 }}
               >
-                ALL PHASES
-              </button>
-              {phases.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    soundEngine.playClick();
-                    setActivePhase(p.id);
-                  }}
-                  onMouseEnter={() => soundEngine.playHover()}
+                {/* LEFT COLUMN: P01 (TOP LEFT) & P03 (LOWER LEFT) */}
+                <div
+                  className="hud-side-column"
                   style={{
-                    padding: '2px 8px',
-                    fontSize: '0.62rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: activePhase === p.id ? '#ffffff' : '#9ca3af',
-                    background: activePhase === p.id ? 'rgba(0, 243, 255, 0.3)' : 'transparent',
-                    border: 'none',
-                    borderRadius: '2px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  P{p.num}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 5 Phase Timeline Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
-            {phases.map((phase) => {
-              const isActive = activePhase === 'ALL' || activePhase === phase.id;
-              return (
-                <motion.div
-                  key={phase.id}
-                  onClick={() => setActivePhase(phase.id)}
-                  whileHover={{ scale: 1.02 }}
-                  style={{
-                    padding: '6px 8px',
-                    background: isActive ? 'rgba(0, 243, 255, 0.05)' : 'rgba(0, 243, 255, 0.01)',
-                    border: isActive ? '1px solid rgba(0, 243, 255, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)',
-                    borderRadius: '3px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '4px',
-                    opacity: isActive ? 1 : 0.45,
-                    cursor: 'pointer',
-                    transition: 'opacity 0.2s, background 0.2s, border 0.2s'
+                    gap: '26px',
+                    width: '280px',
+                    flexShrink: 0
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', fontWeight: 800, color: 'var(--cyan-glow)', background: 'rgba(0, 243, 255, 0.12)', padding: '1px 4px', borderRadius: '2px' }}>
-                      P{phase.num}
-                    </span>
-                    <span style={{ fontFamily: 'var(--font-title)', fontSize: '0.64rem', color: '#ffffff', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                      {phase.title}
-                    </span>
-                  </div>
+                  {leftModules.map((mod) => (
+                    <motion.div
+                      key={mod.id}
+                      initial={{ opacity: 0, x: -35 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -45, transition: { duration: 0.35 } }}
+                      transition={{ duration: 0.4, delay: mod.delay, ease: 'easeOut' }}
+                      className="hud-module-card"
+                      style={{
+                        position: 'relative',
+                        padding: '14px 16px',
+                        background: 'rgba(2, 6, 23, 0.78)',
+                        border: '1px solid rgba(0, 243, 255, 0.35)',
+                        boxShadow: '0 0 20px rgba(0, 243, 255, 0.12), inset 0 0 14px rgba(0, 243, 255, 0.04)',
+                        backdropFilter: 'blur(12px)',
+                        borderRadius: '3px'
+                      }}
+                    >
+                      <div className="hud-corner-tl" />
+                      <div className="hud-corner-tr" />
+                      <div className="hud-corner-bl" />
+                      <div className="hud-corner-br" />
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '2px' }}>
-                    {phase.steps.map((s) => (
-                      <div key={s.num} style={{ fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: '#d1d5db', display: 'flex', alignItems: 'flex-start', gap: '5px', lineHeight: 1.25 }}>
-                        <span style={{ color: 'var(--cyan-glow)', fontWeight: 'bold', flexShrink: 0 }}>{s.num}.</span>
-                        <span>{s.text}</span>
+                      {/* Module Header */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: '1px solid rgba(0, 243, 255, 0.2)',
+                          paddingBottom: '8px',
+                          marginBottom: '10px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              color: 'var(--cyan-glow)',
+                              background: 'rgba(0, 243, 255, 0.15)',
+                              border: '1px solid rgba(0, 243, 255, 0.35)',
+                              padding: '1px 6px',
+                              borderRadius: '2px',
+                              letterSpacing: '0.1em'
+                            }}
+                          >
+                            {mod.id}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-title)',
+                              fontSize: '0.78rem',
+                              color: '#ffffff',
+                              letterSpacing: '0.08em',
+                              textShadow: '0 0 8px rgba(0, 243, 255, 0.5)'
+                            }}
+                          >
+                            {mod.title}
+                          </span>
+                        </div>
+                        {mod.icon}
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* 5. BOTTOM HUD SPECS & ACTION BAR */}
-        <div
-          style={{
-            display: 'flex',
-            justify: 'space-between',
-            alignItems: 'center',
-            paddingTop: '6px',
-            borderTop: '1px solid rgba(0, 243, 255, 0.18)',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}
-        >
-          {/* HUD Metadata */}
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#9ca3af' }}>
-              TIME: <span style={{ color: 'var(--cyan-glow)', fontWeight: 800 }}>30 MIN</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#9ca3af' }}>
-              PROJECTS: <span style={{ color: 'var(--cyan-glow)', fontWeight: 800 }}>1 ASSIGNED</span>
-            </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.68rem', color: '#9ca3af' }}>
-              TOOLS: <span style={{ color: 'var(--lime-accent)', fontWeight: 800 }}>VS CODE + CHATGPT / GEMINI</span>
-            </div>
-          </div>
+                      {/* Bullets */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {mod.bullets.map((b, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.72rem',
+                              color: '#d1d5db',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '6px',
+                              lineHeight: 1.35
+                            }}
+                          >
+                            <span style={{ color: 'var(--cyan-glow)', flexShrink: 0 }}>•</span>
+                            <span>{b}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
 
-          {/* Primary CTA Button */}
-          <motion.button
-            whileHover={{ scale: 1.04, boxShadow: '0 0 28px rgba(0, 243, 255, 0.5)' }}
-            whileTap={{ scale: 0.96 }}
-            className="cyber-btn"
-            onClick={() => {
-              soundEngine.playBoot();
-              if (onBegin) onBegin();
-            }}
-            onMouseEnter={() => soundEngine.playHover()}
-            style={{
-              padding: '9px 26px',
-              fontSize: '0.86rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              cursor: 'pointer'
-            }}
-          >
-            <Play size={15} />
-            <span>BEGIN GEN AI CHALLENGE</span>
-          </motion.button>
-        </div>
-      </motion.div>
+                {/* CENTER: UNCLUTTERED THOR HERO ZONE */}
+                <div style={{ flex: 1, minWidth: '40px' }} />
+
+                {/* RIGHT COLUMN: P02 (TOP RIGHT) & P04 (LOWER RIGHT) */}
+                <div
+                  className="hud-side-column"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '26px',
+                    width: '280px',
+                    flexShrink: 0
+                  }}
+                >
+                  {rightModules.map((mod) => (
+                    <motion.div
+                      key={mod.id}
+                      initial={{ opacity: 0, x: 35 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 45, transition: { duration: 0.35 } }}
+                      transition={{ duration: 0.4, delay: mod.delay, ease: 'easeOut' }}
+                      className="hud-module-card"
+                      style={{
+                        position: 'relative',
+                        padding: '14px 16px',
+                        background: 'rgba(2, 6, 23, 0.78)',
+                        border: '1px solid rgba(0, 243, 255, 0.35)',
+                        boxShadow: '0 0 20px rgba(0, 243, 255, 0.12), inset 0 0 14px rgba(0, 243, 255, 0.04)',
+                        backdropFilter: 'blur(12px)',
+                        borderRadius: '3px'
+                      }}
+                    >
+                      <div className="hud-corner-tl" />
+                      <div className="hud-corner-tr" />
+                      <div className="hud-corner-bl" />
+                      <div className="hud-corner-br" />
+
+                      {/* Module Header */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: '1px solid rgba(0, 243, 255, 0.2)',
+                          paddingBottom: '8px',
+                          marginBottom: '10px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              color: mod.id === 'P04' ? 'var(--lime-accent)' : 'var(--cyan-glow)',
+                              background: mod.id === 'P04' ? 'rgba(57, 255, 20, 0.15)' : 'rgba(0, 243, 255, 0.15)',
+                              border: mod.id === 'P04' ? '1px solid rgba(57, 255, 20, 0.35)' : '1px solid rgba(0, 243, 255, 0.35)',
+                              padding: '1px 6px',
+                              borderRadius: '2px',
+                              letterSpacing: '0.1em'
+                            }}
+                          >
+                            {mod.id}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'var(--font-title)',
+                              fontSize: '0.78rem',
+                              color: '#ffffff',
+                              letterSpacing: '0.08em',
+                              textShadow: '0 0 8px rgba(0, 243, 255, 0.5)'
+                            }}
+                          >
+                            {mod.title}
+                          </span>
+                        </div>
+                        {mod.icon}
+                      </div>
+
+                      {/* Bullets */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {mod.bullets.map((b, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              fontFamily: 'var(--font-mono)',
+                              fontSize: '0.72rem',
+                              color: '#d1d5db',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '6px',
+                              lineHeight: 1.35
+                            }}
+                          >
+                            <span style={{ color: mod.id === 'P04' ? 'var(--lime-accent)' : 'var(--cyan-glow)', flexShrink: 0 }}>•</span>
+                            <span>{b}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+
+              {/* BOTTOM SECTION: >_ MISSION WORKFLOW & BEGIN GENAI CHALLENGE BUTTON */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 25, transition: { duration: 0.35 } }}
+                transition={{ duration: 0.45, delay: 0.3, ease: 'easeOut' }}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '10px',
+                  width: '100%',
+                  marginTop: '12px'
+                }}
+              >
+                {/* HUD Label: >_ MISSION WORKFLOW */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.74rem',
+                    color: 'var(--cyan-glow)',
+                    letterSpacing: '0.16em',
+                    textTransform: 'uppercase',
+                    textShadow: '0 0 8px rgba(0, 243, 255, 0.6)'
+                  }}
+                >
+                  <span style={{ color: 'var(--lime-accent)', fontWeight: 800 }}>&gt;_</span>
+                  <span>MISSION WORKFLOW</span>
+                </div>
+
+                {/* BEGIN GENAI CHALLENGE BUTTON */}
+                <motion.button
+                  whileHover={{ scale: 1.04, boxShadow: '0 0 35px rgba(0, 243, 255, 0.6)' }}
+                  whileTap={{ scale: 0.96 }}
+                  onClick={handleBeginClick}
+                  onMouseEnter={() => soundEngine.playHover()}
+                  className="cyber-btn"
+                  style={{
+                    padding: '12px 38px',
+                    fontSize: '0.94rem',
+                    fontFamily: 'var(--font-title)',
+                    letterSpacing: '0.12em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    cursor: 'pointer',
+                    background: 'linear-gradient(135deg, rgba(0, 243, 255, 0.25) 0%, rgba(2, 6, 23, 0.9) 100%)',
+                    border: '1px solid var(--cyan-glow)',
+                    color: '#ffffff',
+                    borderRadius: '3px',
+                    boxShadow: '0 0 24px rgba(0, 243, 255, 0.35)',
+                    textShadow: '0 0 8px rgba(0, 243, 255, 0.8)'
+                  }}
+                >
+                  <Play size={15} fill="var(--cyan-glow)" color="var(--cyan-glow)" />
+                  <span>BEGIN GENAI CHALLENGE</span>
+                </motion.button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

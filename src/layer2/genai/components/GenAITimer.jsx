@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
@@ -88,12 +88,14 @@ export default function GenAITimer({ assignedAt, onExpire }) {
         gap: '10px',
         padding: '6px 16px',
         background: isExpired
-          ? 'rgba(239, 68, 68, 0.12)'
+          ? 'rgba(239, 68, 68, 0.16)'
           : isCritical
-          ? 'rgba(239, 68, 68, 0.12)'
+          ? 'rgba(239, 68, 68, 0.16)'
           : isWarning
-          ? 'rgba(245, 158, 11, 0.12)'
-          : 'rgba(2, 6, 20, 0.95)',
+          ? 'rgba(245, 158, 11, 0.16)'
+          : 'rgba(3, 14, 30, 0.88)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         borderColor: themeColor,
         borderRadius: '3px',
         boxSizing: 'border-box',

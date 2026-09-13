@@ -19,7 +19,6 @@ import {
 import { toast } from '../../shared/components/Toast';
 import { ConfirmModal } from '../../shared/components/Modals';
 import { soundEngine } from '../../shared/utils/SoundEngine';
-import ThreeBackground from '../../shared/components/ThreeBackground';
 import GenAITimer from './components/GenAITimer';
 import Layer2AiTools from './components/Layer2AiTools';
 import Layer2SuccessResult from './components/Layer2SuccessResult';
@@ -56,6 +55,21 @@ export default function Layer2GenAIChallenge({
 
   const mousePosition = useRef({ x: 0, y: 0 });
   const isFinalizingTimeoutRef = useRef(false);
+  const bgVideoRef = useRef(null);
+
+  // Background Video Autoplay & Loop Assurance
+  useEffect(() => {
+    if (bgVideoRef.current) {
+      bgVideoRef.current.play().catch(() => {});
+    }
+  }, []);
+
+  const handleBgVideoEnded = () => {
+    if (bgVideoRef.current) {
+      bgVideoRef.current.currentTime = 0;
+      bgVideoRef.current.play().catch(() => {});
+    }
+  };
 
   // 1. Mouse Parallax Listener
   useEffect(() => {
@@ -109,9 +123,14 @@ export default function Layer2GenAIChallenge({
 
   const participantInfo = getActiveParticipantInfo();
   const question = genaiService.getQuestionById(assignment?.question_id) || genaiService.getAllQuestions()[0];
-  const isSubmitted = Boolean(assignment?.submitted || submissionSuccess);
+
+  const activeUserId = participant?.userId || participant?.user_id;
+  const isLocallySubmitted = typeof window !== 'undefined' && activeUserId ? localStorage.getItem(`cma_l2_genai_submitted_${activeUserId}`) === 'true' : false;
+  const isLocallyExpired = typeof window !== 'undefined' && activeUserId ? localStorage.getItem(`cma_l2_genai_expired_${activeUserId}`) === 'true' : false;
+
+  const isSubmitted = Boolean(assignment?.submitted || assignment?.status === 'completed' || submissionSuccess || isLocallySubmitted);
   const isSubmissionCompleted = isSubmitted;
-  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired') && !isSubmissionCompleted);
+  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired' || isLocallyExpired) && !isSubmissionCompleted);
 
   // Time Expired Handler (idempotent, single execution)
   const handleTimeExpire = async () => {
@@ -178,6 +197,12 @@ export default function Layer2GenAIChallenge({
     if (submitErr) {
       setError(submitErr.message || 'Failed to submit project. Please try again.');
     } else {
+      if (activeUserId && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`cma_l2_genai_submitted_${activeUserId}`, 'true');
+          localStorage.removeItem(`cma_l2_genai_expired_${activeUserId}`);
+        } catch (e) {}
+      }
       toast.success('Project submitted successfully!');
       setSubmissionSuccess(true);
       if (onSubmissionComplete) onSubmissionComplete(data);
@@ -193,13 +218,26 @@ export default function Layer2GenAIChallenge({
           height: '100vh',
           maxHeight: '100vh',
           backgroundColor: '#030712',
+          backgroundImage:
+            'radial-gradient(circle at 50% 30%, rgba(57, 255, 20, 0.04) 0%, transparent 60%), linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px)',
+          backgroundSize: '100% 100%, 32px 32px, 32px 32px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box'
         }}
       >
-        <ThreeBackground mousePosition={mousePosition} />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%)',
+            backgroundSize: '100% 4px'
+          }}
+        />
         <Layer2SuccessResult
           participantInfo={participantInfo}
           question={question}
@@ -221,13 +259,26 @@ export default function Layer2GenAIChallenge({
           height: '100vh',
           maxHeight: '100vh',
           backgroundColor: '#030712',
+          backgroundImage:
+            'radial-gradient(circle at 50% 30%, rgba(239, 68, 68, 0.04) 0%, transparent 60%), linear-gradient(rgba(239, 68, 68, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(239, 68, 68, 0.02) 1px, transparent 1px)',
+          backgroundSize: '100% 100%, 32px 32px, 32px 32px',
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           boxSizing: 'border-box'
         }}
       >
-        <ThreeBackground mousePosition={mousePosition} />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+            background:
+              'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%)',
+            backgroundSize: '100% 4px'
+          }}
+        />
         <Layer2TimeoutResult
           participantInfo={participantInfo}
           question={question}
@@ -281,8 +332,37 @@ export default function Layer2GenAIChallenge({
         }
       `}</style>
 
-      {/* 3D Ambient Parallax Background */}
-      <ThreeBackground mousePosition={mousePosition} />
+      {/* Layer 02 GenAI Active Workspace Animated Thunder Background Video */}
+      <video
+        ref={bgVideoRef}
+        src="/vedios/layer2Genai.tunder.background.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        onEnded={handleBgVideoEnded}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }}
+      />
+
+      {/* Ambient Dark/Translucent Readability Overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'rgba(2, 6, 18, 0.45)',
+          zIndex: 1,
+          pointerEvents: 'none'
+        }}
+      />
 
       {/* Subtle Futuristic Scanline Overlay */}
       <div
@@ -307,9 +387,11 @@ export default function Layer2GenAIChallenge({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '8px 20px',
-          borderBottom: '1px solid rgba(0, 243, 255, 0.25)',
-          background: 'rgba(2, 6, 18, 0.92)',
-          backdropFilter: 'blur(8px)',
+          borderBottom: '1px solid rgba(0, 243, 255, 0.35)',
+          background: 'rgba(3, 12, 28, 0.85)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          boxShadow: '0 4px 20px rgba(0, 243, 255, 0.12), inset 0 -1px 0 rgba(0, 243, 255, 0.15)',
           boxSizing: 'border-box',
           zIndex: 20,
           gap: '12px',
@@ -328,7 +410,7 @@ export default function Layer2GenAIChallenge({
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.62rem',
-                color: 'rgba(0, 243, 255, 0.7)',
+                color: 'rgba(0, 243, 255, 0.75)',
                 letterSpacing: '0.2em',
                 lineHeight: 1
               }}
@@ -343,7 +425,7 @@ export default function Layer2GenAIChallenge({
                 color: '#ffffff',
                 letterSpacing: '0.12em',
                 lineHeight: 1.2,
-                textShadow: '0 0 12px rgba(0, 243, 255, 0.6)'
+                textShadow: '0 0 14px rgba(0, 243, 255, 0.7)'
               }}
             >
               LAYER 02 // GENAI TRACK
@@ -359,20 +441,25 @@ export default function Layer2GenAIChallenge({
             gap: '8px',
             padding: '4px 12px',
             background: isSubmitted
-              ? 'rgba(57, 255, 20, 0.12)'
+              ? 'rgba(57, 255, 20, 0.14)'
               : isExpired
-              ? 'rgba(239, 68, 68, 0.12)'
-              : 'rgba(57, 255, 20, 0.08)',
+              ? 'rgba(239, 68, 68, 0.14)'
+              : 'rgba(0, 243, 255, 0.08)',
             border: isSubmitted
-              ? '1px solid rgba(57, 255, 20, 0.4)'
+              ? '1px solid rgba(57, 255, 20, 0.5)'
               : isExpired
-              ? '1px solid rgba(239, 68, 68, 0.4)'
-              : '1px solid rgba(57, 255, 20, 0.4)',
+              ? '1px solid rgba(239, 68, 68, 0.5)'
+              : '1px solid rgba(0, 243, 255, 0.35)',
+            boxShadow: isSubmitted
+              ? '0 0 10px rgba(57, 255, 20, 0.15)'
+              : isExpired
+              ? '0 0 10px rgba(239, 68, 68, 0.15)'
+              : '0 0 10px rgba(0, 243, 255, 0.1)',
             borderRadius: '2px',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.7rem',
             letterSpacing: '0.12em',
-            color: isExpired ? '#ef4444' : 'var(--lime-accent)'
+            color: isSubmitted ? 'var(--lime-accent)' : isExpired ? '#ef4444' : 'var(--cyan-glow)'
           }}
         >
           <span
@@ -381,8 +468,12 @@ export default function Layer2GenAIChallenge({
               width: '7px',
               height: '7px',
               borderRadius: '50%',
-              backgroundColor: isExpired ? '#ef4444' : 'var(--lime-accent)',
-              boxShadow: isExpired ? '0 0 8px #ef4444' : '0 0 8px var(--lime-accent)',
+              backgroundColor: isSubmitted ? 'var(--lime-accent)' : isExpired ? '#ef4444' : 'var(--cyan-glow)',
+              boxShadow: isSubmitted
+                ? '0 0 8px var(--lime-accent)'
+                : isExpired
+                ? '0 0 8px #ef4444'
+                : '0 0 8px var(--cyan-glow)',
               animation: isSubmitted || isExpired ? 'none' : 'pulse 2s infinite'
             }}
           />
@@ -412,13 +503,14 @@ export default function Layer2GenAIChallenge({
               alignItems: 'center',
               gap: '8px',
               padding: '5px 10px',
-              background: 'rgba(5, 12, 28, 0.9)',
-              border: '1px solid rgba(0, 243, 255, 0.2)',
+              background: 'rgba(3, 14, 32, 0.88)',
+              border: '1px solid rgba(0, 243, 255, 0.35)',
+              boxShadow: '0 0 10px rgba(0, 243, 255, 0.08)',
               borderRadius: '2px',
               color: '#d1d5db'
             }}
           >
-            <Shield size={13} color="var(--lime-accent)" />
+            <Shield size={13} color="var(--lime-accent)" style={{ filter: 'drop-shadow(0 0 4px var(--lime-accent))' }} />
             <span>
               OPERATOR: <strong style={{ color: '#ffffff' }}>{participantInfo.name}</strong>
             </span>
@@ -434,8 +526,9 @@ export default function Layer2GenAIChallenge({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(5, 10, 24, 0.8)',
-              border: '1px solid rgba(0, 243, 255, 0.3)',
+              background: 'rgba(3, 14, 32, 0.88)',
+              border: '1px solid rgba(0, 243, 255, 0.35)',
+              boxShadow: '0 0 10px rgba(0, 243, 255, 0.08)',
               color: muted ? '#6b7280' : 'var(--cyan-glow)',
               padding: '5px 11px',
               cursor: 'pointer',
@@ -463,12 +556,12 @@ export default function Layer2GenAIChallenge({
           position: 'relative',
           zIndex: 10,
           display: 'grid',
-          gridTemplateColumns: 'minmax(330px, 1fr) minmax(360px, 1.15fr)',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
           gap: '12px',
-          maxWidth: '1580px',
+          maxWidth: '1560px',
           margin: '0 auto',
           width: '100%',
-          padding: '10px 18px 12px 18px',
+          padding: '8px 16px 10px 16px',
           boxSizing: 'border-box',
           overflow: 'hidden',
           height: 'calc(100vh - 52px)'
@@ -495,14 +588,16 @@ export default function Layer2GenAIChallenge({
             className="cyber-card"
             style={{
               flexShrink: 0,
-              padding: '10px 14px',
-              background: 'rgba(2, 6, 20, 0.9)',
-              borderColor: 'rgba(0, 243, 255, 0.35)',
-              boxShadow: '0 0 16px rgba(0, 243, 255, 0.08)',
+              padding: '8px 14px',
+              background: 'rgba(6, 22, 48, 0.86)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
+              borderColor: 'rgba(0, 243, 255, 0.42)',
+              boxShadow: '0 0 20px rgba(0, 243, 255, 0.12), inset 0 0 14px rgba(0, 243, 255, 0.04)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '12px'
+              gap: '10px'
             }}
           >
             <div style={{ minWidth: 0, flex: 1 }}>
@@ -516,7 +611,8 @@ export default function Layer2GenAIChallenge({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  marginBottom: '2px'
+                  marginBottom: '2px',
+                  textShadow: '0 0 6px rgba(0, 243, 255, 0.4)'
                 }}
               >
                 <Layers size={12} /> ASSIGNED MISSION TARGET
@@ -524,14 +620,14 @@ export default function Layer2GenAIChallenge({
               <h2
                 style={{
                   fontFamily: 'var(--font-title)',
-                  fontSize: '1.15rem',
+                  fontSize: '1.12rem',
                   margin: 0,
                   color: '#ffffff',
                   letterSpacing: '0.04em',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  textShadow: '0 0 10px rgba(0, 243, 255, 0.4)'
+                  textShadow: '0 0 12px rgba(0, 243, 255, 0.5)'
                 }}
                 title={question.title}
               >
@@ -545,8 +641,9 @@ export default function Layer2GenAIChallenge({
                 alignItems: 'center',
                 gap: '6px',
                 padding: '4px 8px',
-                background: 'rgba(0, 243, 255, 0.08)',
-                border: '1px solid rgba(0, 243, 255, 0.25)',
+                background: 'rgba(0, 243, 255, 0.14)',
+                border: '1px solid rgba(0, 243, 255, 0.42)',
+                boxShadow: '0 0 10px rgba(0, 243, 255, 0.2)',
                 borderRadius: '3px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.65rem',
@@ -572,14 +669,16 @@ export default function Layer2GenAIChallenge({
               flexDirection: 'column',
               minHeight: 0,
               padding: '12px 16px',
-              background: 'rgba(3, 7, 20, 0.92)',
-              borderColor: 'rgba(224, 38, 255, 0.3)',
-              boxShadow: '0 0 20px rgba(224, 38, 255, 0.08)',
+              background: 'rgba(6, 20, 44, 0.85)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
+              borderColor: 'rgba(168, 85, 247, 0.4)',
+              boxShadow: '0 0 22px rgba(168, 85, 247, 0.1), 0 0 16px rgba(0, 243, 255, 0.08), inset 0 0 16px rgba(0, 243, 255, 0.04)',
               position: 'relative',
               overflow: 'hidden'
             }}
           >
-            {/* Top Glowing Accent Line */}
+            {/* Top Glowing Electric Accent Line */}
             <div
               style={{
                 position: 'absolute',
@@ -587,7 +686,7 @@ export default function Layer2GenAIChallenge({
                 left: 0,
                 right: 0,
                 height: '2px',
-                background: 'linear-gradient(90deg, transparent, var(--magenta-glow), transparent)'
+                background: 'linear-gradient(90deg, transparent, var(--cyan-glow), var(--magenta-glow), transparent)'
               }}
             />
 
@@ -597,7 +696,7 @@ export default function Layer2GenAIChallenge({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: '8px',
+                marginBottom: '6px',
                 flexShrink: 0
               }}
             >
@@ -609,8 +708,9 @@ export default function Layer2GenAIChallenge({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  fontSize: '0.94rem',
-                  letterSpacing: '0.08em'
+                  fontSize: '0.92rem',
+                  letterSpacing: '0.08em',
+                  textShadow: '0 0 8px rgba(224, 38, 255, 0.4)'
                 }}
               >
                 <FileText size={15} /> BUILD OBJECTIVE // SPECIFICATION
@@ -627,6 +727,31 @@ export default function Layer2GenAIChallenge({
               </span>
             </div>
 
+            {/* Visual Goal / Directive Callout Strip */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 10px',
+                marginBottom: '8px',
+                background: 'linear-gradient(90deg, rgba(0, 243, 255, 0.12) 0%, rgba(168, 85, 247, 0.08) 60%, transparent 100%)',
+                borderLeft: '3px solid var(--cyan-glow)',
+                borderTop: '1px solid rgba(0, 243, 255, 0.2)',
+                borderBottom: '1px solid rgba(0, 243, 255, 0.2)',
+                borderRight: '1px solid rgba(0, 243, 255, 0.1)',
+                borderRadius: '2px',
+                flexShrink: 0
+              }}
+            >
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.64rem', color: 'var(--cyan-glow)', fontWeight: 800, letterSpacing: '0.12em' }}>
+                DIRECTIVE:
+              </span>
+              <span style={{ fontFamily: 'var(--font-sans)', fontSize: '0.74rem', color: '#f3f4f6', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {question.title}
+              </span>
+            </div>
+
             {/* Problem Statement Content (Internal scroll container) */}
             <div
               className="l2-scrollbar"
@@ -635,8 +760,8 @@ export default function Layer2GenAIChallenge({
                 minHeight: 0,
                 overflowY: 'auto',
                 color: '#e5e7eb',
-                lineHeight: '1.6',
-                fontSize: '0.86rem',
+                lineHeight: '1.55',
+                fontSize: '0.84rem',
                 whiteSpace: 'pre-wrap',
                 fontFamily: 'var(--font-sans)',
                 paddingRight: '6px'
@@ -736,7 +861,12 @@ export default function Layer2GenAIChallenge({
                 letterSpacing: '0.12em',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '6px'
+                gap: '6px',
+                padding: '4px 10px',
+                background: 'rgba(0, 243, 255, 0.08)',
+                border: '1px solid rgba(0, 243, 255, 0.3)',
+                boxShadow: '0 0 10px rgba(0, 243, 255, 0.08)',
+                borderRadius: '2px'
               }}
             >
               <span
@@ -757,7 +887,7 @@ export default function Layer2GenAIChallenge({
             />
           </div>
 
-          {/* Card C: Technical Debrief / Explanation (Controlled Height, Internal Scroll) */}
+          {/* Card C: Technical Debrief / Explanation (Expanded Height, Flexible Textarea) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -769,13 +899,15 @@ export default function Layer2GenAIChallenge({
               flexDirection: 'column',
               minHeight: 0,
               padding: '12px 16px',
-              background: 'rgba(3, 7, 20, 0.92)',
+              background: 'rgba(6, 20, 44, 0.85)',
+              backdropFilter: 'blur(14px)',
+              WebkitBackdropFilter: 'blur(14px)',
               borderColor: isTextareaFocused
                 ? 'var(--lime-accent)'
-                : 'rgba(57, 255, 20, 0.25)',
+                : 'rgba(57, 255, 20, 0.35)',
               boxShadow: isTextareaFocused
-                ? '0 0 25px rgba(57, 255, 20, 0.2)'
-                : '0 0 15px rgba(57, 255, 20, 0.05)',
+                ? '0 0 25px rgba(57, 255, 20, 0.25), inset 0 0 12px rgba(57, 255, 20, 0.05)'
+                : '0 0 18px rgba(57, 255, 20, 0.08), inset 0 0 12px rgba(0, 243, 255, 0.04)',
               position: 'relative',
               overflow: 'hidden',
               transition: 'border-color 0.25s, box-shadow 0.25s'
@@ -810,8 +942,9 @@ export default function Layer2GenAIChallenge({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '7px',
-                  fontSize: '0.94rem',
-                  letterSpacing: '0.08em'
+                  fontSize: '0.92rem',
+                  letterSpacing: '0.08em',
+                  textShadow: '0 0 8px rgba(57, 255, 20, 0.4)'
                 }}
               >
                 <Terminal size={15} /> EXPLAIN WHAT YOU DID // TECHNICAL DEBRIEF
@@ -830,17 +963,17 @@ export default function Layer2GenAIChallenge({
             <p
               style={{
                 color: '#9ca3af',
-                margin: '0 0 8px 0',
-                fontSize: '0.78rem',
+                margin: '0 0 6px 0',
+                fontSize: '0.76rem',
                 fontFamily: 'var(--font-body)',
-                lineHeight: 1.35,
+                lineHeight: 1.3,
                 flexShrink: 0
               }}
             >
               Explain in your own words what you built, how it works, what features you implemented, and how you leveraged AI.
             </p>
 
-            {/* Controlled Textarea with internal scrolling */}
+            {/* Controlled Textarea with internal scrolling — Lighter & More Visible */}
             <textarea
               className="l2-scrollbar"
               value={explanation}
@@ -851,21 +984,24 @@ export default function Layer2GenAIChallenge({
               placeholder="I built an application with features... During development I used AI to..."
               style={{
                 flex: 1,
-                minHeight: '80px',
-                background: 'rgba(2, 6, 18, 0.95)',
+                minHeight: '70px',
+                background: 'rgba(8, 28, 60, 0.88)',
                 border: isTextareaFocused
                   ? '1px solid var(--lime-accent)'
-                  : '1px solid rgba(0, 243, 255, 0.2)',
+                  : '1px solid rgba(0, 243, 255, 0.35)',
                 borderRadius: '3px',
-                padding: '10px 12px',
+                padding: '8px 10px',
                 color: '#ffffff',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '0.84rem',
-                lineHeight: '1.5',
+                fontSize: '0.82rem',
+                lineHeight: '1.45',
                 resize: 'none',
                 boxSizing: 'border-box',
                 outline: 'none',
                 overflowY: 'auto',
+                boxShadow: isTextareaFocused
+                  ? '0 0 16px rgba(57, 255, 20, 0.3), inset 0 0 12px rgba(0, 243, 255, 0.08)'
+                  : 'inset 0 0 12px rgba(0, 243, 255, 0.05)',
                 transition: 'border-color 0.25s, box-shadow 0.25s'
               }}
             />
@@ -917,8 +1053,9 @@ export default function Layer2GenAIChallenge({
               style={{
                 color: '#ef4444',
                 padding: '6px 12px',
-                background: 'rgba(239, 68, 68, 0.1)',
+                background: 'rgba(239, 68, 68, 0.12)',
                 border: '1px solid #ef4444',
+                boxShadow: '0 0 12px rgba(239, 68, 68, 0.2)',
                 borderRadius: '3px',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.75rem',
@@ -933,7 +1070,7 @@ export default function Layer2GenAIChallenge({
             </motion.div>
           )}
 
-          {/* Card E: Spacious Project Archive / Upload Bay */}
+          {/* Card E: Compact Project Archive / Upload Bay */}
           {!isSubmitted && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -942,12 +1079,14 @@ export default function Layer2GenAIChallenge({
               className="cyber-card"
               style={{
                 flexShrink: 0,
-                padding: '12px 16px',
-                background: 'rgba(3, 7, 20, 0.92)',
-                borderColor: isDragging ? 'var(--cyan-glow)' : 'rgba(245, 158, 11, 0.3)',
+                padding: '10px 14px',
+                background: 'rgba(6, 20, 44, 0.85)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                borderColor: isDragging ? 'var(--cyan-glow)' : 'rgba(245, 158, 11, 0.4)',
                 boxShadow: isDragging
                   ? '0 0 25px rgba(0, 243, 255, 0.25)'
-                  : '0 0 15px rgba(245, 158, 11, 0.06)',
+                  : '0 0 18px rgba(245, 158, 11, 0.08), inset 0 0 12px rgba(0, 243, 255, 0.04)',
                 position: 'relative',
                 overflow: 'hidden',
                 transition: 'border-color 0.25s, box-shadow 0.25s'
@@ -970,7 +1109,7 @@ export default function Layer2GenAIChallenge({
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: '8px'
+                  marginBottom: '6px'
                 }}
               >
                 <h3
@@ -981,8 +1120,9 @@ export default function Layer2GenAIChallenge({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
-                    fontSize: '0.94rem',
-                    letterSpacing: '0.08em'
+                    fontSize: '0.92rem',
+                    letterSpacing: '0.08em',
+                    textShadow: '0 0 8px rgba(245, 158, 11, 0.4)'
                   }}
                 >
                   <UploadCloud size={16} /> PROJECT ARCHIVE // UPLOAD BAY
@@ -1004,10 +1144,11 @@ export default function Layer2GenAIChallenge({
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   style={{
-                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    border: '1px solid rgba(16, 185, 129, 0.5)',
                     borderRadius: '4px',
-                    padding: '10px 14px',
-                    background: 'rgba(16, 185, 129, 0.08)',
+                    padding: '8px 12px',
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    boxShadow: '0 0 14px rgba(16, 185, 129, 0.2)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -1024,13 +1165,13 @@ export default function Layer2GenAIChallenge({
                     }}
                   >
                     <div style={{ color: '#10b981', flexShrink: 0 }}>
-                      <FileBox size={24} />
+                      <FileBox size={22} style={{ filter: 'drop-shadow(0 0 6px #10b981)' }} />
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div
                         style={{
                           color: '#fff',
-                          fontSize: '0.88rem',
+                          fontSize: '0.84rem',
                           fontWeight: 600,
                           fontFamily: 'var(--font-mono)',
                           whiteSpace: 'nowrap',
@@ -1043,7 +1184,7 @@ export default function Layer2GenAIChallenge({
                       <div
                         style={{
                           color: '#9ca3af',
-                          fontSize: '0.72rem',
+                          fontSize: '0.70rem',
                           fontFamily: 'var(--font-mono)'
                         }}
                       >
@@ -1062,7 +1203,7 @@ export default function Layer2GenAIChallenge({
                       }}
                       onMouseEnter={() => soundEngine.playHover()}
                       style={{
-                        background: 'rgba(239, 68, 68, 0.12)',
+                        background: 'rgba(239, 68, 68, 0.14)',
                         border: '1px solid #ef4444',
                         color: '#ef4444',
                         padding: '5px 12px',
@@ -1081,7 +1222,7 @@ export default function Layer2GenAIChallenge({
                       htmlFor="project-upload"
                       onMouseEnter={() => soundEngine.playHover()}
                       style={{
-                        background: 'rgba(0, 243, 255, 0.12)',
+                        background: 'rgba(0, 243, 255, 0.14)',
                         border: '1px solid var(--cyan-glow)',
                         color: 'var(--cyan-glow)',
                         padding: '5px 12px',
@@ -1099,7 +1240,7 @@ export default function Layer2GenAIChallenge({
                   </div>
                 </motion.div>
               ) : (
-                /* Empty Dropzone State with Enhanced Height & Styling */
+                /* Empty Dropzone State with Compact Balanced Height */
                 <motion.div
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -1125,13 +1266,14 @@ export default function Layer2GenAIChallenge({
                   style={{
                     border: isDragging
                       ? '1px dashed var(--cyan-glow)'
-                      : '1px dashed rgba(0, 243, 255, 0.35)',
+                      : '1px dashed rgba(0, 243, 255, 0.45)',
                     borderRadius: '4px',
-                    padding: '16px 18px',
+                    padding: '12px 16px',
                     textAlign: 'center',
                     background: isDragging
-                      ? 'rgba(0, 243, 255, 0.1)'
-                      : 'rgba(2, 6, 20, 0.65)',
+                      ? 'rgba(0, 243, 255, 0.16)'
+                      : 'rgba(8, 28, 62, 0.72)',
+                    boxShadow: 'inset 0 0 16px rgba(0, 243, 255, 0.06)',
                     cursor: isExpired || isSubmitting ? 'not-allowed' : 'pointer',
                     transition: 'background 0.2s, border-color 0.2s'
                   }}
@@ -1143,12 +1285,12 @@ export default function Layer2GenAIChallenge({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '14px',
+                      gap: '12px',
                       width: '100%'
                     }}
                   >
                     <UploadCloud
-                      size={24}
+                      size={22}
                       color={isDragging ? 'var(--lime-accent)' : 'var(--cyan-glow)'}
                       style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px var(--cyan-glow))' }}
                     />
@@ -1157,7 +1299,7 @@ export default function Layer2GenAIChallenge({
                         style={{
                           color: '#f3f4f6',
                           fontFamily: 'var(--font-mono)',
-                          fontSize: '0.82rem',
+                          fontSize: '0.80rem',
                           fontWeight: 600,
                           marginBottom: '2px'
                         }}
@@ -1170,7 +1312,7 @@ export default function Layer2GenAIChallenge({
                         style={{
                           color: '#9ca3af',
                           fontFamily: 'var(--font-mono)',
-                          fontSize: '0.68rem',
+                          fontSize: '0.67rem',
                           lineHeight: 1.3
                         }}
                       >
@@ -1205,13 +1347,13 @@ export default function Layer2GenAIChallenge({
             </motion.div>
           )}
 
-          {/* Action Button: Final Submit Button (Well-Proportioned Primary Action) */}
+          {/* Action Button: Final Submit Button (Prominent Primary Action) */}
           {!isSubmitted && (
             <div style={{ flexShrink: 0, marginTop: '2px' }}>
               <motion.button
                 whileHover={
                   !isExpired && !isSubmitting
-                    ? { scale: 1.015, boxShadow: '0 0 25px rgba(57, 255, 20, 0.45)' }
+                    ? { scale: 1.015, boxShadow: '0 0 35px rgba(57, 255, 20, 0.6), inset 0 0 18px rgba(0, 243, 255, 0.3)' }
                     : {}
                 }
                 whileTap={!isExpired && !isSubmitting ? { scale: 0.985 } : {}}
@@ -1226,21 +1368,27 @@ export default function Layer2GenAIChallenge({
                 disabled={isExpired || isSubmitting}
                 style={{
                   width: '100%',
-                  padding: '12px 24px',
-                  fontSize: '0.96rem',
+                  padding: '11px 22px',
+                  fontSize: '0.94rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '10px',
+                  background: isExpired
+                    ? 'rgba(75, 85, 99, 0.2)'
+                    : 'linear-gradient(135deg, rgba(57, 255, 20, 0.22) 0%, rgba(0, 243, 255, 0.25) 50%, rgba(6, 26, 48, 0.95) 100%)',
                   borderColor: isExpired ? '#4b5563' : 'var(--lime-accent)',
-                  color: isExpired ? '#9ca3af' : '#fff',
+                  color: isExpired ? '#9ca3af' : '#ffffff',
+                  boxShadow: isExpired
+                    ? 'none'
+                    : '0 0 24px rgba(57, 255, 20, 0.38), inset 0 0 14px rgba(0, 243, 255, 0.2)',
                   opacity: isExpired || isSubmitting ? 0.5 : 1,
                   cursor: isExpired || isSubmitting ? 'not-allowed' : 'pointer',
                   letterSpacing: '0.08em',
                   boxSizing: 'border-box'
                 }}
               >
-                <Send size={17} />
+                <Send size={17} style={{ filter: !isExpired && !isSubmitting ? 'drop-shadow(0 0 5px var(--lime-accent))' : 'none' }} />
                 <span>{isSubmitting ? 'SUBMITTING PROJECT...' : 'SUBMIT PROJECT'}</span>
               </motion.button>
             </div>
