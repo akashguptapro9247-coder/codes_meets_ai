@@ -56,6 +56,21 @@ export default function Layer2GenAIChallenge({
 
   const mousePosition = useRef({ x: 0, y: 0 });
   const isFinalizingTimeoutRef = useRef(false);
+  const bgVideoRef = useRef(null);
+
+  // Background Video Autoplay & Loop Assurance
+  useEffect(() => {
+    if (bgVideoRef.current) {
+      bgVideoRef.current.play().catch(() => {});
+    }
+  }, []);
+
+  const handleBgVideoEnded = () => {
+    if (bgVideoRef.current) {
+      bgVideoRef.current.currentTime = 0;
+      bgVideoRef.current.play().catch(() => {});
+    }
+  };
 
   // 1. Mouse Parallax Listener
   useEffect(() => {
@@ -283,11 +298,14 @@ export default function Layer2GenAIChallenge({
 
       {/* Layer 02 GenAI Active Workspace Animated Thunder Background Video */}
       <video
-        src="/vedios/layer2Genai.tunder.background.mp4.mp4"
+        ref={bgVideoRef}
+        src="/vedios/layer2Genai.tunder.background.mp4"
         autoPlay
         loop
         muted
         playsInline
+        preload="auto"
+        onEnded={handleBgVideoEnded}
         style={{
           position: 'absolute',
           inset: 0,
