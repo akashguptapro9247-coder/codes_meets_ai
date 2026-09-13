@@ -9,7 +9,7 @@ import { loadDataset, randomizeQuestions } from './data/DatasetLoader';
 import { adminService } from '../../admin/services/adminService';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 import { eventStateService } from '../../shared/services/eventStateService';
-import { ArrowLeft, CheckCircle, AlertTriangle, Terminal, Shield } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Terminal, Shield } from 'lucide-react';
 
 export default function Layer2ManualChallenge({ participant, onBack }) {
   const userId = participant?.userId || participant?.user_id;
@@ -439,16 +439,8 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
               flexShrink: 0, padding: '6px 24px',
               borderTop: '1px solid rgba(0,243,255,0.15)',
               background: 'rgba(2,6,20,0.85)',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              display: 'flex', justifyContent: 'flex-end', alignItems: 'center'
             }}>
-              <button
-                className="cyber-btn"
-                disabled={currentIndex === 0}
-                onClick={() => { soundEngine.playClick(); setCurrentIndex(c => c - 1); }}
-                style={{ padding: '10px 20px', opacity: currentIndex === 0 ? 0.3 : 1, display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                <ArrowLeft size={15} /> PREVIOUS
-              </button>
               <div style={{ display: 'flex', gap: '16px' }}>
                 {currentIndex < questions.length - 1 ? (
                   <button

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, ShieldCheck, Volume2, VolumeX, Settings, Cpu } from 'lucide-react';
+import { Terminal, ShieldCheck, Volume2, VolumeX, Cpu } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 
-export default function ArenaHeader({ participant, onOpenAdmin }) {
+export default function ArenaHeader({ participant }) {
   const [muted, setMuted] = useState(soundEngine.isMuted());
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
         <span>EVENT ARENA</span>
       </div>
 
-      {/* RIGHT: Participant Identity, SFX Toggle & Admin Panel Button */}
+      {/* RIGHT: Participant Identity & SFX Toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         {/* Participant Info Tag */}
         <div
@@ -145,39 +145,6 @@ export default function ArenaHeader({ participant, onOpenAdmin }) {
         >
           {muted ? <VolumeX size={14} /> : <Volume2 size={14} />}
           <span>{muted ? 'SFX: OFF' : 'SFX: ON'}</span>
-        </button>
-
-        {/* Secret Admin Control Modal Trigger for Live Testing */}
-        <button
-          onClick={() => {
-            soundEngine.playClick();
-            if (window.history.pushState) {
-              window.history.pushState({}, '', '/admin-panel');
-              window.dispatchEvent(new Event('popstate'));
-            } else {
-              window.location.hash = '#admin-panel';
-            }
-            if (onOpenAdmin) onOpenAdmin();
-          }}
-          onMouseEnter={() => soundEngine.playHover()}
-          style={{
-            background: 'rgba(224, 38, 255, 0.12)',
-            border: '1px solid var(--magenta-glow)',
-            color: 'var(--magenta-glow)',
-            padding: '6px 12px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem',
-            letterSpacing: '0.08em',
-            boxShadow: '0 0 10px rgba(224, 38, 255, 0.2)'
-          }}
-          title="Open Admin Control Panel (/admin-panel)"
-        >
-          <Settings size={14} />
-          <span className="hidden md:inline">ADMIN PANEL</span>
         </button>
       </div>
     </header>

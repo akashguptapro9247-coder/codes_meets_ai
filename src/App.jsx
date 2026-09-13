@@ -462,7 +462,6 @@ function App() {
             }
           }}
           onForceExit={handleForceExit}
-          onOpenAdmin={() => navigateTo('/admin-panel', 'admin')}
         />
       )}
 

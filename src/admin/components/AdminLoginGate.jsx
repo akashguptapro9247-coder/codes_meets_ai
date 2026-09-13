@@ -1,44 +1,50 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Lock, Mail, Key, ArrowRight, Zap, AlertCircle } from 'lucide-react';
+import { Shield, Lock, Mail, Key, ArrowRight, AlertCircle } from 'lucide-react';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 
-export default function AdminLoginGate({ onLoginSuccess, onCancel }) {
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
+const ADMIN_PASS_HASH = import.meta.env.VITE_ADMIN_PASS_HASH || '';
+
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export default function AdminLoginGate({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleAutoFill = () => {
-    soundEngine.playHover();
-    setEmail('admin@codemeets.ai');
-    setPassword('admin123');
-    setErrorMsg('');
-  };
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     soundEngine.playClick();
     setIsLoading(true);
+    setErrorMsg('');
 
-    setTimeout(() => {
-      // Configurable admin credentials (accepts admin@codemeets.ai/admin123 or any valid admin email)
-      if (
-        (email.trim().toLowerCase() === 'admin@codemeets.ai' && password === 'admin123') ||
-        (email.trim().toLowerCase().includes('admin') && password.length >= 6) ||
-        (email.trim() && password === 'admin123')
-      ) {
+    try {
+      const passHash = await sha256(password);
+      const emailMatch = email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      const passMatch = passHash === ADMIN_PASS_HASH;
+
+      if (emailMatch && passMatch) {
         soundEngine.playBoot();
         sessionStorage.setItem('cma_admin_auth', 'true');
-        sessionStorage.setItem('cma_admin_email', email);
+        sessionStorage.setItem('cma_admin_email', email.trim().toLowerCase());
         setIsLoading(false);
         onLoginSuccess();
       } else {
         soundEngine.playClick();
-        setErrorMsg('INVALID CREDENTIALS // ACCESS DENIED');
+        setErrorMsg('Invalid admin credentials.');
         setIsLoading(false);
       }
-    }, 450);
+    } catch {
+      setErrorMsg('Authentication error. Please try again.');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -183,7 +189,7 @@ export default function AdminLoginGate({ onLoginSuccess, onCancel }) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. admin@codemeets.ai"
+              placeholder="Enter admin email"
               style={{
                 width: '100%',
                 padding: '12px 14px',
@@ -233,41 +239,6 @@ export default function AdminLoginGate({ onLoginSuccess, onCancel }) {
             />
           </div>
 
-          {/* Quick Demo Autofill Hint Box */}
-          <div
-            style={{
-              padding: '10px 12px',
-              background: 'rgba(0, 243, 255, 0.05)',
-              border: '1px dashed rgba(0, 243, 255, 0.25)',
-              borderRadius: '2px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}
-          >
-            <div style={{ fontSize: '0.68rem', color: '#9ca3af' }}>
-              Default: <span style={{ color: '#ffffff' }}>admin@codemeets.ai</span> / <span style={{ color: '#ffffff' }}>admin123</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleAutoFill}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--cyan-glow)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
-            >
-              <Zap size={12} /> AUTO-FILL
-            </button>
-          </div>
-
           <button
             type="submit"
             disabled={isLoading}
@@ -284,23 +255,6 @@ export default function AdminLoginGate({ onLoginSuccess, onCancel }) {
             <span>{isLoading ? 'AUTHENTICATING...' : 'ACCESS MISSION CONTROL'}</span>
             <ArrowRight size={16} />
           </button>
-
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#6b7280',
-                fontSize: '0.72rem',
-                cursor: 'pointer',
-                marginTop: '4px'
-              }}
-            >
-              [ RETURN TO ARENA ]
-            </button>
-          )}
         </form>
       </motion.div>
     </div>

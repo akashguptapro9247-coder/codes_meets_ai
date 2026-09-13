@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Brain } from 'lucide-react';
 
-const VIDEO_1_SRC = '/vedios/ironman_genai_1.0.mp4';
-const VIDEO_2_SRC = '/vedios/ironman_genai_2.0.mp4';
+const IRONMAN_VIDEO_SRC = '/vedios/ironman_genai_1.0.mp4';
 
 export default function SceneViewer({
   isTimeUp = false,
@@ -12,26 +11,21 @@ export default function SceneViewer({
   const isSubmitted = Boolean(submissionSuccess || existingSubmission);
   const sessionStatusText = isSubmitted ? 'SUBMITTED & LOCKED' : isTimeUp ? 'TIME EXPIRED' : 'CHALLENGE ACTIVE';
 
-  // Track if we have transitioned to Video 2
-  const [isVideo2Active, setIsVideo2Active] = useState(false);
-  const video1Ref = useRef(null);
-  const video2Ref = useRef(null);
+  const videoRef = useRef(null);
 
-  // Transition to Video 2 seamlessly when Video 1 finishes
-  const handleVideo1Ended = () => {
-    if (video2Ref.current) {
-      video2Ref.current.play().catch((err) => {
-        console.warn('[SceneViewer] Video 2 play error:', err);
-      });
+  // Seamless continuous loop handler ensuring no blank/black screen on loop boundary
+  const handleVideoEnded = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
     }
-    setIsVideo2Active(true);
   };
 
-  // Initial mount: start Video 1 playback
+  // Initial mount: start Iron Man video playback
   useEffect(() => {
-    if (video1Ref.current) {
-      video1Ref.current.play().catch((err) => {
-        console.warn('[SceneViewer] Video 1 autoplay catch:', err);
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.warn('[SceneViewer] Video autoplay catch:', err);
       });
     }
   }, []);
@@ -147,40 +141,16 @@ export default function SceneViewer({
             background: '#000000'
           }}
         >
-          {/* VIDEO 1: Plays once, preloaded, visible initially */}
+          {/* Iron Man Reference Video: Plays and loops continuously */}
           <video
-            ref={video1Ref}
-            src={VIDEO_1_SRC}
+            ref={videoRef}
+            src={IRONMAN_VIDEO_SRC}
             autoPlay
             muted
             playsInline
             preload="auto"
-            loop={false}
-            onEnded={handleVideo1Ended}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              maxWidth: '100%',
-              maxHeight: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              userSelect: 'none',
-              pointerEvents: 'none',
-              display: isVideo2Active ? 'none' : 'block',
-              zIndex: isVideo2Active ? 1 : 2
-            }}
-          />
-
-          {/* VIDEO 2: Preloaded in background, loops continuously once started */}
-          <video
-            ref={video2Ref}
-            src={VIDEO_2_SRC}
-            muted
-            playsInline
-            preload="auto"
-            loop={true}
+            loop
+            onEnded={handleVideoEnded}
             style={{
               position: 'absolute',
               inset: 0,
@@ -193,7 +163,7 @@ export default function SceneViewer({
               userSelect: 'none',
               pointerEvents: 'none',
               display: 'block',
-              zIndex: isVideo2Active ? 2 : 1
+              zIndex: 2
             }}
           />
         </div>

@@ -158,6 +158,8 @@ export default function AdminDashboard({ onClose }) {
   const handleLogout = () => {
     sessionStorage.removeItem('cma_admin_auth');
     sessionStorage.removeItem('cma_admin_email');
+    // Replace history entry so back-button cannot bypass the login screen
+    window.history.replaceState({}, '', '/admin');
     setIsAuthenticated(false);
     soundEngine.playClick();
   };
