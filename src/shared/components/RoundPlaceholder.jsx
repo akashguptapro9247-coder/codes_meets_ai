@@ -3,10 +3,29 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Terminal, Play } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 import { eventStateService } from '../services/eventStateService';
+import { adminService } from '../../admin/services/adminService';
 import Layer1GenAIChallenge from '../../layer1/genai/Layer1GenAIChallenge';
 import Layer1ManualChallenge from '../../layer1/manual/Layer1ManualChallenge';
 import Layer2ManualRoute from '../../layer2/manual/Layer2ManualRoute';
 import Layer2GenAIRoute from '../../layer2/genai/Layer2GenAIRoute';
+
+const resolveActiveUserId = (participant) => {
+  if (participant?.userId || participant?.user_id || participant?.id) {
+    return participant.userId || participant.user_id || participant.id;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored =
+        sessionStorage.getItem('cma_participant_session') ||
+        localStorage.getItem('cma_participant_session');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.userId || parsed.user_id || parsed.id || null;
+      }
+    } catch (e) {}
+  }
+  return null;
+};
 
 // NOTE: `isChallengeOpen` and `onLaunchChallenge` are LIFTED to EventArenaScene
 // so the challenge-launched state survives re-renders of this component.
@@ -18,6 +37,8 @@ export default function RoundPlaceholder({
   onLaunchChallenge,
   onBackToArena
 }) {
+  const activeUserId = resolveActiveUserId(participant);
+
   const isManualLayer1 =
     (roundPath?.toLowerCase().includes('manual') ||
     roundTitle?.toLowerCase().includes('manual')) &&
@@ -51,6 +72,45 @@ export default function RoundPlaceholder({
        roundTitle?.toLowerCase().includes('layer 02') || roundTitle?.toLowerCase().includes('layer 2'))
     );
 
+  // Synchronous check for Layer 1 GenAI lock status
+  const isL1GenAiLocked = (() => {
+    if (!isGenAiLayer1 || !activeUserId || typeof window === 'undefined') return false;
+    try {
+      const isSubmitted = localStorage.getItem(`cma_l1_genai_submitted_${activeUserId}`) === 'true';
+      const isExpired =
+        localStorage.getItem(`cma_l1_genai_expired_${activeUserId}`) === 'true' ||
+        localStorage.getItem(`cma_l1_genai_timer_expired_${activeUserId}`) === 'true';
+      return isSubmitted || isExpired;
+    } catch (e) {
+      return false;
+    }
+  })();
+
+  const [isL1GenAiDbLocked, setIsL1GenAiDbLocked] = React.useState(false);
+
+  // Asynchronous pre-fetch to detect if participant has an existing DB submission/timeout
+  React.useEffect(() => {
+    if (!isGenAiLayer1 || !activeUserId) return;
+    let isMounted = true;
+    adminService.fetchLayer1SubmissionForUser(activeUserId).then(({ data }) => {
+      if (!isMounted) return;
+      if (data) {
+        setIsL1GenAiDbLocked(true);
+        try {
+          if (data.status === 'TIME_EXPIRED' || data.time_taken === '15:00' || data.time_taken === '00:30') {
+            localStorage.setItem(`cma_l1_genai_expired_${activeUserId}`, 'true');
+            localStorage.setItem(`cma_l1_genai_timer_expired_${activeUserId}`, 'true');
+          } else {
+            localStorage.setItem(`cma_l1_genai_submitted_${activeUserId}`, 'true');
+          }
+        } catch (e) {}
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isGenAiLayer1, activeUserId]);
+
   // Real-time lock listener — only act if admin CHANGES state from active → inactive
   const prevStateRef = useRef(null);
   React.useEffect(() => {
@@ -77,7 +137,7 @@ export default function RoundPlaceholder({
     return () => unsubscribe();
   }, [roundPath, roundTitle, isManualLayer1, isManualLayer2, isGenAiLayer1, isGenAiLayer2, onBackToArena]);
 
-  // ─── Challenge screens (rendered when isChallengeOpen=true) ───────────────
+  // ─── Challenge screens (rendered when isChallengeOpen=true or round is locked) ───────────────
 
   if (isChallengeOpen && isManualLayer1) {
     return (
@@ -98,7 +158,7 @@ export default function RoundPlaceholder({
     );
   }
 
-  if (isChallengeOpen && isGenAiLayer1) {
+  if ((isChallengeOpen || isL1GenAiLocked || isL1GenAiDbLocked) && isGenAiLayer1) {
     return (
       <Layer1GenAIChallenge
         participant={participant}

@@ -21,16 +21,6 @@ export default function Layer1GenAIChallenge({
   challengeImage = '/assets/layer1_genai.jpeg',
   challengeTitle = 'LAYER 01 // GENAI TRACK'
 }) {
-  const [prompt, setPrompt] = useState('');
-  const [images, setImages] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionSuccess, setSubmissionSuccess] = useState(false);
-  const [validationError, setValidationError] = useState(null);
-  const [isTimeUp, setIsTimeUp] = useState(false);
-  const [existingSubmission, setExistingSubmission] = useState(null);
-  const [isLoadingSubmission, setIsLoadingSubmission] = useState(true);
-  const isFinalizingTimeoutRef = useRef(false);
-
   // Helper to reliably extract the active user ID from props or storage
   const getActiveUserId = () => {
     if (participant?.userId) return participant.userId;
@@ -77,6 +67,32 @@ export default function Layer1GenAIChallenge({
 
   const userId = getActiveUserId();
 
+  // Synchronous local storage lock check for instant protection against flashes
+  const initialLock = (() => {
+    if (!userId || typeof window === 'undefined') return { isExpired: false, isSubmitted: false };
+    try {
+      const isExpired =
+        localStorage.getItem(`cma_l1_genai_expired_${userId}`) === 'true' ||
+        localStorage.getItem(`cma_l1_genai_timer_expired_${userId}`) === 'true';
+      const isSubmitted = localStorage.getItem(`cma_l1_genai_submitted_${userId}`) === 'true';
+      return { isExpired, isSubmitted };
+    } catch (e) {
+      return { isExpired: false, isSubmitted: false };
+    }
+  })();
+
+  const isPreLocked = Boolean(initialLock.isExpired || initialLock.isSubmitted);
+
+  const [prompt, setPrompt] = useState('');
+  const [images, setImages] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState(initialLock.isSubmitted);
+  const [validationError, setValidationError] = useState(null);
+  const [isTimeUp, setIsTimeUp] = useState(initialLock.isExpired);
+  const [existingSubmission, setExistingSubmission] = useState(null);
+  const [isLoadingSubmission, setIsLoadingSubmission] = useState(!isPreLocked);
+  const isFinalizingTimeoutRef = useRef(false);
+
   // Real-time lock listener: if admin locks Layer 1 or deactivates GenAI track, exit immediately to Play Page
   useEffect(() => {
     const unsubscribe = eventStateService.subscribeToEventState((state) => {
@@ -119,26 +135,43 @@ export default function Layer1GenAIChallenge({
 
           if (data.status === 'TIME_EXPIRED' || data.time_taken === '15:00' || data.time_taken === '00:30') {
             setIsTimeUp(true);
+            setSubmissionSuccess(false);
+            try {
+              localStorage.setItem(`cma_l1_genai_expired_${activeId}`, 'true');
+              localStorage.setItem(`cma_l1_genai_timer_expired_${activeId}`, 'true');
+            } catch (e) {}
           } else {
             setSubmissionSuccess(true);
+            setIsTimeUp(false);
+            try {
+              localStorage.setItem(`cma_l1_genai_submitted_${activeId}`, 'true');
+            } catch (e) {}
           }
         } else {
-          // If Admin deleted submission or no submission exists
-          setExistingSubmission(null);
-          setSubmissionSuccess(false);
+          // If Admin deleted submission or no submission exists in DB
+          const localExpired =
+            localStorage.getItem(`cma_l1_genai_expired_${activeId}`) === 'true' ||
+            localStorage.getItem(`cma_l1_genai_timer_expired_${activeId}`) === 'true';
+          const localSubmitted = localStorage.getItem(`cma_l1_genai_submitted_${activeId}`) === 'true';
 
-          // Check if timer in localStorage is already marked as expired or reached timeout
-          const timerKey = `cma_l1_genai_timer_start_${activeId}`;
-          const expiredKey = `cma_l1_genai_timer_expired_${activeId}`;
-          const isExpiredMarked = localStorage.getItem(expiredKey) === 'true';
-          const storedStart = localStorage.getItem(timerKey);
+          if (localSubmitted) {
+            setSubmissionSuccess(true);
+          } else if (localExpired) {
+            setIsTimeUp(true);
+          } else {
+            setExistingSubmission(null);
+            setSubmissionSuccess(false);
+            setIsTimeUp(false);
 
-          if (isExpiredMarked) {
-            handleTimeUp();
-          } else if (storedStart) {
-            const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
-            if (elapsed >= 900) {
-              handleTimeUp();
+            // Check if timer in localStorage is already marked as expired or reached timeout
+            const timerKey = `cma_l1_genai_timer_start_${activeId}`;
+            const storedStart = localStorage.getItem(timerKey);
+
+            if (storedStart) {
+              const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
+              if (elapsed >= 900) {
+                handleTimeUp();
+              }
             }
           }
         }
@@ -167,10 +200,13 @@ export default function Layer1GenAIChallenge({
         (payload) => {
           if (!isMounted) return;
           if (payload.eventType === 'DELETE') {
-            const currentTimerKey = `cma_l1_genai_timer_start_${userId || 'player'}`;
+            const currentTimerKey = `cma_l1_genai_timer_start_${activeId || 'player'}`;
             try {
               localStorage.removeItem(currentTimerKey);
               sessionStorage.removeItem(currentTimerKey);
+              localStorage.removeItem(`cma_l1_genai_submitted_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_expired_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_timer_expired_${activeId}`);
             } catch (e) {}
             loadSubmission();
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
@@ -212,8 +248,13 @@ export default function Layer1GenAIChallenge({
 
     if (activeId) {
       const expiredKey = `cma_l1_genai_timer_expired_${activeId}`;
+      const generalExpiredKey = `cma_l1_genai_expired_${activeId}`;
+      const timerKey = `cma_l1_genai_timer_start_${activeId}`;
       try {
         localStorage.setItem(expiredKey, 'true');
+        localStorage.setItem(generalExpiredKey, 'true');
+        localStorage.removeItem(timerKey);
+        sessionStorage.removeItem(timerKey);
       } catch (e) {}
     }
 
@@ -247,8 +288,8 @@ export default function Layer1GenAIChallenge({
 
   // Real Manual Submission Handler: ImageKit upload + Supabase insertion
   const handleSubmit = async () => {
-    if (isTimeUp || existingSubmission?.status === 'TIME_EXPIRED') {
-      setValidationError('CHALLENGE TIME HAS EXPIRED // SUBMISSIONS LOCKED');
+    if (isTimeUp || existingSubmission?.status === 'TIME_EXPIRED' || submissionSuccess) {
+      setValidationError('CHALLENGE HAS BEEN SUBMITTED / COMPLETED // SUBMISSIONS LOCKED');
       return;
     }
 
@@ -315,8 +356,9 @@ export default function Layer1GenAIChallenge({
         setSubmissionSuccess(true);
         soundEngine.playBoot();
 
-        // Clear local timer on successful submission
+        // Clear local timer and record lock on successful submission
         try {
+          localStorage.setItem(`cma_l1_genai_submitted_${activeId}`, 'true');
           localStorage.removeItem(timerKey);
           sessionStorage.removeItem(timerKey);
         } catch (e) {}

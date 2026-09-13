@@ -10,6 +10,21 @@ export default function CountdownTimer({
 }) {
   const getTimerKey = (id) => `cma_l1_genai_timer_start_${id || 'player'}`;
   const getExpiredKey = (id) => `cma_l1_genai_timer_expired_${id || 'player'}`;
+  const getGenExpiredKey = (id) => `cma_l1_genai_expired_${id || 'player'}`;
+  const getSubmittedKey = (id) => `cma_l1_genai_submitted_${id || 'player'}`;
+
+  const isPlayerLocked = (id) => {
+    if (typeof window === 'undefined') return false;
+    return (
+      localStorage.getItem(getExpiredKey(id)) === 'true' ||
+      sessionStorage.getItem(getExpiredKey(id)) === 'true' ||
+      localStorage.getItem(getGenExpiredKey(id)) === 'true' ||
+      sessionStorage.getItem(getGenExpiredKey(id)) === 'true' ||
+      localStorage.getItem(getSubmittedKey(id)) === 'true' ||
+      sessionStorage.getItem(getSubmittedKey(id)) === 'true'
+    );
+  };
+
   const timerKey = getTimerKey(participantId);
   const expiredKey = getExpiredKey(participantId);
 
@@ -17,7 +32,7 @@ export default function CountdownTimer({
   const [secondsRemaining, setSecondsRemaining] = useState(() => {
     if (typeof window === 'undefined') return TOTAL_DURATION;
 
-    if (disabled || localStorage.getItem(expiredKey) === 'true' || sessionStorage.getItem(expiredKey) === 'true') {
+    if (disabled || isPlayerLocked(participantId)) {
       return 0;
     }
 
@@ -44,6 +59,10 @@ export default function CountdownTimer({
   // Recalculate if participantId becomes available after initial mount
   useEffect(() => {
     if (!participantId || participantId === 'default' || participantId === 'player') return;
+    if (disabled || isPlayerLocked(participantId)) {
+      setSecondsRemaining(0);
+      return;
+    }
     const currentKey = getTimerKey(participantId);
     const stored = localStorage.getItem(currentKey) || sessionStorage.getItem(currentKey);
     const now = Date.now();
@@ -58,7 +77,7 @@ export default function CountdownTimer({
         sessionStorage.setItem(currentKey, nowStr);
       } catch (e) {}
     }
-  }, [participantId]);
+  }, [participantId, disabled]);
 
   useEffect(() => {
     if (disabled || secondsRemaining <= 0 || localStorage.getItem(expiredKey) === 'true') {

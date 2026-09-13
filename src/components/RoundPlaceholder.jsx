@@ -3,10 +3,31 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Terminal, Play } from 'lucide-react';
 import { soundEngine } from '../utils/SoundEngine';
 import { eventStateService } from '../services/eventStateService';
+import { adminService } from '../admin/services/adminService';
 import Layer1GenAIChallenge from './Layer1GenAIChallenge/Layer1GenAIChallenge';
 import Layer1ManualChallenge from './Layer1ManualChallenge/Layer1ManualChallenge';
 
+const resolveActiveUserId = (participant) => {
+  if (participant?.userId || participant?.user_id || participant?.id) {
+    return participant.userId || participant.user_id || participant.id;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored =
+        sessionStorage.getItem('cma_participant_session') ||
+        localStorage.getItem('cma_participant_session');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return parsed.userId || parsed.user_id || parsed.id || null;
+      }
+    } catch (e) {}
+  }
+  return null;
+};
+
 export default function RoundPlaceholder({ roundPath, roundTitle, participant, onBackToArena }) {
+  const activeUserId = resolveActiveUserId(participant);
+
   const isManualLayer1 =
     roundPath?.toLowerCase().includes('manual') ||
     roundTitle?.toLowerCase().includes('manual');
@@ -22,7 +43,43 @@ export default function RoundPlaceholder({ roundPath, roundTitle, participant, o
       roundPath === '/layer1'
     );
 
+  const isL1GenAiLocked = (() => {
+    if (!isGenAiLayer1 || !activeUserId || typeof window === 'undefined') return false;
+    try {
+      const isSubmitted = localStorage.getItem(`cma_l1_genai_submitted_${activeUserId}`) === 'true';
+      const isExpired =
+        localStorage.getItem(`cma_l1_genai_expired_${activeUserId}`) === 'true' ||
+        localStorage.getItem(`cma_l1_genai_timer_expired_${activeUserId}`) === 'true';
+      return isSubmitted || isExpired;
+    } catch (e) {
+      return false;
+    }
+  })();
+
+  const [isL1GenAiDbLocked, setIsL1GenAiDbLocked] = useState(false);
   const [isWorkspaceLaunched, setIsWorkspaceLaunched] = useState(false);
+
+  useEffect(() => {
+    if (!isGenAiLayer1 || !activeUserId) return;
+    let isMounted = true;
+    adminService.fetchLayer1SubmissionForUser(activeUserId).then(({ data }) => {
+      if (!isMounted) return;
+      if (data) {
+        setIsL1GenAiDbLocked(true);
+        try {
+          if (data.status === 'TIME_EXPIRED' || data.time_taken === '15:00' || data.time_taken === '00:30') {
+            localStorage.setItem(`cma_l1_genai_expired_${activeUserId}`, 'true');
+            localStorage.setItem(`cma_l1_genai_timer_expired_${activeUserId}`, 'true');
+          } else {
+            localStorage.setItem(`cma_l1_genai_submitted_${activeUserId}`, 'true');
+          }
+        } catch (e) {}
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [isGenAiLayer1, activeUserId]);
 
   // Real-time lock listener on placeholder screen
   useEffect(() => {
@@ -57,8 +114,8 @@ export default function RoundPlaceholder({ roundPath, roundTitle, participant, o
     );
   }
 
-  // If GenAI workspace is launched, render the complete GenAI challenge interface
-  if (isWorkspaceLaunched && isGenAiLayer1) {
+  // If GenAI workspace is launched or locked, render the complete GenAI challenge interface
+  if ((isWorkspaceLaunched || isL1GenAiLocked || isL1GenAiDbLocked) && isGenAiLayer1) {
     return (
       <Layer1GenAIChallenge
         participant={participant}
