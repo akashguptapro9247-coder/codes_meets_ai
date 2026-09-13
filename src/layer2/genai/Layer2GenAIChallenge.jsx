@@ -123,9 +123,14 @@ export default function Layer2GenAIChallenge({
 
   const participantInfo = getActiveParticipantInfo();
   const question = genaiService.getQuestionById(assignment?.question_id) || genaiService.getAllQuestions()[0];
-  const isSubmitted = Boolean(assignment?.submitted || submissionSuccess);
+
+  const activeUserId = participant?.userId || participant?.user_id;
+  const isLocallySubmitted = typeof window !== 'undefined' && activeUserId ? localStorage.getItem(`cma_l2_genai_submitted_${activeUserId}`) === 'true' : false;
+  const isLocallyExpired = typeof window !== 'undefined' && activeUserId ? localStorage.getItem(`cma_l2_genai_expired_${activeUserId}`) === 'true' : false;
+
+  const isSubmitted = Boolean(assignment?.submitted || assignment?.status === 'completed' || submissionSuccess || isLocallySubmitted);
   const isSubmissionCompleted = isSubmitted;
-  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired') && !isSubmissionCompleted);
+  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired' || isLocallyExpired) && !isSubmissionCompleted);
 
   // Time Expired Handler (idempotent, single execution)
   const handleTimeExpire = async () => {
@@ -192,6 +197,12 @@ export default function Layer2GenAIChallenge({
     if (submitErr) {
       setError(submitErr.message || 'Failed to submit project. Please try again.');
     } else {
+      if (activeUserId && typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`cma_l2_genai_submitted_${activeUserId}`, 'true');
+          localStorage.removeItem(`cma_l2_genai_expired_${activeUserId}`);
+        } catch (e) {}
+      }
       toast.success('Project submitted successfully!');
       setSubmissionSuccess(true);
       if (onSubmissionComplete) onSubmissionComplete(data);

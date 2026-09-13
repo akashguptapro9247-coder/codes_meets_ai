@@ -74,6 +74,13 @@ class GenAIService {
   async submitProject(userId, explanation) {
     if (!isSupabaseConfigured() || !supabase) return { data: null, error: { message: 'Supabase not configured' } };
     try {
+      if (typeof window !== 'undefined' && userId) {
+        try {
+          localStorage.setItem(`cma_l2_genai_submitted_${userId}`, 'true');
+          localStorage.removeItem(`cma_l2_genai_expired_${userId}`);
+        } catch (e) {}
+      }
+
       const { data, error } = await supabase
         .from('layer_2_genai_submissions')
         .update({
@@ -97,6 +104,12 @@ class GenAIService {
   async recordTimeout(userId, explanation) {
     if (!isSupabaseConfigured() || !supabase) return { data: null, error: null };
     try {
+      if (typeof window !== 'undefined' && userId) {
+        try {
+          localStorage.setItem(`cma_l2_genai_expired_${userId}`, 'true');
+        } catch (e) {}
+      }
+
       const { data, error } = await supabase
         .from('layer_2_genai_submissions')
         .update({
