@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { Shield, Lock, Mail, Key, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || '';
-const ADMIN_PASS_HASH = import.meta.env.VITE_ADMIN_PASS_HASH || '';
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'codemeetsai@8coremembers.com';
+const ADMIN_PASS_HASH = import.meta.env.VITE_ADMIN_PASS_HASH || '413bcaf3c9ba28e18379a141cb24b8fc92e42631a209b4a42332cfad81bc26d5';
 
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
