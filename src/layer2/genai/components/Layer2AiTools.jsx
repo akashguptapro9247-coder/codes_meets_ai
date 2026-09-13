@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { ExternalLink, Sparkles, Bot, ArrowRight } from 'lucide-react';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
@@ -17,11 +17,13 @@ export default function Layer2AiTools({ disabled = false }) {
         flexShrink: 0,
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        gap: '6px',
         padding: '10px 14px',
-        background: 'rgba(2, 6, 20, 0.92)',
-        borderColor: 'rgba(0, 243, 255, 0.3)',
-        boxShadow: '0 0 15px rgba(0, 243, 255, 0.06)',
+        background: 'rgba(3, 14, 30, 0.86)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderColor: 'rgba(0, 243, 255, 0.38)',
+        boxShadow: '0 0 20px rgba(0, 243, 255, 0.1), inset 0 0 14px rgba(0, 243, 255, 0.03)',
         position: 'relative',
         overflow: 'hidden',
         borderRadius: '3px',
@@ -54,14 +56,15 @@ export default function Layer2AiTools({ disabled = false }) {
       >
         {/* Section Heading */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Sparkles size={14} color="var(--cyan-glow)" style={{ filter: 'drop-shadow(0 0 4px var(--cyan-glow))' }} />
+          <Sparkles size={14} color="var(--cyan-glow)" style={{ filter: 'drop-shadow(0 0 5px var(--cyan-glow))' }} />
           <span
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '0.74rem',
               color: 'var(--cyan-glow)',
               letterSpacing: '0.12em',
-              fontWeight: 800
+              fontWeight: 800,
+              textShadow: '0 0 8px rgba(0, 243, 255, 0.5)'
             }}
           >
             AI GENERATION TOOLS
@@ -73,7 +76,7 @@ export default function Layer2AiTools({ disabled = false }) {
           {/* ChatGPT Button */}
           <motion.button
             type="button"
-            whileHover={{ scale: 1.03, y: -1 }}
+            whileHover={{ scale: 1.03, y: -1, boxShadow: '0 0 18px rgba(16, 185, 129, 0.5)' }}
             whileTap={{ scale: 0.97 }}
             onClick={() => handleOpenPlatform('https://chatgpt.com/')}
             onMouseEnter={() => soundEngine.playHover()}
@@ -86,15 +89,15 @@ export default function Layer2AiTools({ disabled = false }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'linear-gradient(135deg, rgba(16, 163, 127, 0.22) 0%, rgba(2, 22, 16, 0.95) 100%)',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.28) 0%, rgba(2, 28, 22, 0.92) 100%)',
               borderColor: '#10b981',
               color: '#ffffff',
-              boxShadow: '0 0 12px rgba(16, 185, 129, 0.25)',
+              boxShadow: '0 0 14px rgba(16, 185, 129, 0.25), inset 0 0 8px rgba(16, 185, 129, 0.12)',
               cursor: 'pointer'
             }}
             title="Open ChatGPT in a new tab"
           >
-            <Bot size={13} color="#10b981" />
+            <Bot size={13} color="#10b981" style={{ filter: 'drop-shadow(0 0 4px #10b981)' }} />
             <span>CHATGPT</span>
             <ExternalLink size={11} color="#10b981" />
           </motion.button>
@@ -102,7 +105,7 @@ export default function Layer2AiTools({ disabled = false }) {
           {/* Gemini Button */}
           <motion.button
             type="button"
-            whileHover={{ scale: 1.03, y: -1 }}
+            whileHover={{ scale: 1.03, y: -1, boxShadow: '0 0 18px rgba(168, 85, 247, 0.5)' }}
             whileTap={{ scale: 0.97 }}
             onClick={() => handleOpenPlatform('https://gemini.google.com/')}
             onMouseEnter={() => soundEngine.playHover()}
@@ -115,17 +118,17 @@ export default function Layer2AiTools({ disabled = false }) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.22) 0%, rgba(147, 51, 234, 0.22) 50%, rgba(12, 8, 30, 0.95) 100%)',
-              borderColor: 'var(--magenta-glow)',
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.28) 0%, rgba(24, 10, 42, 0.92) 100%)',
+              borderColor: '#c084fc',
               color: '#ffffff',
-              boxShadow: '0 0 12px rgba(224, 38, 255, 0.25)',
+              boxShadow: '0 0 14px rgba(168, 85, 247, 0.25), inset 0 0 8px rgba(168, 85, 247, 0.12)',
               cursor: 'pointer'
             }}
             title="Open Google Gemini in a new tab"
           >
-            <Sparkles size={13} color="var(--magenta-glow)" />
+            <Sparkles size={13} color="#c084fc" style={{ filter: 'drop-shadow(0 0 4px #c084fc)' }} />
             <span>GEMINI</span>
-            <ExternalLink size={11} color="var(--magenta-glow)" />
+            <ExternalLink size={11} color="#c084fc" />
           </motion.button>
         </div>
       </div>
@@ -149,15 +152,16 @@ export default function Layer2AiTools({ disabled = false }) {
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
-          background: 'rgba(0, 243, 255, 0.05)',
-          border: '1px solid rgba(0, 243, 255, 0.18)',
+          background: 'rgba(0, 243, 255, 0.06)',
+          border: '1px solid rgba(0, 243, 255, 0.22)',
           borderRadius: '2px',
           padding: '4px 8px',
           fontFamily: 'var(--font-mono)',
           fontSize: '0.64rem',
           color: 'var(--cyan-glow)',
           letterSpacing: '0.06em',
-          flexWrap: 'wrap'
+          flexWrap: 'wrap',
+          boxShadow: 'inset 0 0 8px rgba(0, 243, 255, 0.03)'
         }}
       >
         <span style={{ color: 'var(--lime-accent)', fontWeight: 700 }}>WORKFLOW:</span>
