@@ -195,7 +195,7 @@ export default function GenAIIntro({ participant, onBack, onBegin }) {
               }}
             >
               <Play size={16} />
-              <span>BEGIN CHALLENGE</span>
+              <span>ENTER MISSION WORKFLOW</span>
             </button>
           </div>
         </div>
