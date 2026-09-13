@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 
-// Re-export useBombSequence from its own file for clean imports
-export { useBombSequence } from './useBombSequence';
+// Re-export useHulkSequence from its own file for clean imports
+export { useHulkSequence } from './useHulkSequence';
 
 /**
  * Hook for managing impact position from a target element.
@@ -26,7 +26,15 @@ export function useImpactPosition(targetRef) {
     };
 
     const pos = updateImpactPos();
-    if (pos) setImpactPos(pos);
+    if (pos) {
+      setImpactPos(pos);
+    } else {
+      // If ref is not yet populated during the first layout effect, try again next frame
+      requestAnimationFrame(() => {
+        const p = updateImpactPos();
+        if (p) setImpactPos(p);
+      });
+    }
 
     const handleResize = () => {
       const p = updateImpactPos();
@@ -92,12 +100,26 @@ export function useFlipJumble({ lineContainerRef, lines, onAnimationComplete }) 
 
     if (lineElements.length === 0) return;
 
-    // Step 2 & 3: Measure LAST positions and INVERT (offset to where elements were)
+    // Step 2: Measure ALL LAST positions first (READ phase - prevents layout thrashing)
+    const lastPositions = {};
     lineElements.forEach((el) => {
       const id = el.getAttribute('data-line-id');
       if (id && firsts[id] !== undefined) {
-        const lastTop = el.getBoundingClientRect().top;
-        const deltaY = firsts[id] - lastTop;
+        lastPositions[id] = el.offsetTop;
+      }
+    });
+
+    // Step 3: INVERT (WRITE phase).
+    // Also set will-change: transform on each element here so the browser can promote
+    // every line to its own GPU compositor layer BEFORE the parent's hulk-punch-shake
+    // CSS animation claims the compositing context. This lets each line animate on the
+    // compositor thread independently, preventing the parent shake from forcing a
+    // full CPU repaint of the subtree every frame.
+    lineElements.forEach((el) => {
+      const id = el.getAttribute('data-line-id');
+      el.style.willChange = 'transform'; // promote to own layer NOW, before transition
+      if (id && firsts[id] !== undefined && lastPositions[id] !== undefined) {
+        const deltaY = firsts[id] - lastPositions[id];
         if (deltaY !== 0) {
           el.style.transition = 'none';
           el.style.transform = `translate(0, ${deltaY}px)`;
@@ -105,10 +127,14 @@ export function useFlipJumble({ lineContainerRef, lines, onAnimationComplete }) 
       }
     });
 
-    // Force synchronous reflow so browser registers the inverted offsets
-    void document.body.offsetHeight;
+    // Force browser to register the inverted transforms before transitions play.
+    // We only need a style flush (not a full layout), so read computedStyle of
+    // one element — far cheaper than void document.body.offsetHeight which forces
+    // a full-document layout recalculation at the busiest frame (concurrent with
+    // flushSync particle creation and hulk-punch-shake starting).
+    void getComputedStyle(lineElements[0]).getPropertyValue('transform');
 
-    // Step 4 & 5: PLAY — double rAF guarantees frame 1 paints inverted offset before transition starts
+    // Step 4 & 5: PLAY — double rAF guarantees frame 1 paints inverted position before transition starts
     let raf1 = null;
     let raf2 = null;
 
@@ -117,22 +143,28 @@ export function useFlipJumble({ lineContainerRef, lines, onAnimationComplete }) 
         lineElements.forEach((el, index) => {
           const id = el.getAttribute('data-line-id');
           if (id) {
-            el.style.transition = `transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) ${index * 35}ms, border-color 0.15s ease, background 0.15s ease`;
-            el.style.transform = 'translate(0, 0)';
+            // 600ms duration so each box visibly travels its path (enough frames to follow).
+            // 45ms stagger: all 6 boxes start within 225ms of each other, meaning all boxes
+            // are simultaneously in-flight from ~225ms to ~600ms — 375ms of visible
+            // simultaneous travel. Original used 700ms + 35ms stagger for the same reason.
+            // translate3d(x,y,z) promotes to GPU compositor layer independent of parent.
+            el.style.transition = `transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) ${index * 45}ms`;
+            el.style.transform = 'translate3d(0, 0, 0)';
           }
         });
       });
     });
 
-    // Step 6: Clean up inline transform and transition styles after all staggered line transitions complete
-    const maxStaggerDelay = Math.max(0, (lineElements.length - 1) * 35);
-    const totalDuration = 700 + maxStaggerDelay + 100;
+    // Step 6: Clean up inline styles after all staggered transitions complete
+    const maxStaggerDelay = Math.max(0, (lineElements.length - 1) * 45);
+    const totalDuration = 600 + maxStaggerDelay + 100;
 
     const cleanupTimer = setTimeout(() => {
       const elements = lineContainerRef.current?.querySelectorAll('.anim-target-line') || [];
       elements.forEach((el) => {
         el.style.transition = '';
         el.style.transform = '';
+        el.style.willChange = ''; // release compositor layer after animation
       });
       if (onAnimationComplete) onAnimationComplete();
     }, totalDuration);
@@ -141,6 +173,8 @@ export function useFlipJumble({ lineContainerRef, lines, onAnimationComplete }) 
       if (raf1) cancelAnimationFrame(raf1);
       if (raf2) cancelAnimationFrame(raf2);
       clearTimeout(cleanupTimer);
+      // Ensure will-change is cleaned up on unmount / re-render
+      lineElements.forEach((el) => { el.style.willChange = ''; });
     };
   }, [lines]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -155,7 +189,7 @@ export function useFlipJumble({ lineContainerRef, lines, onAnimationComplete }) 
     lineElements.forEach((el) => {
       const id = el.getAttribute('data-line-id');
       if (id) {
-        firsts[id] = el.getBoundingClientRect().top;
+        firsts[id] = el.offsetTop;
       }
     });
     firstPositionsRef.current = firsts;
