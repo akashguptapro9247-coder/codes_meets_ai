@@ -556,9 +556,9 @@ export default function Layer2GenAIChallenge({
           position: 'relative',
           zIndex: 10,
           display: 'grid',
-          gridTemplateColumns: 'minmax(330px, 1fr) minmax(360px, 1.15fr)',
-          gap: '10px',
-          maxWidth: '1540px',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+          gap: '12px',
+          maxWidth: '1560px',
           margin: '0 auto',
           width: '100%',
           padding: '8px 16px 10px 16px',
@@ -574,7 +574,7 @@ export default function Layer2GenAIChallenge({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '10px',
             height: '100%',
             minHeight: 0,
             overflow: 'hidden'
@@ -588,7 +588,7 @@ export default function Layer2GenAIChallenge({
             className="cyber-card"
             style={{
               flexShrink: 0,
-              padding: '8px 12px',
+              padding: '8px 14px',
               background: 'rgba(6, 22, 48, 0.86)',
               backdropFilter: 'blur(14px)',
               WebkitBackdropFilter: 'blur(14px)',
@@ -665,11 +665,10 @@ export default function Layer2GenAIChallenge({
             className="cyber-card"
             style={{
               flex: 1,
-              maxHeight: '380px',
               display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
-              padding: '10px 14px',
+              padding: '12px 16px',
               background: 'rgba(6, 20, 44, 0.85)',
               backdropFilter: 'blur(14px)',
               WebkitBackdropFilter: 'blur(14px)',
@@ -838,7 +837,7 @@ export default function Layer2GenAIChallenge({
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '10px',
             height: '100%',
             minHeight: 0,
             overflow: 'hidden'
@@ -899,7 +898,7 @@ export default function Layer2GenAIChallenge({
               display: 'flex',
               flexDirection: 'column',
               minHeight: 0,
-              padding: '10px 14px',
+              padding: '12px 16px',
               background: 'rgba(6, 20, 44, 0.85)',
               backdropFilter: 'blur(14px)',
               WebkitBackdropFilter: 'blur(14px)',
@@ -1071,7 +1070,7 @@ export default function Layer2GenAIChallenge({
             </motion.div>
           )}
 
-          {/* Card E: Spacious Project Archive / Upload Bay — Slightly Taller & Lighter Surface */}
+          {/* Card E: Compact Project Archive / Upload Bay */}
           {!isSubmitted && (
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -1080,7 +1079,7 @@ export default function Layer2GenAIChallenge({
               className="cyber-card"
               style={{
                 flexShrink: 0,
-                padding: '11px 15px',
+                padding: '10px 14px',
                 background: 'rgba(6, 20, 44, 0.85)',
                 backdropFilter: 'blur(14px)',
                 WebkitBackdropFilter: 'blur(14px)',
@@ -1147,7 +1146,7 @@ export default function Layer2GenAIChallenge({
                   style={{
                     border: '1px solid rgba(16, 185, 129, 0.5)',
                     borderRadius: '4px',
-                    padding: '9px 13px',
+                    padding: '8px 12px',
                     background: 'rgba(16, 185, 129, 0.12)',
                     boxShadow: '0 0 14px rgba(16, 185, 129, 0.2)',
                     display: 'flex',
@@ -1166,13 +1165,13 @@ export default function Layer2GenAIChallenge({
                     }}
                   >
                     <div style={{ color: '#10b981', flexShrink: 0 }}>
-                      <FileBox size={24} style={{ filter: 'drop-shadow(0 0 6px #10b981)' }} />
+                      <FileBox size={22} style={{ filter: 'drop-shadow(0 0 6px #10b981)' }} />
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div
                         style={{
                           color: '#fff',
-                          fontSize: '0.86rem',
+                          fontSize: '0.84rem',
                           fontWeight: 600,
                           fontFamily: 'var(--font-mono)',
                           whiteSpace: 'nowrap',
@@ -1241,7 +1240,7 @@ export default function Layer2GenAIChallenge({
                   </div>
                 </motion.div>
               ) : (
-                /* Empty Dropzone State with Spacious Height & Lighter Visible Surface */
+                /* Empty Dropzone State with Compact Balanced Height */
                 <motion.div
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -1269,7 +1268,7 @@ export default function Layer2GenAIChallenge({
                       ? '1px dashed var(--cyan-glow)'
                       : '1px dashed rgba(0, 243, 255, 0.45)',
                     borderRadius: '4px',
-                    padding: '16px 18px',
+                    padding: '12px 16px',
                     textAlign: 'center',
                     background: isDragging
                       ? 'rgba(0, 243, 255, 0.16)'
@@ -1286,12 +1285,12 @@ export default function Layer2GenAIChallenge({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      gap: '14px',
+                      gap: '12px',
                       width: '100%'
                     }}
                   >
                     <UploadCloud
-                      size={24}
+                      size={22}
                       color={isDragging ? 'var(--lime-accent)' : 'var(--cyan-glow)'}
                       style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px var(--cyan-glow))' }}
                     />
@@ -1300,7 +1299,7 @@ export default function Layer2GenAIChallenge({
                         style={{
                           color: '#f3f4f6',
                           fontFamily: 'var(--font-mono)',
-                          fontSize: '0.82rem',
+                          fontSize: '0.80rem',
                           fontWeight: 600,
                           marginBottom: '2px'
                         }}
@@ -1313,7 +1312,7 @@ export default function Layer2GenAIChallenge({
                         style={{
                           color: '#9ca3af',
                           fontFamily: 'var(--font-mono)',
-                          fontSize: '0.68rem',
+                          fontSize: '0.67rem',
                           lineHeight: 1.3
                         }}
                       >

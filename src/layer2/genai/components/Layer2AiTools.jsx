@@ -144,17 +144,19 @@ export default function Layer2AiTools({ disabled = false }) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          justifyContent: 'space-between',
+          gap: '4px',
           background: 'rgba(0, 243, 255, 0.08)',
           border: '1px solid rgba(0, 243, 255, 0.28)',
           borderRadius: '2px',
-          padding: '5px 10px',
+          padding: '5px 12px',
           fontFamily: 'var(--font-mono)',
           fontSize: '0.66rem',
           color: 'var(--cyan-glow)',
           letterSpacing: '0.06em',
-          flexWrap: 'wrap',
-          boxShadow: 'inset 0 0 10px rgba(0, 243, 255, 0.04)'
+          boxShadow: 'inset 0 0 10px rgba(0, 243, 255, 0.04)',
+          boxSizing: 'border-box',
+          width: '100%'
         }}
       >
         <span style={{ color: 'var(--lime-accent)', fontWeight: 700 }}>WORKFLOW:</span>
@@ -173,7 +175,7 @@ export default function Layer2AiTools({ disabled = false }) {
       <div
         style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: '0.66rem',
+          fontSize: '0.65rem',
           color: '#cbd5e1',
           lineHeight: '1.35',
           letterSpacing: '0.02em'
