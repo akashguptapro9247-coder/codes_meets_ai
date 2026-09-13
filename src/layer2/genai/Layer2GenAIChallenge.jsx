@@ -199,7 +199,33 @@ export default function Layer2GenAIChallenge({
           boxSizing: 'border-box'
         }}
       >
-        <ThreeBackground mousePosition={mousePosition} />
+        {/* Layer 02 GenAI Page 3 Animated Background Video */}
+        <video
+          src="/vedios/layer2Genai.tunder.background.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+            pointerEvents: 'none'
+          }}
+        />
+        {/* Ambient Dark Overlay for contrast & readability */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(2, 6, 18, 0.65)',
+            zIndex: 1,
+            pointerEvents: 'none'
+          }}
+        />
         <Layer2SuccessResult
           participantInfo={participantInfo}
           question={question}
@@ -227,7 +253,33 @@ export default function Layer2GenAIChallenge({
           boxSizing: 'border-box'
         }}
       >
-        <ThreeBackground mousePosition={mousePosition} />
+        {/* Layer 02 GenAI Page 3 Animated Background Video */}
+        <video
+          src="/vedios/layer2Genai.tunder.background.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            zIndex: 0,
+            pointerEvents: 'none'
+          }}
+        />
+        {/* Ambient Dark Overlay for contrast & readability */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(2, 6, 18, 0.65)',
+            zIndex: 1,
+            pointerEvents: 'none'
+          }}
+        />
         <Layer2TimeoutResult
           participantInfo={participantInfo}
           question={question}
