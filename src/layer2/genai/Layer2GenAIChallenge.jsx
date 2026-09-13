@@ -888,7 +888,7 @@ export default function Layer2GenAIChallenge({
             />
           </div>
 
-          {/* Card C: Technical Debrief / Explanation (Controlled Height, Internal Scroll) */}
+          {/* Card C: Technical Debrief / Explanation (Expanded Height, Flexible Textarea) */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -896,10 +896,9 @@ export default function Layer2GenAIChallenge({
             className="cyber-card"
             style={{
               flex: 1,
-              maxHeight: '250px',
               display: 'flex',
               flexDirection: 'column',
-              minHeight: '170px',
+              minHeight: 0,
               padding: '10px 14px',
               background: 'rgba(6, 20, 44, 0.85)',
               backdropFilter: 'blur(14px)',
