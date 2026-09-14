@@ -4,7 +4,8 @@
 
 export async function executeAndEvaluateCode(language, source, expectedOutput, stdin = '') {
   try {
-    const response = await fetch('/api/execute', {
+    const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+    const response = await fetch(`${apiBase}/api/execute`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

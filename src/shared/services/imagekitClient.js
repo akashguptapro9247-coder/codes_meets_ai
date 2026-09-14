@@ -5,6 +5,8 @@
 // Never holds or touches the private key.
 // ==========================================================================
 
+const getApiBase = () => (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
+
 export const imagekitClient = {
   /**
    * Helper to convert File object to base64 string
@@ -27,7 +29,7 @@ export const imagekitClient = {
       const fileName = `submission_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
       const folder = `/code-meets-ai/layer-1/gen-ai/${userId || 'guest'}`;
 
-      const response = await fetch('/api/imagekit/upload', {
+      const response = await fetch(`${getApiBase()}/api/imagekit/upload`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -85,7 +87,7 @@ export const imagekitClient = {
     if (!fileIds || fileIds.length === 0) return { success: true };
 
     try {
-      const response = await fetch('/api/imagekit/delete', {
+      const response = await fetch(`${getApiBase()}/api/imagekit/delete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
