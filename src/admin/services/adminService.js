@@ -379,37 +379,36 @@ export const adminService = {
     }
 
     try {
-      // 1. Check if user already has an active submission (One submission only enforcement)
-      const { data: existing } = await supabase
-        .from('layer_1_genai_submissions')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // 1 & 2. Check for existing submission and prepare/upload images in parallel
+      const [existingCheck, uploadedImages] = await Promise.all([
+        supabase
+          .from('layer_1_genai_submissions')
+          .select('id, user_id, prompt, image_urls, image_file_ids, image_paths, status, submitted_at')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        (async () => {
+          if (!imageItems || imageItems.length === 0) return [];
+          try {
+            return await imagekitClient.uploadMultipleImages(imageItems, userId);
+          } catch (uploadErr) {
+            console.error('[Supabase::submitLayer1GenAi] ImageKit upload error:', uploadErr);
+            if (!isTimeout) throw uploadErr;
+            return [];
+          }
+        })()
+      ]);
 
-      if (existing) {
+      if (existingCheck?.data) {
         // Do NOT overwrite a previously recorded manual or timeout submission
         return {
-          data: existing,
+          data: existingCheck.data,
           error: isTimeout ? null : { message: 'You have already submitted your Layer 1 GenAI challenge. Duplicate submissions are not allowed.' }
         };
       }
 
-      // 2. Upload new image files to ImageKit via secure backend
-      let uploadedImages = [];
-      if (imageItems && imageItems.length > 0) {
-        try {
-          uploadedImages = await imagekitClient.uploadMultipleImages(imageItems, userId);
-        } catch (uploadErr) {
-          console.error('[Supabase::submitLayer1GenAi] ImageKit upload error:', uploadErr);
-          if (!isTimeout) {
-            return { error: { message: `Image upload failed: ${uploadErr.message || 'Please check your connection.'}` } };
-          }
-        }
-      }
-
-      const imageUrls = uploadedImages.map((img) => img.url).filter(Boolean);
-      const imageFileIds = uploadedImages.map((img) => img.fileId).filter(Boolean);
-      let imagePaths = uploadedImages.map((img) => img.filePath).filter(Boolean);
+      const imageUrls = (uploadedImages || []).map((img) => img.url).filter(Boolean);
+      const imageFileIds = (uploadedImages || []).map((img) => img.fileId).filter(Boolean);
+      let imagePaths = (uploadedImages || []).map((img) => img.filePath).filter(Boolean);
 
       // Server-side authoritative timing verification
       const submissionTimestamp = submittedAt || new Date().toISOString();
@@ -442,13 +441,13 @@ export const adminService = {
         calculatedTimeTaken = '01:00';
       }
 
-      // Embed metadata into image_paths as ultra-safe fallback if columns are absent
+      // Embed metadata into image_paths as authoritative storage for timing
       const metadataTag = `__TIME_TAKEN__:${calculatedTimeTaken}`;
       const startedTag = `__STARTED_AT__:${startedAt || ''}`;
       const secTag = `__TIME_TAKEN_SECONDS__:${calculatedSeconds}`;
       imagePaths = [...imagePaths, metadataTag, startedTag, secTag];
 
-      // 3. Insert submission record in Supabase (enforced by UNIQUE constraint on user_id)
+      // 3. Fast direct insertion with known table schema
       const payload = {
         user_id: userId,
         username: username || 'Participant',
@@ -457,10 +456,7 @@ export const adminService = {
         image_urls: imageUrls,
         image_file_ids: imageFileIds,
         image_paths: imagePaths,
-        time_taken: calculatedTimeTaken,
-        time_taken_seconds: calculatedSeconds,
-        started_at: startedAt || null,
-        status: isTimeout ? 'TIME_EXPIRED' : 'pending',
+        status: 'pending',
         submitted_at: submissionTimestamp,
         updated_at: new Date().toISOString()
       };
@@ -470,29 +466,6 @@ export const adminService = {
         .insert([payload])
         .select()
         .single();
-
-      // Graceful fallback if any new columns (time_taken, time_taken_seconds, started_at) do not exist yet on remote table
-      const isMissingColError = error && (
-        error.code === '42703' ||
-        error.code === 'PGRST204' ||
-        error.message?.includes('does not exist') ||
-        error.message?.includes('Could not find the') ||
-        error.message?.includes('schema cache')
-      );
-
-      if (isMissingColError) {
-        const fallbackPayload = { ...payload };
-        delete fallbackPayload.time_taken;
-        delete fallbackPayload.time_taken_seconds;
-        delete fallbackPayload.started_at;
-        const fallbackRes = await supabase
-          .from('layer_1_genai_submissions')
-          .insert([fallbackPayload])
-          .select()
-          .single();
-        data = fallbackRes.data;
-        error = fallbackRes.error;
-      }
 
       if (error) {
         if (error.code === '23505' || error.message?.includes('duplicate key') || error.message?.includes('unique constraint')) {
@@ -513,6 +486,8 @@ export const adminService = {
 
       if (data) {
         data.time_taken = calculatedTimeTaken;
+        data.time_taken_seconds = calculatedSeconds;
+        data.started_at = startedAt || null;
       }
 
       return { data, error: null };
@@ -1774,6 +1749,10 @@ export const adminService = {
         completed_at: payload.status === 'completed' ? new Date().toISOString() : null
       };
 
+      if (payload.startedAt) {
+        dbPayload.started_at = payload.startedAt;
+      }
+
       const { data, error } = await supabase
         .from('layer_2_manual_attempts')
         .upsert(dbPayload, { onConflict: 'user_id' })
@@ -1889,10 +1868,6 @@ export const adminService = {
         .from('layer_2_genai_submissions')
         .update({
           question_id: newQuestionId,
-          explanation: null,
-          submitted: false,
-          submitted_at: null,
-          status: 'in_progress',
           updated_at: new Date().toISOString()
         })
         .eq('user_id', userId);
@@ -1906,27 +1881,39 @@ export const adminService = {
   async deleteLayer2GenAiSubmission(submissionId, userId) {
     if (!isSupabaseConfigured() || !supabase) return { error: { message: 'Supabase not configured' } };
     try {
-      const { error } = await supabase
-        .from('layer_2_genai_submissions')
-        .delete()
-        .eq('id', submissionId);
-        
-      if (error) return { error };
+      let query = supabase.from('layer_2_genai_submissions').delete();
+      if (submissionId) {
+        query = query.eq('id', submissionId);
+      } else if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        return { error: { message: 'Submission ID or User ID required' } };
+      }
+
+      const { error } = await query;
+      if (error) {
+        console.error('[adminService::deleteLayer2GenAiSubmission] Error:', error);
+        return { error };
+      }
       
       // Also clear the marks from layer_2 table
-      const { data: l2Record } = await supabase
-        .from('layer_2')
-        .select('layer_2_manual_marks, name')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const targetUserId = userId;
+      if (targetUserId) {
+        const { data: l2Record } = await supabase
+          .from('layer_2')
+          .select('layer_2_manual_marks, name')
+          .eq('user_id', targetUserId)
+          .maybeSingle();
 
-      const manualMarks = parseFloat(l2Record?.layer_2_manual_marks) || 0;
-      const userName = l2Record?.name || '';
+        const manualMarks = parseFloat(l2Record?.layer_2_manual_marks) || 0;
+        const userName = l2Record?.name || '';
+        
+        await this.updateLayer2Marks(targetUserId, null, manualMarks, userName);
+      }
       
-      await this.updateLayer2Marks(userId, null, manualMarks, userName);
-      
-      return { error: null };
+      return { success: true, error: null };
     } catch (err) {
+      console.error('[adminService::deleteLayer2GenAiSubmission] Exception:', err);
       return { error: err };
     }
   },

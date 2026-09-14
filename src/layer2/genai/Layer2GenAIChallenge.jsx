@@ -10,6 +10,9 @@ import {
   CheckCircle,
   AlertTriangle,
   FileBox,
+  Folder,
+  FolderCheck,
+  FolderOpen,
   X,
   UploadCloud,
   Terminal,
@@ -19,6 +22,8 @@ import {
 import { toast } from '../../shared/components/Toast';
 import { ConfirmModal } from '../../shared/components/Modals';
 import { soundEngine } from '../../shared/utils/SoundEngine';
+import { eventStateService } from '../../shared/services/eventStateService';
+import { supabase, isSupabaseConfigured } from '../../shared/services/supabaseClient';
 import GenAITimer from './components/GenAITimer';
 import Layer2AiTools from './components/Layer2AiTools';
 import Layer2SuccessResult from './components/Layer2SuccessResult';
@@ -31,21 +36,60 @@ export default function Layer2GenAIChallenge({
   onSubmissionComplete,
   onBack = null
 }) {
-  const [explanation, setExplanation] = useState(assignment?.explanation || '');
+  const activeUserId = participant?.userId || participant?.user_id;
+
+  // Real-time assignment state for immediate question reassignment
+  const [currentAssignment, setCurrentAssignment] = useState(assignment);
+  const currentQuestionIdRef = useRef(assignment?.question_id);
+
+  useEffect(() => {
+    if (assignment) {
+      setCurrentAssignment(assignment);
+      currentQuestionIdRef.current = assignment.question_id;
+    } else {
+      setCurrentAssignment(null);
+      currentQuestionIdRef.current = null;
+      setSubmissionSuccess(false);
+      setIsExpired(false);
+      setExplanation('');
+      setLoadedFolder(null);
+      setLoadedFile(null);
+    }
+  }, [assignment]);
+
+  // Prompt draft persistence: restore from localStorage first, then assignment
+  const [explanation, setExplanation] = useState(() => {
+    if (typeof window !== 'undefined' && activeUserId) {
+      const draft = localStorage.getItem(`cma_l2_genai_prompt_${activeUserId}`);
+      if (draft !== null && draft !== undefined && draft !== '') return draft;
+    }
+    return assignment?.explanation || '';
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
   const [error, setError] = useState(null);
   const [isExpired, setIsExpired] = useState(() => {
     if (assignment?.status === 'time_expired') return true;
-    const activeId = participant?.userId || participant?.user_id;
-    if (activeId && typeof window !== 'undefined') {
+    if (activeUserId && typeof window !== 'undefined') {
       try {
-        return localStorage.getItem(`cma_l2_genai_expired_${activeId}`) === 'true';
+        return localStorage.getItem(`cma_l2_genai_expired_${activeUserId}`) === 'true';
       } catch (e) {
         return false;
       }
     }
     return false;
+  });
+
+  // Folder selection state with browser-side persistence
+  const [loadedFolder, setLoadedFolder] = useState(() => {
+    if (typeof window !== 'undefined' && activeUserId) {
+      try {
+        const stored = localStorage.getItem(`cma_l2_genai_folder_${activeUserId}`);
+        if (stored) return JSON.parse(stored);
+      } catch (e) {}
+    }
+    return null;
   });
   const [loadedFile, setLoadedFile] = useState(null);
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
@@ -122,35 +166,156 @@ export default function Layer2GenAIChallenge({
   };
 
   const participantInfo = getActiveParticipantInfo();
-  const question = genaiService.getQuestionById(assignment?.question_id) || genaiService.getAllQuestions()[0];
+  const defaultQuestion = (genaiService.getQuestions && genaiService.getQuestions()[0]) || {
+    id: 'l2_genai_1',
+    title: 'AI PROJECT CHALLENGE',
+    problem_statement: 'Build a complete project using AI tools and explain your development process.'
+  };
+  const question = genaiService.getQuestionById(currentAssignment?.question_id) || defaultQuestion;
 
-  const activeUserId = participant?.userId || participant?.user_id;
-  const isLocallySubmitted = typeof window !== 'undefined' && activeUserId ? localStorage.getItem(`cma_l2_genai_submitted_${activeUserId}`) === 'true' : false;
-  const isLocallyExpired = typeof window !== 'undefined' && activeUserId ? localStorage.getItem(`cma_l2_genai_expired_${activeUserId}`) === 'true' : false;
-
-  const isSubmitted = Boolean(assignment?.submitted || assignment?.status === 'completed' || submissionSuccess || isLocallySubmitted);
+  const isSubmitted = Boolean(
+    currentAssignment?.submitted ||
+    currentAssignment?.status === 'completed' ||
+    currentAssignment?.status === 'reviewed' ||
+    submissionSuccess
+  );
   const isSubmissionCompleted = isSubmitted;
-  const isTimeoutCompleted = Boolean((isExpired || assignment?.status === 'time_expired' || isLocallyExpired) && !isSubmissionCompleted);
+  const isTimeoutCompleted = Boolean(
+    (isExpired || currentAssignment?.status === 'time_expired') &&
+    !isSubmissionCompleted
+  );
+
+  // Auto-save prompt draft to localStorage so it survives refresh & mode switching
+  useEffect(() => {
+    if (typeof window === 'undefined' || !activeUserId || isSubmitted || isExpired) return;
+    try {
+      localStorage.setItem(`cma_l2_genai_prompt_${activeUserId}`, explanation);
+    } catch (e) {}
+  }, [explanation, activeUserId, isSubmitted, isExpired]);
+
+  // Mode-switch listener: return immediately to Arena when Admin switches GenAI -> Manual during session
+  const prevModeStateRef = useRef(null);
+  useEffect(() => {
+    const unsubscribe = eventStateService.subscribeToEventState((state) => {
+      const prev = prevModeStateRef.current;
+      prevModeStateRef.current = state;
+      if (!prev) return; // Skip initial default/cached state on mount
+      const wasActive = prev.layer2?.active && prev.layer2?.activeTrack === 'gen-ai';
+      const isNowActive = state.layer2?.active && state.layer2?.activeTrack === 'gen-ai';
+      if (wasActive && !isNowActive) {
+        if (onBack) onBack();
+      }
+    });
+    return () => unsubscribe();
+  }, [onBack]);
+
+  // Real-time Question Reassignment & Deletion Listener (Supabase Realtime + 2s polling fallback)
+  useEffect(() => {
+    if (!activeUserId || !isSupabaseConfigured() || !supabase) return;
+
+    const resetAfterDeletion = () => {
+      if (activeUserId && typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(`cma_l2_genai_submitted_${activeUserId}`);
+          sessionStorage.removeItem(`cma_l2_genai_submitted_${activeUserId}`);
+          localStorage.removeItem(`cma_l2_genai_expired_${activeUserId}`);
+          sessionStorage.removeItem(`cma_l2_genai_expired_${activeUserId}`);
+          localStorage.removeItem(`cma_l2_genai_prompt_${activeUserId}`);
+          sessionStorage.removeItem(`cma_l2_genai_prompt_${activeUserId}`);
+          localStorage.removeItem(`cma_l2_genai_folder_${activeUserId}`);
+          sessionStorage.removeItem(`cma_l2_genai_folder_${activeUserId}`);
+          localStorage.removeItem(`cma_l2_genai_assigned_at_${activeUserId}`);
+          sessionStorage.removeItem(`cma_l2_genai_assigned_at_${activeUserId}`);
+        } catch (e) {}
+      }
+      setCurrentAssignment(null);
+      currentQuestionIdRef.current = null;
+      setSubmissionSuccess(false);
+      setIsExpired(false);
+      setExplanation('');
+      setLoadedFolder(null);
+      setLoadedFile(null);
+      if (onSubmissionComplete) onSubmissionComplete(null);
+    };
+
+    const channelName = `l2_genai_sub_${activeUserId}_${Date.now()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'layer_2_genai_submissions',
+          filter: `user_id=eq.${activeUserId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            resetAfterDeletion();
+          } else if (payload.new && payload.new.question_id) {
+            if (payload.new.question_id !== currentQuestionIdRef.current) {
+              currentQuestionIdRef.current = payload.new.question_id;
+              setCurrentAssignment(prev => ({
+                ...prev,
+                ...payload.new
+              }));
+              toast.info('ASSIGNED QUESTION UPDATED BY ADMIN');
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data } = await supabase
+          .from('layer_2_genai_submissions')
+          .select('*')
+          .eq('user_id', activeUserId)
+          .maybeSingle();
+
+        if (!data) {
+          if (currentAssignment) {
+            resetAfterDeletion();
+          }
+        } else if (data && data.question_id && data.question_id !== currentQuestionIdRef.current) {
+          currentQuestionIdRef.current = data.question_id;
+          setCurrentAssignment(prev => ({
+            ...prev,
+            ...data
+          }));
+          toast.info('ASSIGNED QUESTION UPDATED BY ADMIN');
+        }
+      } catch (e) {}
+    }, 2000);
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (e) {}
+      clearInterval(pollInterval);
+    };
+  }, [activeUserId, currentAssignment, onSubmissionComplete]);
 
   // Time Expired Handler (idempotent, single execution)
   const handleTimeExpire = async () => {
     setIsExpired(true);
     soundEngine.playClick();
 
-    const activeId = participant?.userId || participant?.user_id;
-    if (activeId && typeof window !== 'undefined') {
+    if (activeUserId && typeof window !== 'undefined') {
       try {
-        localStorage.setItem(`cma_l2_genai_expired_${activeId}`, 'true');
+        localStorage.setItem(`cma_l2_genai_expired_${activeUserId}`, 'true');
       } catch (e) {}
     }
 
     if (isFinalizingTimeoutRef.current) return;
     isFinalizingTimeoutRef.current = true;
 
-    if (assignment?.submitted || submissionSuccess) return;
+    if (currentAssignment?.submitted || submissionSuccess) return;
 
     try {
-      const { data } = await genaiService.recordTimeout(activeId, explanation);
+      const promptToSave = explanation || (typeof window !== 'undefined' ? localStorage.getItem(`cma_l2_genai_prompt_${activeUserId}`) : '') || '';
+      const { data } = await genaiService.recordTimeout(activeUserId, promptToSave);
       if (data && onSubmissionComplete) {
         onSubmissionComplete(data);
       }
@@ -161,7 +326,7 @@ export default function Layer2GenAIChallenge({
 
   // Final Submission Handler
   const handleSubmit = async () => {
-    if (isExpired || assignment?.status === 'time_expired') {
+    if (isExpired || currentAssignment?.status === 'time_expired') {
       soundEngine.playClick();
       setError('CHALLENGE TIME HAS EXPIRED // SUBMISSIONS LOCKED');
       return;
@@ -179,9 +344,9 @@ export default function Layer2GenAIChallenge({
       return;
     }
 
-    if (!loadedFile) {
+    if (!loadedFolder && !loadedFile) {
       soundEngine.playClick();
-      setError('Please upload your project archive (.zip, .rar, .7z) before submitting.');
+      setError('Please select your project folder before submitting.');
       return;
     }
 
@@ -189,7 +354,6 @@ export default function Layer2GenAIChallenge({
     setError(null);
     soundEngine.playBoot();
 
-    const activeUserId = participant?.userId || participant?.user_id;
     const { data, error: submitErr } = await genaiService.submitProject(activeUserId, explanation);
 
     setIsSubmitting(false);
@@ -201,12 +365,87 @@ export default function Layer2GenAIChallenge({
         try {
           localStorage.setItem(`cma_l2_genai_submitted_${activeUserId}`, 'true');
           localStorage.removeItem(`cma_l2_genai_expired_${activeUserId}`);
+          localStorage.removeItem(`cma_l2_genai_prompt_${activeUserId}`);
+          localStorage.removeItem(`cma_l2_genai_folder_${activeUserId}`);
         } catch (e) {}
       }
       toast.success('Project submitted successfully!');
       setSubmissionSuccess(true);
       if (onSubmissionComplete) onSubmissionComplete(data);
     }
+  };
+
+  // Folder selection handlers
+  const handleFolderSelect = (files) => {
+    if (!files || files.length === 0) return;
+    const first = files[0];
+    const rootName = first.webkitRelativePath
+      ? first.webkitRelativePath.split('/')[0]
+      : (files.length > 1 ? 'project_build_folder' : first.name.replace(/\.[^/.]+$/, ''));
+    
+    let totalSize = 0;
+    for (let i = 0; i < files.length; i++) {
+      totalSize += files[i].size || 0;
+    }
+
+    const folderMeta = {
+      name: rootName || 'project_folder',
+      fileCount: files.length,
+      size: totalSize,
+      selectedAt: Date.now()
+    };
+
+    setLoadedFolder(folderMeta);
+    setLoadedFile(null);
+
+    if (activeUserId && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`cma_l2_genai_folder_${activeUserId}`, JSON.stringify(folderMeta));
+      } catch (e) {}
+    }
+
+    soundEngine.playClick();
+    toast.success(`Folder selected: ${folderMeta.name} (${folderMeta.fileCount} files)`);
+  };
+
+  const handleSelectFolderClick = async () => {
+    if (isExpired || isSubmitting) return;
+
+    if (typeof window !== 'undefined' && 'showDirectoryPicker' in window) {
+      try {
+        const dirHandle = await window.showDirectoryPicker();
+        if (dirHandle) {
+          let count = 0;
+          try {
+            for await (const _ of dirHandle.values()) {
+              count++;
+            }
+          } catch (e) {}
+
+          const folderMeta = {
+            name: dirHandle.name || 'project_folder',
+            fileCount: count > 0 ? count : 1,
+            size: 0,
+            selectedAt: Date.now()
+          };
+          setLoadedFolder(folderMeta);
+          setLoadedFile(null);
+          if (activeUserId) {
+            try {
+              localStorage.setItem(`cma_l2_genai_folder_${activeUserId}`, JSON.stringify(folderMeta));
+            } catch (e) {}
+          }
+          soundEngine.playClick();
+          toast.success(`Folder selected: ${folderMeta.name}`);
+          return;
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    const el = document.getElementById('project-folder-input');
+    if (el) el.click();
   };
 
   if (isSubmissionCompleted) {
@@ -242,8 +481,8 @@ export default function Layer2GenAIChallenge({
           participantInfo={participantInfo}
           question={question}
           explanation={explanation}
-          loadedFile={loadedFile}
-          assignment={assignment}
+          loadedFile={loadedFile || (loadedFolder ? { name: loadedFolder.name, size: loadedFolder.size || 0 } : null)}
+          assignment={currentAssignment}
           onBack={onBack}
         />
       </div>
@@ -283,10 +522,10 @@ export default function Layer2GenAIChallenge({
           participantInfo={participantInfo}
           question={question}
           hasValidExplanation={Boolean(explanation && explanation.trim().length >= 50)}
-          hasFile={Boolean(loadedFile)}
+          hasFile={Boolean(loadedFile || loadedFolder)}
           explanationLength={explanation?.trim()?.length || 0}
-          fileName={loadedFile?.name || ''}
-          fileSize={loadedFile?.size ? `${(loadedFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
+          fileName={loadedFolder?.name || loadedFile?.name || ''}
+          fileSize={loadedFolder?.size ? `${(loadedFolder.size / 1024 / 1024).toFixed(2)} MB` : (loadedFile?.size ? `${(loadedFile.size / 1024 / 1024).toFixed(2)} MB` : (loadedFolder ? 'Local Directory' : ''))}
           onBack={onBack}
         />
       </div>
@@ -820,7 +1059,7 @@ export default function Layer2GenAIChallenge({
                     color: '#ef4444'
                   }}
                 >
-                  30-MINUTE TIMEOUT EXPIRED // SUBMISSIONS CLOSED
+                  TIME EXPIRED // SUBMISSIONS CLOSED
                 </span>
               </div>
             )}
@@ -882,7 +1121,8 @@ export default function Layer2GenAIChallenge({
             </div>
 
             <GenAITimer
-              assignedAt={assignment?.assigned_at}
+              assignedAt={currentAssignment?.assigned_at}
+              participantId={activeUserId}
               onExpire={handleTimeExpire}
             />
           </div>
@@ -1125,7 +1365,7 @@ export default function Layer2GenAIChallenge({
                     textShadow: '0 0 8px rgba(245, 158, 11, 0.4)'
                   }}
                 >
-                  <UploadCloud size={16} /> PROJECT ARCHIVE // UPLOAD BAY
+                  <Folder size={16} /> PROJECT WORKSPACE // BUILD DIRECTORY
                 </h3>
                 <span
                   style={{
@@ -1134,12 +1374,12 @@ export default function Layer2GenAIChallenge({
                     color: '#9ca3af'
                   }}
                 >
-                  STEP 12 // ZIP
+                  STEP 12 // FOLDER
                 </span>
               </div>
 
-              {loadedFile ? (
-                /* Loaded State */
+              {(loadedFolder || loadedFile) ? (
+                /* Selected Folder / File State */
                 <motion.div
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -1165,7 +1405,11 @@ export default function Layer2GenAIChallenge({
                     }}
                   >
                     <div style={{ color: '#10b981', flexShrink: 0 }}>
-                      <FileBox size={22} style={{ filter: 'drop-shadow(0 0 6px #10b981)' }} />
+                      {loadedFolder ? (
+                        <FolderCheck size={22} style={{ filter: 'drop-shadow(0 0 6px #10b981)' }} />
+                      ) : (
+                        <FileBox size={22} style={{ filter: 'drop-shadow(0 0 6px #10b981)' }} />
+                      )}
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div
@@ -1179,7 +1423,7 @@ export default function Layer2GenAIChallenge({
                           textOverflow: 'ellipsis'
                         }}
                       >
-                        {loadedFile.name}
+                        {loadedFolder ? loadedFolder.name : loadedFile?.name}
                       </div>
                       <div
                         style={{
@@ -1188,7 +1432,9 @@ export default function Layer2GenAIChallenge({
                           fontFamily: 'var(--font-mono)'
                         }}
                       >
-                        {(loadedFile.size / 1024 / 1024).toFixed(2)} MB • READY FOR SUBMISSION
+                        {loadedFolder
+                          ? `${loadedFolder.fileCount || 1} files ${loadedFolder.size ? `• ${(loadedFolder.size / 1024 / 1024).toFixed(2)} MB` : ''} • FOLDER SELECTED`
+                          : `${(loadedFile.size / 1024 / 1024).toFixed(2)} MB • READY FOR SUBMISSION`}
                       </div>
                     </div>
                   </div>
@@ -1198,8 +1444,14 @@ export default function Layer2GenAIChallenge({
                       disabled={isExpired || isSubmitting}
                       onClick={() => {
                         soundEngine.playClick();
+                        setLoadedFolder(null);
                         setLoadedFile(null);
-                        toast.info('File removed');
+                        if (activeUserId && typeof window !== 'undefined') {
+                          try {
+                            localStorage.removeItem(`cma_l2_genai_folder_${activeUserId}`);
+                          } catch (e) {}
+                        }
+                        toast.info('Folder removed');
                       }}
                       onMouseEnter={() => soundEngine.playHover()}
                       style={{
@@ -1218,8 +1470,10 @@ export default function Layer2GenAIChallenge({
                     >
                       <X size={13} /> REMOVE
                     </button>
-                    <label
-                      htmlFor="project-upload"
+                    <button
+                      type="button"
+                      disabled={isExpired || isSubmitting}
+                      onClick={handleSelectFolderClick}
                       onMouseEnter={() => soundEngine.playHover()}
                       style={{
                         background: 'rgba(0, 243, 255, 0.14)',
@@ -1235,12 +1489,12 @@ export default function Layer2GenAIChallenge({
                         fontFamily: 'var(--font-mono)'
                       }}
                     >
-                      <UploadCloud size={13} /> REPLACE
-                    </label>
+                      <FolderOpen size={13} /> CHANGE FOLDER
+                    </button>
                   </div>
                 </motion.div>
               ) : (
-                /* Empty Dropzone State with Compact Balanced Height */
+                /* Empty Dropzone State */
                 <motion.div
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -1252,17 +1506,10 @@ export default function Layer2GenAIChallenge({
                     setIsDragging(false);
                     if (isExpired || isSubmitting) return;
                     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                      const file = e.dataTransfer.files[0];
-                      if (file.size > 50 * 1024 * 1024) {
-                        soundEngine.playClick();
-                        toast.error('File exceeds 50MB limit.');
-                        return;
-                      }
-                      soundEngine.playClick();
-                      setLoadedFile(file);
-                      toast.success('File loaded successfully');
+                      handleFolderSelect(e.dataTransfer.files);
                     }
                   }}
+                  onClick={handleSelectFolderClick}
                   style={{
                     border: isDragging
                       ? '1px dashed var(--cyan-glow)'
@@ -1278,10 +1525,8 @@ export default function Layer2GenAIChallenge({
                     transition: 'background 0.2s, border-color 0.2s'
                   }}
                 >
-                  <label
-                    htmlFor="project-upload"
+                  <div
                     style={{
-                      cursor: isExpired || isSubmitting ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1289,7 +1534,7 @@ export default function Layer2GenAIChallenge({
                       width: '100%'
                     }}
                   >
-                    <UploadCloud
+                    <FolderOpen
                       size={22}
                       color={isDragging ? 'var(--lime-accent)' : 'var(--cyan-glow)'}
                       style={{ flexShrink: 0, filter: 'drop-shadow(0 0 6px var(--cyan-glow))' }}
@@ -1305,8 +1550,8 @@ export default function Layer2GenAIChallenge({
                         }}
                       >
                         {isDragging
-                          ? 'Drop your .zip file here now'
-                          : 'Drag & drop project .zip here, or click to browse'}
+                          ? 'Drop your project folder here now'
+                          : 'Click to select project folder, or drag & drop directory here'}
                       </div>
                       <div
                         style={{
@@ -1316,31 +1561,25 @@ export default function Layer2GenAIChallenge({
                           lineHeight: 1.3
                         }}
                       >
-                        Accepts .zip, .rar, .7z (Max 50MB) • Exclude node_modules
+                        Selects local build directory • Saved locally in session • Prompt only is submitted
                       </div>
                     </div>
-                  </label>
+                  </div>
                 </motion.div>
               )}
 
+              {/* Native Directory Picker Input */}
               <input
                 type="file"
-                accept=".zip,.rar,.7z"
+                webkitdirectory=""
+                directory=""
+                multiple
                 disabled={isExpired || isSubmitting}
                 style={{ display: 'none' }}
-                id="project-upload"
+                id="project-folder-input"
                 onChange={(e) => {
                   if (e.target.files && e.target.files.length > 0) {
-                    const file = e.target.files[0];
-                    if (file.size > 50 * 1024 * 1024) {
-                      soundEngine.playClick();
-                      toast.error('File exceeds 50MB limit.');
-                      e.target.value = '';
-                      return;
-                    }
-                    soundEngine.playClick();
-                    setLoadedFile(file);
-                    toast.success('File loaded successfully');
+                    handleFolderSelect(e.target.files);
                   }
                 }}
               />

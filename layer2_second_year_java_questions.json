@@ -331,7 +331,8 @@
             "largest = arr[i];"
           ],
           "expectedOutput": "45",
-          "explanation": "Goal: Second Largest Update. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+          "explanation": "Track the second-largest value in `arr` as you scan for the largest, using `largest` and `second`. Two lines are missing inside the existing `if` block. Expected output: 45.",
+          "hint": "When `arr[i] > largest` is true, the OLD `largest` value needs to be saved into `second` first — then `largest` itself gets updated to `arr[i]`. The order matters."
         },
         {
           "id": "java-2y-q4-2",
@@ -342,7 +343,8 @@
             "count++;"
           ],
           "expectedOutput": "3",
-          "explanation": "Goal: Count Vowels. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+          "explanation": "Count how many characters in `text` are vowels, using `ch` (already extracted) and the counter `count`. Two lines are missing. Expected output: 3.",
+          "hint": "Use `\"aeiou\".indexOf(ch) >= 0` to check if `ch` is a vowel. If it's true, `count` needs to increase by one."
         },
         {
           "id": "java-2y-q4-3",
@@ -353,7 +355,8 @@
             "min = arr[i];"
           ],
           "expectedOutput": "Minimum = 8",
-          "explanation": "Goal: Find Minimum Value. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium."
+          "explanation": "Find the minimum value in `arr`, using `min` (already initialized to `arr[0]`). Two lines are missing inside the loop. Expected output: \"Minimum = 8\".",
+          "hint": "Use a comparison like `arr[i] < min` inside the loop. When it's true, `min` needs to be updated to hold that new value."
         },
         {
           "id": "java-2y-q4-4",
@@ -364,8 +367,8 @@
             "count++;"
           ],
           "expectedOutput": "2",
-          "explanation": "Goal: Count Positive Odd Numbers. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium.",
-          "hint": "Check if `value` is strictly greater than 0 AND has a non-zero remainder when divided by 2 (`value % 2 != 0`), then increment `count`."
+          "explanation": "Count how many values in `arr` are BOTH positive AND odd, using the counter `count`. Two lines are missing. Expected output: 2.",
+          "hint": "Combine two checks on `value` — one for being positive, one for being odd — joined with `&&`. If both hold, `count` increases by one."
         },
         {
           "id": "java-2y-q4-5",
@@ -376,8 +379,8 @@
             "arr[i] = arr[arr.length - 1 - i]; arr[arr.length - 1 - i] = temp;"
           ],
           "expectedOutput": "50 40 30 20 10 ",
-          "explanation": "Goal: Reverse Array In Place. Exactly two important lines are missing. Fill both missing sections. Difficulty is medium.",
-          "hint": "Perform a standard variable swap using `temp`: store `arr[i]`, replace `arr[i]` with its symmetric element `arr[arr.length - 1 - i]`, and assign `temp` to the symmetric element."
+          "explanation": "Reverse the array `arr` in place by swapping elements from both ends toward the middle. Two lines are missing inside the loop. Expected output: \"50 40 30 20 10 \".",
+          "hint": "You'll need a `temp` variable to hold `arr[i]` before overwriting it. Then swap it with the element at the mirror position, `arr[arr.length - 1 - i]`."
         }
       ],
       "questionCount": 5
@@ -395,7 +398,8 @@
           "codeAfter": "\n\n        System.out.println(prime);\n    }\n}",
           "expectedCode": "for (int i = 2; i * i <= n; i++) {\n    if (n % i == 0) {\n        prime = false;\n        break;\n    }\n}",
           "expectedOutput": "true",
-          "explanation": "Goal: Prime Check. Complete only the missing section. Maximum 5 lines may be entered."
+          "explanation": "Check whether `n` is a prime number, updating the flag `prime` accordingly. Expected output: \"true\".",
+          "hint": "Loop a variable `i` from 2 upward (only while `i * i <= n`), and inside it check `n % i == 0` — if true, mark `prime = false` and stop the loop."
         },
         {
           "id": "java-2y-q5-2",
@@ -404,7 +408,8 @@
           "codeAfter": "\n\n        System.out.println(\"Second = \" + second);\n    }\n}",
           "expectedCode": "int max = Math.max(a, Math.max(b, c));\nsecond = Math.max(Math.min(a, b), Math.min(Math.max(a, b), c));\nif (second == max) second = Math.max(Math.min(a, b), Math.min(a, c));",
           "expectedOutput": "Second = 21",
-          "explanation": "Goal: Second Largest of Three. Complete only the missing section. Maximum 5 lines may be entered."
+          "explanation": "Find the second-largest of `a`, `b`, and `c`, storing it in `second`. Expected output: \"Second = 21\".",
+          "hint": "`Math.max` and `Math.min` can be combined to pick out values — think about how nesting them on pairs of `a`, `b`, and `c` could isolate the middle value."
         },
         {
           "id": "java-2y-q5-3",
@@ -413,7 +418,8 @@
           "codeAfter": "\n\n        System.out.println(\"Count = \" + count);\n    }\n}",
           "expectedCode": "while (n > 0) {\n    if (n % 10 == 5) count++;\n    n /= 10;\n}",
           "expectedOutput": "Count = 3",
-          "explanation": "Goal: Count Digits Equal to 5. Complete only the missing section. Maximum 5 lines may be entered."
+          "explanation": "Count how many digits of `n` equal 5, using the counter `count`. Expected output: \"Count = 3\".",
+          "hint": "Use a loop that keeps extracting the last digit with `n % 10`, checking it against 5, and then removing it from `n` with `n /= 10`."
         },
         {
           "id": "java-2y-q5-4",
@@ -422,8 +428,8 @@
           "codeAfter": "\n\n        System.out.println(\"Count = \" + count);\n    }\n}",
           "expectedCode": "for (int i = 0; i < text.length(); i++) {\n    if (text.charAt(i) == target) count++;\n}",
           "expectedOutput": "Count = 3",
-          "explanation": "Goal: Character Frequency. Complete only the missing section. Maximum 5 lines may be entered.",
-          "hint": "Loop through the string indices using `.length()` and check if `text.charAt(i) == target` to increment `count`."
+          "explanation": "Count how many times `target` appears in `text`, using the counter `count`. Expected output: \"Count = 3\".",
+          "hint": "Loop through the characters of `text` using `.charAt(i)`, comparing each one to `target` before increasing `count`."
         },
         {
           "id": "java-2y-q5-5",
@@ -432,8 +438,8 @@
           "codeAfter": "\n\n        double average = (double) sum / arr.length;\n        System.out.printf(\"%.2f\", average);\n    }\n}",
           "expectedCode": "for (int value : arr) {\n    sum += value;\n}",
           "expectedOutput": "15.00",
-          "explanation": "Goal: Array Average. Complete only the missing section. Maximum 5 lines may be entered.",
-          "hint": "Use a enhanced `for` loop (`for (int value : arr)`) to accumulate the sum of all elements into `sum`."
+          "explanation": "Add up all elements of `arr` into `sum`, used later to compute the average. Expected output: \"15.00\".",
+          "hint": "An enhanced for-loop like `for (int value : arr)` lets you add each element straight into `sum`."
         }
       ],
       "questionCount": 5

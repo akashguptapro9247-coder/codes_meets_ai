@@ -304,62 +304,62 @@
         {
           "id": "java-1y-q4-1",
           "title": "Find Maximum",
-          "hint": "Line 1 checks if the array element is larger than max, and line 2 updates max.",
+          "hint": "Use a comparison like `arr[i] > max` inside the loop. When it's true, `max` needs to be updated to hold that new value.",
           "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {18, 42, 27, 65, 31};\n        int max = arr[0];\n\n        for (int i = 1; i < arr.length; i++) {\n            // MISSING LINE 1\n                // MISSING LINE 2\n        }\n\n        System.out.println(\"Maximum = \" + max);\n    }\n}",
           "missingLines": [
             "if (arr[i] > max)",
             "max = arr[i];"
           ],
           "expectedOutput": "Maximum = 65",
-          "explanation": "Goal: Find Maximum. Exactly two important lines are missing. Fill both missing sections."
+          "explanation": "Find the maximum value in the array `arr`, using `max` (already initialized to `arr[0]`). Two lines are missing inside the loop. Expected output: \"Maximum = 65\"."
         },
         {
           "id": "java-1y-q4-2",
           "title": "Sum of Positive Numbers",
-          "hint": "Line 1 declares sum = 0 before the loop, and line 2 accumulates positive values inside the block.",
+          "hint": "Before the loop, `sum` needs to start at 0. Inside the already-given `if (arr[i] > 0)` block, add the value on with an expression like `sum += arr[i]`.",
           "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {-2, 5, -4, 8, 10};\n\n        // MISSING LINE 1\n\n        for (int i = 0; i < arr.length; i++) {\n            if (arr[i] > 0) {\n                // MISSING LINE 2\n            }\n        }\n\n        System.out.println(sum);\n    }\n}",
           "missingLines": [
             "int sum = 0;",
             "sum += arr[i];"
           ],
           "expectedOutput": "23",
-          "explanation": "Goal: Sum of Positive Numbers. Exactly two important lines are missing. Fill both missing sections."
+          "explanation": "Add up only the positive values in `arr` into a variable `sum`. Two lines are missing: one before the loop, one inside the existing `if`. Expected output: 23."
         },
         {
           "id": "java-1y-q4-3",
           "title": "Count Digits Greater Than 5",
-          "hint": "Check if digit is greater than 5 and increment the count variable.",
+          "hint": "Use a comparison like `digit > 5`. If it's true, `count` needs to increase by one.",
           "code": "public class Main {\n    public static void main(String[] args) {\n        int n = 785634;\n        int count = 0;\n\n        while (n > 0) {\n            int digit = n % 10;\n\n            // MISSING LINE 1\n            // MISSING LINE 2\n\n            n /= 10;\n        }\n\n        System.out.println(count);\n    }\n}",
           "missingLines": [
             "if (digit > 5)",
             "count++;"
           ],
           "expectedOutput": "3",
-          "explanation": "Goal: Count Digits Greater Than 5. Exactly two important lines are missing. Fill both missing sections."
+          "explanation": "Count how many digits of `n` are greater than 5, using `digit` (already extracted) and the counter `count`. Two lines are missing. Expected output: 3."
         },
         {
           "id": "java-1y-q4-4",
           "title": "Find First Occurrence",
-          "hint": "Check if arr[i] matches target, assign position, and break the loop.",
+          "hint": "Use a comparison like `arr[i] == target`. If it's true, you need to store `i` into `position` and stop the loop from continuing.",
           "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {4, 7, 9, 7, 12};\n        int target = 7;\n        int position = -1;\n\n        for (int i = 0; i < arr.length; i++) {\n            // MISSING LINE 1\n                // MISSING LINE 2\n        }\n\n        System.out.println(position);\n    }\n}",
           "missingLines": [
             "if (arr[i] == target) {",
             "position = i;\n                break;\n            }"
           ],
           "expectedOutput": "1",
-          "explanation": "Goal: Find First Occurrence. Exactly two important lines are missing. Fill both missing sections."
+          "explanation": "Find the index of the first element in `arr` equal to `target`, storing it in `position`. Two lines are missing inside the loop. Expected output: 1."
         },
         {
           "id": "java-1y-q4-5",
           "title": "Average of Array",
-          "hint": "Initialize sum before loop execution and accumulate each element into sum within the loop.",
+          "hint": "Before the loop, `sum` needs to start at 0. Inside the loop, add each element on with an expression like `sum += arr[i]`.",
           "code": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {10, 20, 30, 40, 50};\n\n        // MISSING LINE 1\n\n        for (int i = 0; i < arr.length; i++) {\n            // MISSING LINE 2\n        }\n\n        double average = sum / 5.0;\n        System.out.printf(\"%.2f\", average);\n    }\n}",
           "missingLines": [
             "int sum = 0;",
             "sum += arr[i];"
           ],
           "expectedOutput": "30.00",
-          "explanation": "Goal: Average of Array. Exactly two important lines are missing. Fill both missing sections."
+          "explanation": "Compute the sum of `arr`'s elements into a variable `sum`, which is later divided to get the average. Two lines are missing: one before the loop, one inside it. Expected output: \"30.00\"."
         }
       ],
       "questionCount": 5
@@ -373,52 +373,52 @@
         {
           "id": "java-1y-q5-1",
           "title": "Check Even",
-          "hint": "Use an if-else conditional block checking if n % 2 == 0 to print output.",
+          "hint": "Use `n % 2 == 0` to test evenness, then print the matching word for each case.",
           "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int n = 24;\n\n        // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n        System.out.println(\"Check completed.\");\n    }\n}",
           "expectedCode": "if (n % 2 == 0) System.out.println(\"Even\");\nelse System.out.println(\"Odd\");",
           "expectedOutput": "Even\nCheck completed.",
-          "explanation": "Goal: Check Even. Complete only the missing section. Maximum 4 lines may be entered."
+          "explanation": "Check whether `n` is even and print the matching word. Expected full output: \"Even\\nCheck completed.\""
         },
         {
           "id": "java-1y-q5-2",
           "title": "Find Larger Number",
-          "hint": "Assign max using a ternary operator (a > b) ? a : b; in a single statement.",
+          "hint": "Compare `a > b`, and store whichever value wins into `max` — this can be done in a single expression.",
           "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int a = 18, b = 27;\n        int max;\n\n        // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n        System.out.println(\"Maximum = \" + max);\n    }\n}",
           "expectedCode": "max = (a > b) ? a : b;",
           "expectedOutput": "Maximum = 27",
-          "explanation": "Goal: Find Larger Number. Complete only the missing section. Maximum 4 lines may be entered."
+          "explanation": "Find the larger of `a` and `b`, storing it in `max`. Expected output: \"Maximum = 27\"."
         },
         {
           "id": "java-1y-q5-3",
           "title": "Count Even",
-          "hint": "Write a single loop checking each array value with modulo operator to increment count.",
+          "hint": "You'll need a loop over `arr`, and inside it a check like `arr[i] % 2 == 0` before increasing `count`.",
           "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {3, 8, 11, 14, 20};\n        int count = 0;\n\n        // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n        System.out.println(\"Even Count = \" + count);\n    }\n}",
           "expectedCode": "for (int i = 0; i < arr.length; i++)\n    if (arr[i] % 2 == 0) count++;",
           "expectedOutput": "Even Count = 3",
-          "explanation": "Goal: Count Even. Complete only the missing section. Maximum 4 lines may be entered."
+          "explanation": "Count how many elements of `arr` are even, using the counter `count`. Expected output: \"Even Count = 3\"."
         },
         {
           "id": "java-1y-q5-4",
           "title": "Positive or Negative",
-          "hint": "Use conditional logic evaluating if n is greater than or equal to zero.",
+          "hint": "Use `n >= 0` to test positivity (zero counts as positive here), then print the matching word for each case.",
           "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        int n = -7;\n\n        // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n        System.out.println(\"Done\");\n    }\n}",
           "expectedCode": "if (n >= 0) System.out.println(\"Positive\");\nelse System.out.println(\"Negative\");",
           "expectedOutput": "Negative\nDone",
-          "explanation": "Goal: Positive or Negative. Complete only the missing section. Maximum 4 lines may be entered."
+          "explanation": "Check whether `n` is positive (including 0) or negative, and print the matching word. Expected full output: \"Negative\\nDone\""
         },
         {
           "id": "java-1y-q5-5",
           "title": "Character Case",
-          "hint": "Use Character.isLowerCase(ch) in an if-else statement.",
+          "hint": "Java's `Character` class has a method for exactly this check — look for one with 'lowercase' in its name, and call it on `ch`.",
           "codeBefore": "public class Main {\n    public static void main(String[] args) {\n        char ch = 'e';\n\n        // WRITE YOUR CODE HERE",
           "codeAfter": "\n\n        System.out.println(\"Character check completed.\");\n    }\n}",
           "expectedCode": "if (Character.isLowerCase(ch)) System.out.println(\"Lowercase\");\nelse System.out.println(\"Not Lowercase\");",
           "expectedOutput": "Lowercase\nCharacter check completed.",
-          "explanation": "Goal: Character Case. Complete only the missing section. Maximum 4 lines may be entered."
+          "explanation": "Check whether `ch` is a lowercase letter and print the matching message. Expected full output: \"Lowercase\\nCharacter check completed.\""
         }
       ],
       "questionCount": 5

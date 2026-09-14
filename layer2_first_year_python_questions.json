@@ -241,11 +241,8 @@
             "maximum = num"
           ],
           "expectedOutput": "Maximum = 65",
-          "explanation": "Goal: Find Maximum in Array. Identify the two missing lines of code required to make the program complete and correct.",
-          "hints": [
-            "First, compare the current `num` with `maximum` using an `if` statement.",
-            "Inside the `if` block, update `maximum` by assigning `num` to it."
-          ]
+          "explanation": "Find the maximum value in `numbers`, using `maximum` (already initialized to `numbers[0]`). Two lines are missing inside the loop. Expected output: \"Maximum = 65\".",
+          "hint": "Use `num > maximum` as your condition. If it's true, `maximum` needs to be reassigned to `num`."
         },
         {
           "id": "python-1y-q4-2",
@@ -256,11 +253,8 @@
             "neg_count += 1"
           ],
           "expectedOutput": "Negative Count = 3",
-          "explanation": "Goal: Count Negative Numbers. Identify the two missing lines of code required to make the program complete and correct.",
-          "hints": [
-            "Check if the current value `v` is strictly less than `0`.",
-            "If true, increment `neg_count` by 1."
-          ]
+          "explanation": "Count how many values in `vals` are negative, using the counter `neg_count`. Two lines are missing inside the loop. Expected output: \"Negative Count = 3\".",
+          "hint": "Use `v < 0` as your condition. If it's true, `neg_count` needs to increase by 1."
         },
         {
           "id": "python-1y-q4-3",
@@ -271,11 +265,8 @@
             "count += 1"
           ],
           "expectedOutput": "Average = 20.0",
-          "explanation": "Goal: Calculate Average of Positive Numbers. Identify the two missing lines of code required to make the program complete and correct.",
-          "hints": [
-            "Add the positive score `s` to the running sum variable `total`.",
-            "Increment the `count` tracking positive values by 1."
-          ]
+          "explanation": "Compute the average of only the positive values in `scores`, using `total` and `count`. Two lines are missing inside the existing `if s > 0:` block. Expected output: \"Average = 20.0\".",
+          "hint": "Inside the `if s > 0:` block, one line should add `s` onto `total`, and the other should increase `count` by 1."
         },
         {
           "id": "python-1y-q4-4",
@@ -286,11 +277,8 @@
             "found = True"
           ],
           "expectedOutput": "Found = True",
-          "explanation": "Goal: Search for Target Value. Identify the two missing lines of code required to make the program complete and correct.",
-          "hints": [
-            "Check if the current `element` matches `target` using `==`.",
-            "When matched, set the boolean flag `found` to `True`."
-          ]
+          "explanation": "Check whether `target` is present in `arr`, setting the flag `found` accordingly. Two lines are missing inside the loop. Expected output: \"Found = True\".",
+          "hint": "Use `element == target` as your condition. If it's true, `found` needs to be set to `True`."
         },
         {
           "id": "python-1y-q4-5",
@@ -301,11 +289,8 @@
             "num //= 10"
           ],
           "expectedOutput": "Digit Sum = 10",
-          "explanation": "Goal: Sum of Digits of an Integer. Identify the two missing lines of code required to make the program complete and correct.",
-          "hints": [
-            "Use the modulo operator `% 10` to get the last digit and add it to `digit_sum`.",
-            "Use integer division `//= 10` to strip off the last digit from `num`."
-          ]
+          "explanation": "Add up the digits of `num` into `digit_sum`. Two lines are missing inside the loop. Expected output: \"Digit Sum = 10\".",
+          "hint": "Use `num % 10` to grab the last digit and add it into `digit_sum`. Then remove that digit from `num` using integer division."
         }
       ]
     },
@@ -323,11 +308,8 @@
           "codeAfter": "print(\"Even Count =\", count)",
           "expectedCode": "for num in numbers:\n    if num % 2 == 0:\n        count += 1",
           "expectedOutput": "Even Count = 3",
-          "explanation": "Goal: Check Even Numbers Count. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
-          "hints": [
-            "Iterate through `numbers` with a `for` loop.",
-            "Check if each number has a remainder of 0 when divided by 2 (`num % 2 == 0`) and increment `count`."
-          ]
+          "explanation": "Count how many values in `numbers` are even, using the counter `count`. Expected output: \"Even Count = 3\".",
+          "hint": "Loop through `numbers`, and use `num % 2 == 0` to test each one before increasing `count`."
         },
         {
           "id": "python-1y-q5-2",
@@ -336,11 +318,8 @@
           "codeAfter": "print(\"Minimum =\", minimum)",
           "expectedCode": "for v in values:\n    if v < minimum:\n        minimum = v",
           "expectedOutput": "Minimum = 7",
-          "explanation": "Goal: Find Minimum of List. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
-          "hints": [
-            "Loop through each element `v` in `values`.",
-            "If `v` is smaller than `minimum`, reassign `minimum = v`."
-          ]
+          "explanation": "Find the minimum value in `values`, using `minimum` (already initialized to `values[0]`). Expected output: \"Minimum = 7\".",
+          "hint": "Loop through `values`, comparing each to `minimum` with `v < minimum` — reassign `minimum` when that's true."
         },
         {
           "id": "python-1y-q5-3",
@@ -349,11 +328,8 @@
           "codeAfter": "print(\"Is Positive =\", is_positive)",
           "expectedCode": "if val > 0:\n    is_positive = True",
           "expectedOutput": "Is Positive = False",
-          "explanation": "Goal: Check Positive Number. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
-          "hints": [
-            "Write an `if` condition to check if `val` is strictly greater than 0.",
-            "Inside the block, update `is_positive` to `True`."
-          ]
+          "explanation": "Check whether `val` is positive, updating `is_positive` accordingly. Expected output: \"Is Positive = False\".",
+          "hint": "A single condition is enough: `val > 0`. If true, update `is_positive`."
         },
         {
           "id": "python-1y-q5-4",
@@ -362,11 +338,8 @@
           "codeAfter": "print(\"Occurrences =\", occurrences)",
           "expectedCode": "for x in items:\n    if x == target:\n        occurrences += 1",
           "expectedOutput": "Occurrences = 3",
-          "explanation": "Goal: Count Target Occurrences. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
-          "hints": [
-            "Loop over every item `x` in `items`.",
-            "Compare `x` with `target`; increment `occurrences` whenever they are equal."
-          ]
+          "explanation": "Count how many times `target` appears in `items`, using `occurrences`. Expected output: \"Occurrences = 3\".",
+          "hint": "Loop through `items`, comparing each to `target` with `x == target` — increase `occurrences` when they match."
         },
         {
           "id": "python-1y-q5-5",
@@ -375,11 +348,8 @@
           "codeAfter": "print(\"Result =\", result)",
           "expectedCode": "for word in words:\n    result += word",
           "expectedOutput": "Result = CodeMeetsAI",
-          "explanation": "Goal: Concatenate Strings in List. Write the missing Python code (maximum 4 lines) to solve the given challenge.",
-          "hints": [
-            "Iterate through each `word` in `words`.",
-            "Append each word directly to `result` using `+=`."
-          ]
+          "explanation": "Join all the words in `words` together into `result`. Expected output: \"Result = CodeMeetsAI\".",
+          "hint": "Loop through `words`, and on each pass attach the current word onto `result` using `+=`."
         }
       ]
     }

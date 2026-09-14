@@ -3,18 +3,36 @@ import { motion } from 'framer-motion';
 import { Clock, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { soundEngine } from '../../../shared/utils/SoundEngine';
 
-const ROUND_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+export const L2_GENAI_ROUND_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const ROUND_DURATION_MS = L2_GENAI_ROUND_DURATION_MS;
 
-export default function GenAITimer({ assignedAt, onExpire }) {
+export default function GenAITimer({ assignedAt, participantId, onExpire }) {
   const [timeLeft, setTimeLeft] = useState(ROUND_DURATION_MS);
   const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
-    if (!assignedAt) return;
+    const resolveStartTime = () => {
+      if (assignedAt) {
+        const parsed = new Date(assignedAt).getTime();
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+      if (typeof window !== 'undefined' && participantId) {
+        try {
+          const cached = localStorage.getItem(`cma_l2_genai_assigned_at_${participantId}`);
+          if (cached) {
+            const parsed = new Date(cached).getTime();
+            if (!isNaN(parsed) && parsed > 0) return parsed;
+          }
+        } catch (e) {}
+      }
+      return null;
+    };
+
+    const startTime = resolveStartTime();
+    if (!startTime) return;
 
     const calculateTimeLeft = () => {
-      const startTime = new Date(assignedAt).getTime();
-      const now = new Date().getTime();
+      const now = Date.now();
       const elapsed = now - startTime;
       const remaining = Math.max(0, ROUND_DURATION_MS - elapsed);
       return remaining;
@@ -43,7 +61,7 @@ export default function GenAITimer({ assignedAt, onExpire }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [assignedAt, isExpired, onExpire]);
+  }, [assignedAt, participantId, isExpired, onExpire]);
 
   const minutes = Math.floor(timeLeft / 60000);
   const seconds = Math.floor((timeLeft % 60000) / 1000);

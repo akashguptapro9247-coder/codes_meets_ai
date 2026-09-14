@@ -11,6 +11,7 @@ export default function ManualResultsScreen({
 }) {
   const correctCount = result?.correctCount ?? 0;
   const totalQuestions = result?.totalQuestions ?? 15;
+  const score = result?.score !== undefined && result?.score !== null ? result.score : correctCount * 10;
   const accuracy = Math.round((correctCount / totalQuestions) * 100);
 
   // Dynamic Accuracy Badge determination
@@ -153,19 +154,48 @@ export default function ManualResultsScreen({
         </span>
       </div>
 
-      {/* Metrics Row (Correct Answers & Accuracy) */}
+      {/* Metrics Row (Score / 150, Correct Answers & Accuracy) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '16px',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: '14px',
           width: '100%'
         }}
       >
+        {/* Total Score Box (0 - 150) */}
+        <div
+          style={{
+            padding: '16px 14px',
+            background: 'rgba(224, 38, 255, 0.08)',
+            border: '1px solid rgba(224, 38, 255, 0.4)',
+            borderRadius: '4px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <span style={{ fontSize: '0.7rem', color: '#f0abfc', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
+            TOTAL SCORE
+          </span>
+          <span
+            style={{
+              fontSize: '1.85rem',
+              fontWeight: 900,
+              color: 'var(--magenta-glow)',
+              fontFamily: 'var(--font-mono)',
+              textShadow: '0 0 15px rgba(224, 38, 255, 0.5)'
+            }}
+          >
+            {score} <span style={{ fontSize: '1rem', color: '#9ca3af' }}>/ 150</span>
+          </span>
+        </div>
+
         {/* Correct Answers Box */}
         <div
           style={{
-            padding: '18px 20px',
+            padding: '16px 14px',
             background: 'rgba(0, 243, 255, 0.06)',
             border: '1px solid rgba(0, 243, 255, 0.3)',
             borderRadius: '4px',
@@ -175,26 +205,26 @@ export default function ManualResultsScreen({
             gap: '6px'
           }}
         >
-          <span style={{ fontSize: '0.72rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
-            CORRECT ANSWERS
+          <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
+            CORRECT
           </span>
           <span
             style={{
-              fontSize: '2rem',
+              fontSize: '1.85rem',
               fontWeight: 900,
               color: 'var(--cyan-glow)',
               fontFamily: 'var(--font-mono)',
               textShadow: '0 0 15px rgba(0, 243, 255, 0.5)'
             }}
           >
-            {correctCount} <span style={{ fontSize: '1.1rem', color: '#6b7280' }}>/ {totalQuestions}</span>
+            {correctCount} <span style={{ fontSize: '1rem', color: '#6b7280' }}>/ {totalQuestions}</span>
           </span>
         </div>
 
         {/* Accuracy Box */}
         <div
           style={{
-            padding: '18px 20px',
+            padding: '16px 14px',
             background: 'rgba(57, 255, 20, 0.06)',
             border: '1px solid rgba(57, 255, 20, 0.3)',
             borderRadius: '4px',
@@ -204,12 +234,12 @@ export default function ManualResultsScreen({
             gap: '6px'
           }}
         >
-          <span style={{ fontSize: '0.72rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
+          <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', letterSpacing: '0.08em' }}>
             ACCURACY
           </span>
           <span
             style={{
-              fontSize: '2rem',
+              fontSize: '1.85rem',
               fontWeight: 900,
               color: 'var(--lime-accent)',
               fontFamily: 'var(--font-mono)',

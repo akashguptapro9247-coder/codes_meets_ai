@@ -271,8 +271,8 @@
             "if (arr[i] > largest)\n        largest = arr[i];"
           ],
           "expectedOutput": "25",
-          "explanation": "Goal: Find Largest Array Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
-          "hint": "Initialize the variable 'largest' with the first element of the array before the loop. Inside the loop, check if the current element 'arr[i]' is greater than 'largest' and update it accordingly."
+          "explanation": "Find the largest element in the array `arr` and store the result in the variable `largest`, then print it. Two lines are missing: one goes before the loop, and one goes inside it. Expected output: 25.",
+          "hint": "Before the loop, `largest` should start out equal to `arr[0]`. Inside the loop, use a comparison like `arr[i] > largest` — if it's true, update `largest` to hold that new value."
         },
         {
           "id": "c-1y-q4-2",
@@ -283,8 +283,8 @@
             "count++;"
           ],
           "expectedOutput": "3",
-          "explanation": "Goal: Count Odd Numbers. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
-          "hint": "Inside the loop, use an if condition checking if 'arr[i] % 2 != 0'. If true, increment the 'count' variable."
+          "explanation": "Count how many elements in the array `arr` are odd numbers, using the counter `count`. Two lines are missing inside the loop. Expected output: 3.",
+          "hint": "Use the expression `arr[i] % 2 != 0` to test if an element is odd. If that's true, `count` needs to go up by one."
         },
         {
           "id": "c-1y-q4-3",
@@ -295,8 +295,8 @@
             "sum += arr[i];"
           ],
           "expectedOutput": "50",
-          "explanation": "Goal: Calculate Array Sum. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
-          "hint": "Declare and initialize the variable 'sum' to 0 before starting the loop. Inside the loop, accumulate the total by adding 'arr[i]' to 'sum'."
+          "explanation": "Add up all the elements of array `arr` into a variable named `sum`, then print the total. Two lines are missing: one before the loop, one inside it. Expected output: 50.",
+          "hint": "Before the loop, `sum` should start at 0. Inside the loop, add each element on with an expression like `sum += arr[i]`."
         },
         {
           "id": "c-1y-q4-4",
@@ -307,8 +307,8 @@
             "count++;"
           ],
           "expectedOutput": "3",
-          "explanation": "Goal: Count Numbers Greater Than 10. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
-          "hint": "Check if 'arr[i]' is greater than 10 inside the loop using an if statement, then increment 'count'."
+          "explanation": "Count how many elements of `arr` are greater than 10, using the counter `count`. Two lines are missing inside the loop. Expected output: 3.",
+          "hint": "Use a comparison like `arr[i] > 10` to test each element. If it's true, `count` needs to increase by one."
         },
         {
           "id": "c-1y-q4-5",
@@ -319,8 +319,8 @@
             "if (arr[i] < smallest)\n        smallest = arr[i];"
           ],
           "expectedOutput": "4",
-          "explanation": "Goal: Find Smallest Element. Exactly two important lines are missing from the program. Fill in both missing lines so that the program works correctly.",
-          "hint": "Set 'smallest' equal to 'arr[0]' before the loop. Inside the loop, check if 'arr[i]' is less than 'smallest' and update the variable if true."
+          "explanation": "Find the smallest element in the array `arr` and store it in `smallest`. Two lines are missing: one before the loop, one inside it. Expected output: 4.",
+          "hint": "Before the loop, `smallest` should start out equal to `arr[0]`. Inside the loop, use a comparison like `arr[i] < smallest` — if it's true, update `smallest` to that new value."
         }
       ]
     },
@@ -337,8 +337,8 @@
           "codeAfter": "\n\n    printf(\"Number checking completed.\");\n    return 0;\n}",
           "expectedCode": "if (n % 2 == 0)\n    printf(\"Even\\n\");\nelse\n    printf(\"Odd\\n\");",
           "expectedOutput": "Odd\nNumber checking completed.",
-          "explanation": "Goal: Even or Odd. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
-          "hint": "Use the modulo operator ('%') with 2 in an if-else structure to print \"Even\\n\" or \"Odd\\n\"."
+          "explanation": "Check whether `n` is even or odd and print the matching word. Expected full output: \"Odd\\nNumber checking completed.\"",
+          "hint": "Use `n % 2 == 0` to test evenness. Depending on whether that's true or false, print the matching word."
         },
         {
           "id": "c-1y-q5-2",
@@ -347,8 +347,8 @@
           "codeAfter": "\n\n    printf(\"Largest = %d\", largest);\n    return 0;\n}",
           "expectedCode": "if (a > b)\n    largest = a;\nelse\n    largest = b;",
           "expectedOutput": "Largest = 25",
-          "explanation": "Goal: Find Larger Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
-          "hint": "Compare 'a' and 'b' with an if-else statement and assign the greater value to the 'largest' variable."
+          "explanation": "Find the larger of `a` and `b`, and store it in `largest`. Expected output: \"Largest = 25\".",
+          "hint": "Compare `a > b` — whichever branch that leads you to, assign the corresponding variable's value to `largest`."
         },
         {
           "id": "c-1y-q5-3",
@@ -357,8 +357,8 @@
           "codeAfter": "\n\n    printf(\"Check completed.\");\n    return 0;\n}",
           "expectedCode": "if (n >= 0)\n    printf(\"Positive\\n\");\nelse\n    printf(\"Negative\\n\");",
           "expectedOutput": "Negative\nCheck completed.",
-          "explanation": "Goal: Positive or Negative. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
-          "hint": "Check if 'n' is greater than or equal to 0, and print \"Positive\\n\" or \"Negative\\n\" using an if-else block."
+          "explanation": "Check whether `n` is positive (including 0) or negative, and print the matching word. Expected full output: \"Negative\\nCheck completed.\"",
+          "hint": "Use `n >= 0` to test positivity (zero counts as positive here). Print the matching word for each case."
         },
         {
           "id": "c-1y-q5-4",
@@ -367,8 +367,8 @@
           "codeAfter": "\n\n    printf(\"Program completed.\");\n    return 0;\n}",
           "expectedCode": "if (n % 5 == 0)\n    printf(\"Divisible\\n\");\nelse\n    printf(\"Not Divisible\\n\");",
           "expectedOutput": "Divisible\nProgram completed.",
-          "explanation": "Goal: Divisible by 5. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
-          "hint": "Test if 'n % 5 == 0' to determine if the number is divisible by 5, printing \"Divisible\\n\" or \"Not Divisible\\n\" accordingly."
+          "explanation": "Check whether `n` is divisible by 5 and print the matching message. Expected full output: \"Divisible\\nProgram completed.\"",
+          "hint": "Use `n % 5 == 0` to test divisibility by 5. Print the matching message for each case."
         },
         {
           "id": "c-1y-q5-5",
@@ -377,8 +377,8 @@
           "codeAfter": "\n\n    printf(\"Square = %d\", square);\n    return 0;\n}",
           "expectedCode": "square = n * n;",
           "expectedOutput": "Square = 49",
-          "explanation": "Goal: Square of a Number. Complete only the missing section of the code. The code before and after the blank is already provided. Maximum 4 lines may be entered.",
-          "hint": "Multiply 'n' by itself and store the result in the 'square' variable."
+          "explanation": "Compute the square of `n` and store it in `square`. Expected output: \"Square = 49\".",
+          "hint": "The result you need is `n * n` — just store that value in `square`."
         }
       ]
     }

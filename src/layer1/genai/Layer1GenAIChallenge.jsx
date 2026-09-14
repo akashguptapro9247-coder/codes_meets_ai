@@ -12,6 +12,7 @@ import DigitalParticles from '../../shared/components/DigitalParticles';
 import ScanOverlay from '../../shared/components/ScanOverlay';
 import { supabase } from '../../shared/services/supabaseClient';
 import { adminService } from '../../admin/services/adminService';
+import { imagekitClient } from '../../shared/services/imagekitClient';
 import { eventStateService } from '../../shared/services/eventStateService';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 
@@ -83,15 +84,82 @@ export default function Layer1GenAIChallenge({
 
   const isPreLocked = Boolean(initialLock.isExpired || initialLock.isSubmitted);
 
-  const [prompt, setPrompt] = useState('');
-  const [images, setImages] = useState([]);
+  // Synchronously restore unsubmitted draft prompt and image from storage on initial mount
+  const [prompt, setPrompt] = useState(() => {
+    if (!userId || typeof window === 'undefined') return '';
+    try {
+      const isSub = localStorage.getItem(`cma_l1_genai_submitted_${userId}`) === 'true';
+      const isExp = localStorage.getItem(`cma_l1_genai_expired_${userId}`) === 'true';
+      if (!isSub && !isExp) {
+        const saved = localStorage.getItem(`cma_l1_genai_draft_prompt_${userId}`);
+        if (saved && typeof saved === 'string') return saved;
+      }
+    } catch (e) {}
+    return '';
+  });
+
+  const [images, setImages] = useState(() => {
+    if (!userId || typeof window === 'undefined') return [];
+    try {
+      const isSub = localStorage.getItem(`cma_l1_genai_submitted_${userId}`) === 'true';
+      const isExp = localStorage.getItem(`cma_l1_genai_expired_${userId}`) === 'true';
+      if (!isSub && !isExp) {
+        const savedImg = localStorage.getItem(`cma_l1_genai_draft_image_${userId}`);
+        if (savedImg) {
+          const parsed = JSON.parse(savedImg);
+          if (parsed && (parsed.url || parsed.previewUrl)) {
+            return [parsed];
+          }
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreUploading, setIsPreUploading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(initialLock.isSubmitted);
   const [validationError, setValidationError] = useState(null);
   const [isTimeUp, setIsTimeUp] = useState(initialLock.isExpired);
   const [existingSubmission, setExistingSubmission] = useState(null);
-  const [isLoadingSubmission, setIsLoadingSubmission] = useState(!isPreLocked);
+  // Authoritative check: always verify DB state on mount so admin delete is honored immediately
+  const [isLoadingSubmission, setIsLoadingSubmission] = useState(true);
+  const [timerResetKey, setTimerResetKey] = useState(0);
+
   const isFinalizingTimeoutRef = useRef(false);
+  const activePreUploadPromiseRef = useRef(null);
+  const latestUploadedImageRef = useRef(images[0]?.url ? images[0] : null);
+  const hasUserEditedRef = useRef(false);
+  const isPromptInitializedRef = useRef(false);
+
+  // Persistence keys scoped per participant ID
+  const activeUserIdForDraft = userId || getActiveUserId();
+  const draftPromptKey = activeUserIdForDraft ? `cma_l1_genai_draft_prompt_${activeUserIdForDraft}` : null;
+  const draftImageKey = activeUserIdForDraft ? `cma_l1_genai_draft_image_${activeUserIdForDraft}` : null;
+
+  const clearAllDrafts = (targetId) => {
+    const id = targetId || activeUserIdForDraft;
+    if (!id) return;
+    try {
+      localStorage.removeItem(`cma_l1_genai_draft_prompt_${id}`);
+      localStorage.removeItem(`cma_l1_genai_draft_image_${id}`);
+    } catch (e) {}
+  };
+
+  // Track initialization after first mount so initial empty render doesn't overwrite saved draft
+  useEffect(() => {
+    isPromptInitializedRef.current = true;
+  }, []);
+
+  // Persist prompt draft on change (only while challenge is active and not submitted)
+  useEffect(() => {
+    if (!draftPromptKey || submissionSuccess || isTimeUp || existingSubmission) return;
+    // Prevent wiping saved draft with empty string on initial mount
+    if (!isPromptInitializedRef.current && prompt === '') return;
+    try {
+      localStorage.setItem(draftPromptKey, prompt);
+    } catch (e) {}
+  }, [prompt, draftPromptKey, submissionSuccess, isTimeUp, existingSubmission]);
 
   // Real-time lock listener: if admin locks Layer 1 or deactivates GenAI track, exit immediately to Play Page
   useEffect(() => {
@@ -148,25 +216,66 @@ export default function Layer1GenAIChallenge({
             } catch (e) {}
           }
         } else {
-          // If Admin deleted submission or no submission exists in DB
-          const localExpired =
+          // DATABASE HAS NO ACTIVE SUBMISSION (Authoritative source of truth)
+          const hadLocalSubmitted = localStorage.getItem(`cma_l1_genai_submitted_${activeId}`) === 'true';
+          const hadLocalExpired =
             localStorage.getItem(`cma_l1_genai_expired_${activeId}`) === 'true' ||
             localStorage.getItem(`cma_l1_genai_timer_expired_${activeId}`) === 'true';
-          const localSubmitted = localStorage.getItem(`cma_l1_genai_submitted_${activeId}`) === 'true';
 
-          if (localSubmitted) {
-            setSubmissionSuccess(true);
-          } else if (localExpired) {
-            setIsTimeUp(true);
+          if (hadLocalSubmitted || hadLocalExpired) {
+            // Admin deleted previous submission/attempt — reset all stale state completely
+            try {
+              localStorage.removeItem(`cma_l1_genai_submitted_${activeId}`);
+              sessionStorage.removeItem(`cma_l1_genai_submitted_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_expired_${activeId}`);
+              sessionStorage.removeItem(`cma_l1_genai_expired_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_timer_expired_${activeId}`);
+              sessionStorage.removeItem(`cma_l1_genai_timer_expired_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_timer_start_${activeId}`);
+              sessionStorage.removeItem(`cma_l1_genai_timer_start_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_draft_prompt_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_draft_image_${activeId}`);
+            } catch (e) {}
+
+            setExistingSubmission(null);
+            setSubmissionSuccess(false);
+            setIsTimeUp(false);
+            setPrompt('');
+            setImages([]);
+            latestUploadedImageRef.current = null;
+            activePreUploadPromiseRef.current = null;
+            setTimerResetKey((prev) => prev + 1);
           } else {
+            // In-progress unsubmitted attempt — restore drafts if not already in state
             setExistingSubmission(null);
             setSubmissionSuccess(false);
             setIsTimeUp(false);
 
-            // Check if timer in localStorage is already marked as expired or reached timeout
+            if (!hasUserEditedRef.current) {
+              try {
+                const savedPrompt = localStorage.getItem(`cma_l1_genai_draft_prompt_${activeId}`);
+                if (savedPrompt && typeof savedPrompt === 'string') {
+                  setPrompt((prev) => (prev.trim().length === 0 ? savedPrompt : prev));
+                }
+              } catch (e) {}
+            }
+
+            try {
+              const savedImageRaw = localStorage.getItem(`cma_l1_genai_draft_image_${activeId}`);
+              if (savedImageRaw) {
+                const parsedImg = JSON.parse(savedImageRaw);
+                if (parsedImg && (parsedImg.url || parsedImg.previewUrl)) {
+                  setImages((prev) => (prev.length === 0 ? [parsedImg] : prev));
+                  if (parsedImg.url) {
+                    latestUploadedImageRef.current = parsedImg;
+                  }
+                }
+              }
+            } catch (e) {}
+
+            // Check if timer in storage reached timeout
             const timerKey = `cma_l1_genai_timer_start_${activeId}`;
             const storedStart = localStorage.getItem(timerKey);
-
             if (storedStart) {
               const elapsed = Math.floor((Date.now() - parseInt(storedStart, 10)) / 1000);
               if (elapsed >= 900) {
@@ -207,7 +316,15 @@ export default function Layer1GenAIChallenge({
               localStorage.removeItem(`cma_l1_genai_submitted_${activeId}`);
               localStorage.removeItem(`cma_l1_genai_expired_${activeId}`);
               localStorage.removeItem(`cma_l1_genai_timer_expired_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_draft_prompt_${activeId}`);
+              localStorage.removeItem(`cma_l1_genai_draft_image_${activeId}`);
             } catch (e) {}
+            setExistingSubmission(null);
+            setSubmissionSuccess(false);
+            setIsTimeUp(false);
+            setPrompt('');
+            setImages([]);
+            setTimerResetKey((prev) => prev + 1);
             loadSubmission();
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             if (payload.new && payload.new.user_id === activeId) {
@@ -226,17 +343,93 @@ export default function Layer1GenAIChallenge({
     };
   }, [userId]);
 
-  // Add selected image file to local state (enforce single image)
-  const handleAddImages = (newImages) => {
-    if (isTimeUp || isCompleted) return;
-    setImages((prev) => (newImages && newImages.length > 0 ? [newImages[0]] : []));
-    if (validationError) setValidationError(null);
+  const handlePromptChange = (newVal) => {
+    hasUserEditedRef.current = true;
+    setPrompt(newVal);
   };
 
-  // Remove individual image
+  // Add selected image file to local state (enforce single image) & pre-upload for refresh persistence
+  const handleAddImages = async (newImages) => {
+    if (isTimeUp || isCompleted) return;
+    if (!newImages || newImages.length === 0) return;
+
+    const chosen = newImages[0];
+    setImages([chosen]);
+    if (validationError) setValidationError(null);
+
+    const activeId = userId || getActiveUserId();
+
+    // If item already has a remote url (e.g. restored from draft), save to storage immediately
+    if (chosen.url) {
+      latestUploadedImageRef.current = chosen;
+      try {
+        localStorage.setItem(`cma_l1_genai_draft_image_${activeId}`, JSON.stringify(chosen));
+      } catch (e) {}
+      return;
+    }
+
+    latestUploadedImageRef.current = null;
+
+    // Save initial metadata and preview to localStorage immediately
+    try {
+      localStorage.setItem(`cma_l1_genai_draft_image_${activeId}`, JSON.stringify({
+        id: chosen.id,
+        name: chosen.name,
+        size: chosen.size,
+        previewUrl: chosen.previewUrl
+      }));
+    } catch (e) {}
+
+    // If it has a local File object, pre-upload in background so it survives browser reload
+    if (chosen.file && activeId) {
+      setIsPreUploading(true);
+      const uploadPromise = imagekitClient.uploadImage(chosen.file, activeId);
+      activePreUploadPromiseRef.current = uploadPromise;
+
+      uploadPromise
+        .then((uploaded) => {
+          if (uploaded?.url) {
+            const persistedItem = {
+              id: chosen.id,
+              name: chosen.name || uploaded.name,
+              size: chosen.size,
+              url: uploaded.url,
+              fileId: uploaded.fileId || '',
+              filePath: uploaded.filePath || '',
+              previewUrl: uploaded.url
+            };
+
+            latestUploadedImageRef.current = persistedItem;
+            setImages([persistedItem]);
+            try {
+              localStorage.setItem(`cma_l1_genai_draft_image_${activeId}`, JSON.stringify(persistedItem));
+            } catch (e) {}
+          }
+        })
+        .catch((uploadErr) => {
+          console.warn('[Layer1GenAI] Background pre-upload warning:', uploadErr);
+          // Even if pre-upload fails, chosen image remains in React state for standard upload on submit
+        })
+        .finally(() => {
+          setIsPreUploading(false);
+          activePreUploadPromiseRef.current = null;
+        });
+    }
+  };
+
+  // Remove individual image and clear persisted draft
   const handleRemoveImage = (id) => {
     if (isTimeUp || isCompleted) return;
+    activePreUploadPromiseRef.current = null;
+    latestUploadedImageRef.current = null;
+    setIsPreUploading(false);
     setImages((prev) => prev.filter((img, idx) => (img.id ? img.id !== id : idx !== id)));
+    const activeId = userId || getActiveUserId();
+    if (activeId) {
+      try {
+        localStorage.removeItem(`cma_l1_genai_draft_image_${activeId}`);
+      } catch (e) {}
+    }
   };
 
   // Time expired callback: auto-finalize attempt to DB (idempotent, single execution)
@@ -255,6 +448,8 @@ export default function Layer1GenAIChallenge({
         localStorage.setItem(generalExpiredKey, 'true');
         localStorage.removeItem(timerKey);
         sessionStorage.removeItem(timerKey);
+        localStorage.removeItem(`cma_l1_genai_draft_prompt_${activeId}`);
+        localStorage.removeItem(`cma_l1_genai_draft_image_${activeId}`);
       } catch (e) {}
     }
 
@@ -273,7 +468,7 @@ export default function Layer1GenAIChallenge({
         username: activeInfo.name,
         rollNumber: activeInfo.rollNumber,
         prompt: prompt.trim(),
-        imageItems: images
+        imageItems: latestUploadedImageRef.current ? [latestUploadedImageRef.current] : images
       });
 
       if (data) {
@@ -286,9 +481,11 @@ export default function Layer1GenAIChallenge({
     }
   };
 
-  // Real Manual Submission Handler: ImageKit upload + Supabase insertion
+  // Real Manual Submission Handler: Optimized pipeline with ImageKit deduplication + Supabase insertion
   const handleSubmit = async () => {
-    if (isTimeUp || existingSubmission?.status === 'TIME_EXPIRED' || submissionSuccess) {
+    if (isSubmitting) return;
+
+    if (isTimeUp || existingSubmission?.status === 'TIME_EXPIRED' || existingSubmission?.time_taken === '15:00' || submissionSuccess) {
       setValidationError('CHALLENGE HAS BEEN SUBMITTED / COMPLETED // SUBMISSIONS LOCKED');
       return;
     }
@@ -323,6 +520,32 @@ export default function Layer1GenAIChallenge({
     const activeId = userId || getActiveUserId();
     const activeInfo = getActiveParticipantInfo();
 
+    // If pre-upload is currently in progress or completed, reuse uploaded asset to avoid duplicate uploads
+    let imageItemsToSubmit = images;
+    if (latestUploadedImageRef.current && (images[0]?.url || images[0]?.id === latestUploadedImageRef.current.id)) {
+      imageItemsToSubmit = [latestUploadedImageRef.current];
+    } else if (activePreUploadPromiseRef.current) {
+      try {
+        const uploaded = await activePreUploadPromiseRef.current;
+        if (uploaded?.url) {
+          const persistedItem = {
+            id: images[0]?.id || Date.now(),
+            name: images[0]?.name || uploaded.name,
+            size: images[0]?.size,
+            url: uploaded.url,
+            fileId: uploaded.fileId || '',
+            filePath: uploaded.filePath || '',
+            previewUrl: uploaded.url
+          };
+          latestUploadedImageRef.current = persistedItem;
+          imageItemsToSubmit = [persistedItem];
+          setImages(imageItemsToSubmit);
+        }
+      } catch (e) {
+        // Fall back to submission upload in adminService.submitLayer1GenAi
+      }
+    }
+
     // Calculate actual time taken using the session timer
     const timerKey = `cma_l1_genai_timer_start_${activeId || userId || 'player'}`;
     const storedStart = localStorage.getItem(timerKey) || sessionStorage.getItem(timerKey);
@@ -341,7 +564,7 @@ export default function Layer1GenAIChallenge({
         username: activeInfo.name,
         rollNumber: activeInfo.rollNumber,
         prompt: prompt.trim(),
-        imageItems: images,
+        imageItems: imageItemsToSubmit,
         timeTaken: timeTakenFormatted,
         timeTakenSeconds: elapsedSeconds,
         startedAt,
@@ -356,11 +579,13 @@ export default function Layer1GenAIChallenge({
         setSubmissionSuccess(true);
         soundEngine.playBoot();
 
-        // Clear local timer and record lock on successful submission
+        // Clear local timer, drafts, and record lock on successful submission
         try {
           localStorage.setItem(`cma_l1_genai_submitted_${activeId}`, 'true');
           localStorage.removeItem(timerKey);
           sessionStorage.removeItem(timerKey);
+          localStorage.removeItem(`cma_l1_genai_draft_prompt_${activeId}`);
+          localStorage.removeItem(`cma_l1_genai_draft_image_${activeId}`);
         } catch (e) {}
       }
     } catch (err) {
@@ -372,9 +597,14 @@ export default function Layer1GenAIChallenge({
     }
   };
 
-  const isTimeoutState = Boolean(isTimeUp || existingSubmission?.status === 'TIME_EXPIRED');
+  const isTimeoutState = Boolean(
+    isTimeUp ||
+    existingSubmission?.status === 'TIME_EXPIRED' ||
+    existingSubmission?.time_taken === '15:00' ||
+    existingSubmission?.time_taken_seconds === 900
+  );
   const isManualCompleted = Boolean(
-    (submissionSuccess || (existingSubmission && existingSubmission.status !== 'TIME_EXPIRED')) &&
+    (submissionSuccess || (existingSubmission && !isTimeoutState)) &&
     !isTimeoutState
   );
   const isCompleted = isTimeoutState || isManualCompleted;
@@ -1149,6 +1379,7 @@ export default function Layer1GenAIChallenge({
             >
               {/* 15-MIN COUNTDOWN TIMER */}
               <CountdownTimer
+                key={timerResetKey}
                 participantId={userId || 'player'}
                 onTimeUp={handleTimeUp}
                 disabled={isCompleted}
@@ -1161,8 +1392,8 @@ export default function Layer1GenAIChallenge({
               <PromptInput
                 value={prompt}
                 prompt={prompt}
-                onChange={setPrompt}
-                onChangePrompt={setPrompt}
+                onChange={handlePromptChange}
+                onChangePrompt={handlePromptChange}
                 disabled={isSubmitting || submissionSuccess || isTimeUp}
               />
 
@@ -1171,16 +1402,16 @@ export default function Layer1GenAIChallenge({
                 images={images}
                 onAddImages={handleAddImages}
                 onRemoveImage={handleRemoveImage}
-                disabled={isSubmitting || submissionSuccess || isTimeUp}
+                disabled={isSubmitting || submissionSuccess || isTimeUp || isCompleted}
               />
 
               {/* SUBMISSION ACTION BAR */}
               <SubmissionControls
                 isSubmitting={isSubmitting}
                 submissionSuccess={submissionSuccess}
+                disabled={isTimeUp || isCompleted}
                 validationError={validationError}
                 onSubmit={handleSubmit}
-                isTimeUp={isTimeUp}
               />
             </section>
           </main>

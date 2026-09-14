@@ -14,6 +14,8 @@ class ParticipantGuard {
     this.realtimeChannel = null;
     this.listeners = new Set();
     this.isTerminated = false;
+    this.l2GenaiTimerInterval = null;
+    this.l2ManualTimerInterval = null;
   }
 
   /**
@@ -106,10 +108,122 @@ class ParticipantGuard {
           }
         }
       )
+      // 4. Listen for DELETE on layer_2_genai_submissions (if Admin deletes GenAI submission)
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'layer_2_genai_submissions'
+        },
+        (payload) => {
+          if (payload.old && payload.old.user_id === this.currentUserId) {
+            try {
+              localStorage.removeItem(`cma_l2_genai_submitted_${this.currentUserId}`);
+              sessionStorage.removeItem(`cma_l2_genai_submitted_${this.currentUserId}`);
+              localStorage.removeItem(`cma_l2_genai_expired_${this.currentUserId}`);
+              sessionStorage.removeItem(`cma_l2_genai_expired_${this.currentUserId}`);
+              localStorage.removeItem(`cma_l2_genai_prompt_${this.currentUserId}`);
+              sessionStorage.removeItem(`cma_l2_genai_prompt_${this.currentUserId}`);
+              localStorage.removeItem(`cma_l2_genai_folder_${this.currentUserId}`);
+              sessionStorage.removeItem(`cma_l2_genai_folder_${this.currentUserId}`);
+              localStorage.removeItem(`cma_l2_genai_assigned_at_${this.currentUserId}`);
+              sessionStorage.removeItem(`cma_l2_genai_assigned_at_${this.currentUserId}`);
+            } catch (e) {}
+            this.notifyListeners({
+              type: 'L2_GENAI_SUBMISSION_DELETED',
+              userId: this.currentUserId
+            });
+          }
+        }
+      )
       .subscribe();
+
+    // Background watcher for Layer 2 GenAI timer expiry (e.g. while on Arena or in Manual)
+    if (typeof window !== 'undefined') {
+      if (this.l2GenaiTimerInterval) clearInterval(this.l2GenaiTimerInterval);
+      this.l2GenaiTimerInterval = setInterval(async () => {
+        try {
+          const assignedAtRaw = localStorage.getItem(`cma_l2_genai_assigned_at_${userId}`);
+          const isSubmitted = localStorage.getItem(`cma_l2_genai_submitted_${userId}`) === 'true';
+          const isExpired = localStorage.getItem(`cma_l2_genai_expired_${userId}`) === 'true';
+
+          if (assignedAtRaw && !isSubmitted && !isExpired) {
+            const assignedTime = new Date(assignedAtRaw).getTime();
+            const ROUND_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+            if (!isNaN(assignedTime) && (Date.now() - assignedTime >= ROUND_DURATION_MS)) {
+              localStorage.setItem(`cma_l2_genai_expired_${userId}`, 'true');
+              const draft = localStorage.getItem(`cma_l2_genai_prompt_${userId}`) || '';
+              const { genaiService } = await import('../../layer2/genai/services/genaiService');
+              await genaiService.recordTimeout(userId, draft);
+            }
+          }
+        } catch (e) {}
+      }, 5000);
+
+      // Background watcher for Layer 2 Manual timer expiry (e.g. while participant is on Arena or in GenAI)
+      if (this.l2ManualTimerInterval) clearInterval(this.l2ManualTimerInterval);
+      this.l2ManualTimerInterval = setInterval(async () => {
+        try {
+          const submittedKey = `cma_l2_manual_submitted_${userId}`;
+          const isSubmitted = localStorage.getItem(submittedKey) === 'true';
+          if (isSubmitted) return;
+
+          const savedRaw = localStorage.getItem(`cma_l2_manual_state_${userId}`);
+          if (!savedRaw) return;
+
+          const savedState = JSON.parse(savedRaw);
+          if (!savedState || !savedState.hasStarted || !savedState.startTime) return;
+
+          const startTimeMs = Number(savedState.startTime);
+          const ROUND_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+          if (!isNaN(startTimeMs) && (Date.now() - startTimeMs >= ROUND_DURATION_MS)) {
+            localStorage.setItem(submittedKey, 'true');
+            const { adminService } = await import('../../admin/services/adminService');
+
+            const savedQs = savedState.questions || [];
+            const savedQStates = savedState.questionStates || {};
+            const processedStates = {};
+
+            savedQs.forEach(q => {
+              const qs = savedQStates[q.id] || { attempts: 0, marks: 0, status: 'pending', history: [] };
+              if (qs.status === 'pending') {
+                processedStates[q.id] = { ...qs, status: 'auto_expired', marks: 0 };
+              } else {
+                processedStates[q.id] = { ...qs };
+              }
+            });
+
+            const totalScore = Object.values(processedStates).reduce((sum, s) => sum + (s.marks || 0), 0);
+
+            await adminService.submitLayer2ManualAttempt({
+              userId,
+              username: savedState.username || 'Participant',
+              rollNumber: savedState.rollNumber || '',
+              year: savedState.batchYear === '26' ? '1st Year' : '2nd Year',
+              language: savedState.language || '',
+              questionsPool: savedQs,
+              questionStates: processedStates,
+              automaticMarks: totalScore,
+              status: 'completed'
+            });
+
+            localStorage.removeItem(`cma_l2_manual_state_${userId}`);
+          }
+        } catch (e) {}
+      }, 5000);
+    }
   }
 
   stopWatching() {
+    if (this.l2GenaiTimerInterval) {
+      clearInterval(this.l2GenaiTimerInterval);
+      this.l2GenaiTimerInterval = null;
+    }
+    if (this.l2ManualTimerInterval) {
+      clearInterval(this.l2ManualTimerInterval);
+      this.l2ManualTimerInterval = null;
+    }
     if (this.realtimeChannel && supabase) {
       try {
         supabase.removeChannel(this.realtimeChannel);

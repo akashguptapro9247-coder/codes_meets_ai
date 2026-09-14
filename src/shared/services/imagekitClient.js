@@ -61,22 +61,21 @@ export const imagekitClient = {
    * Batch upload multiple image files to ImageKit
    */
   async uploadMultipleImages(imageItems = [], userId) {
-    const results = [];
-    for (const item of imageItems) {
-      if (item.file) {
-        const uploaded = await this.uploadImage(item.file, userId);
-        results.push(uploaded);
-      } else if (item.url) {
-        // Already uploaded / existing URL
-        results.push({
-          url: item.url,
-          fileId: item.fileId || '',
-          filePath: item.filePath || '',
-          name: item.name || ''
-        });
-      }
-    }
-    return results;
+    return Promise.all(
+      imageItems.map(async (item) => {
+        if (item.file) {
+          return await this.uploadImage(item.file, userId);
+        } else if (item.url) {
+          return {
+            url: item.url,
+            fileId: item.fileId || '',
+            filePath: item.filePath || '',
+            name: item.name || ''
+          };
+        }
+        return null;
+      })
+    ).then((results) => results.filter(Boolean));
   },
 
   /**

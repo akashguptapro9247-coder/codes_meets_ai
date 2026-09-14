@@ -3,10 +3,35 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Terminal, Play } from 'lucide-react';
 import { soundEngine } from '../../shared/utils/SoundEngine';
 import { eventStateService } from '../../shared/services/eventStateService';
+import { adminService } from '../../admin/services/adminService';
 import Layer2ManualChallenge from './Layer2ManualChallenge';
 
 export default function Layer2ManualRoute({ participant, onBack, skipIntro = false }) {
-  const [isWorkspaceLaunched, setIsWorkspaceLaunched] = useState(skipIntro);
+  const userId = participant?.userId || participant?.user_id;
+  const [isWorkspaceLaunched, setIsWorkspaceLaunched] = useState(() => {
+    if (skipIntro) return true;
+    try {
+      const saved = localStorage.getItem(`cma_l2_manual_state_${userId || 'guest'}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.hasStarted) return true;
+      }
+      if (localStorage.getItem(`cma_l2_manual_submitted_${userId || 'guest'}`) === 'true') {
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  });
+
+  // Check DB on mount if participant already has an attempt (e.g. on fresh device or after clearing storage)
+  useEffect(() => {
+    if (!userId || isWorkspaceLaunched) return;
+    adminService.fetchLayer2ManualAttemptForUser(userId).then(({ data }) => {
+      if (data && (data.status === 'completed' || data.status === 'in_progress')) {
+        setIsWorkspaceLaunched(true);
+      }
+    }).catch(() => {});
+  }, [userId, isWorkspaceLaunched]);
 
   // Real-time lock listener on landing screen — only kick if admin CHANGES state from active -> inactive
   const prevLockStateRef = useRef(null);

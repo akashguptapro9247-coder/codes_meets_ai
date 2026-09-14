@@ -259,7 +259,8 @@
             "largest = num"
           ],
           "expectedOutput": "Second Largest = 40",
-          "explanation": "Goal: Find Second Largest Number. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Track the second-largest value in `numbers` as you scan for the largest, using `largest` and `second_largest`. Two lines are missing inside the existing `if` block. Expected output: \"Second Largest = 40\".",
+          "hint": "When `num > largest` is true, the OLD `largest` value needs to be saved into `second_largest` first — then `largest` itself gets updated to `num`. The order matters."
         },
         {
           "id": "python-2y-q4-2",
@@ -270,7 +271,8 @@
             "left += 1; right -= 1"
           ],
           "expectedOutput": "Reversed = [5, 4, 3, 2, 1]",
-          "explanation": "Goal: Reverse List In-Place. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Reverse the list `arr` in place by swapping elements from both ends toward the middle. Two lines are missing inside the loop. Expected output: \"Reversed = [5, 4, 3, 2, 1]\".",
+          "hint": "Python can swap two list positions in one line with `arr[left], arr[right] = arr[right], arr[left]`. After that, both `left` and `right` need to move one step closer together."
         },
         {
           "id": "python-2y-q4-3",
@@ -281,7 +283,8 @@
             "greater_than_five += 1"
           ],
           "expectedOutput": "Greater Than 5 Count = 4",
-          "explanation": "Goal: Conditional Matrix Element Filter. Identify the two missing lines of code required to make the program complete and correct."
+          "explanation": "Count how many values in the matrix are greater than 5, using `greater_than_five`. Two lines are missing inside the nested loops. Expected output: 4.",
+          "hint": "Use `val > 5` as your condition. If it's true, `greater_than_five` needs to increase by 1."
         },
         {
           "id": "python-2y-q4-4",
@@ -292,8 +295,8 @@
             "is_prime = False"
           ],
           "expectedOutput": "Is Prime = True",
-          "explanation": "Goal: Check Prime Number. Identify the two missing lines of code required to make the program complete and correct.",
-          "hint": "Check if `num` is divisible by `i` using the modulo operator `%`, and set `is_prime` to `False` if a divisor is found."
+          "explanation": "Check whether `num` is a prime number, updating the flag `is_prime` accordingly. Two lines are missing inside the loop. Expected output: \"Is Prime = True\".",
+          "hint": "Use `num % i == 0` as your condition. If it's true, `is_prime` needs to be set to `False`."
         },
         {
           "id": "python-2y-q4-5",
@@ -304,8 +307,8 @@
             "freq[char] = count + 1"
           ],
           "expectedOutput": "Frequencies = {'b': 1, 'a': 3, 'n': 2}",
-          "explanation": "Goal: Character Frequency Dictionary. Identify the two missing lines of code required to make the program complete and correct.",
-          "hint": "Retrieve the current count for `char` using `.get(char, 0)` and update the dictionary key `freq[char]` with the incremented value."
+          "explanation": "Count how many times each character appears in `text`, building the dictionary `freq`. Two lines are missing inside the loop. Expected output includes counts for each letter.",
+          "hint": "Use `freq.get(char, 0)` to safely read the current count for `char` (this returns 0 if it hasn't been seen yet). Then store that count, plus 1, back into `freq[char]`."
         }
       ]
     },
@@ -323,7 +326,8 @@
           "codeAfter": "print(\"Is Prime =\", is_prime)",
           "expectedCode": "for i in range(2, num):\n    if num % i == 0:\n        is_prime = False\n        break",
           "expectedOutput": "Is Prime = True",
-          "explanation": "Goal: Check Prime Number. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+          "explanation": "Check whether `num` is a prime number, updating the flag `is_prime` accordingly. Expected output: \"Is Prime = True\".",
+          "hint": "Loop `i` through `range(2, num)`, and check `num % i == 0` — if true, set `is_prime = False` and stop the loop."
         },
         {
           "id": "python-2y-q5-2",
@@ -332,7 +336,8 @@
           "codeAfter": "print(\"Digit Frequency =\", freq)",
           "expectedCode": "for d in str(num):\n    freq[d] = freq.get(d, 0) + 1",
           "expectedOutput": "Digit Frequency = {'1': 1, '2': 2, '3': 3}",
-          "explanation": "Goal: Count Frequency of Digits. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+          "explanation": "Count how many times each digit appears in `num`, building the dictionary `freq`. Expected output: \"Digit Frequency = {'1': 1, '2': 2, '3': 3}\".",
+          "hint": "Loop through `str(num)` to get each digit `d`, and use `freq.get(d, 0) + 1` to compute its updated count before storing it back into `freq[d]`."
         },
         {
           "id": "python-2y-q5-3",
@@ -341,7 +346,8 @@
           "codeAfter": "print(\"Second Largest =\", second_largest)",
           "expectedCode": "nums_copy.sort()\nsecond_largest = nums_copy[-2]",
           "expectedOutput": "Second Largest = 40",
-          "explanation": "Goal: Second Largest in List. Write the missing Python code (maximum 5 lines) to solve the given challenge."
+          "explanation": "Find the second-largest value among the unique numbers in `nums_copy`. Expected output: \"Second Largest = 40\".",
+          "hint": "Sorting `nums_copy` puts the largest value at the end — think about which index just before the last one would give you the second-largest."
         },
         {
           "id": "python-2y-q5-4",
@@ -350,8 +356,8 @@
           "codeAfter": "print(\"Reversed Words =\", reversed_text)",
           "expectedCode": "words = text.split()\nreversed_text = \" \".join(words[::-1])",
           "expectedOutput": "Reversed Words = AI Meets Code",
-          "explanation": "Goal: Reverse Words in a String. Write the missing Python code (maximum 5 lines) to solve the given challenge.",
-          "hint": "Split `text` into words, reverse the list using slice step `[::-1]`, and join them back using `' '.join()`."
+          "explanation": "Reverse the order of the words in `text`, storing the result in `reversed_text`. Expected output: \"Reversed Words = AI Meets Code\".",
+          "hint": "Use `text.split()` to break the sentence into words, then think about how slicing with `[::-1]` could reverse their order before joining them back with spaces."
         },
         {
           "id": "python-2y-q5-5",
@@ -360,8 +366,8 @@
           "codeAfter": "print(\"Diagonal Sum =\", diag_sum)",
           "expectedCode": "for i in range(len(matrix)):\n    diag_sum += matrix[i][i]",
           "expectedOutput": "Diagonal Sum = 15",
-          "explanation": "Goal: Sum of Main Diagonal in Matrix. Write the missing Python code (maximum 5 lines) to solve the given challenge.",
-          "hint": "Loop through index `i` from `0` to `len(matrix) - 1` and accumulate `matrix[i][i]` into `diag_sum`."
+          "explanation": "Add up the main diagonal elements of `matrix` into `diag_sum`. Expected output: \"Diagonal Sum = 15\".",
+          "hint": "Loop `i` through `range(len(matrix))`, and add `matrix[i][i]` into `diag_sum` on each pass."
         }
       ]
     }

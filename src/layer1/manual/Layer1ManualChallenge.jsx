@@ -79,6 +79,9 @@ export default function Layer1ManualChallenge({
   // ── Feedback phase state machine: 'idle' | 'processing' | 'revealed' ──
   const [feedbackState, setFeedbackState] = useState('idle');
   const feedbackTimers = useRef([]);
+  // Idempotent guard: prevents double-call to completeLayer1ManualSession when
+  // timer expiry fires at the same moment as the last question's auto-advance.
+  const isFinalizingRef = useRef(false);
 
   // ==========================================
   // SPIDER-MAN TEMPORARY INTEGRATION STATE
@@ -247,8 +250,12 @@ export default function Layer1ManualChallenge({
   }, [currentIndex, questions, selectedAnswers]);
 
   // ── STEP 3: Finalize the attempt (timer expired or last question answered) ──
-  const handleFinalizeAttempt = async () => {
-    if (isSubmitting || isCompleted) return;
+  const handleFinalizeAttempt = useCallback(async () => {
+    // Idempotent guard — prevents double-submission if timer expiry and
+    // last-question auto-advance both fire at almost the same time.
+    if (isFinalizingRef.current || isCompleted) return;
+    isFinalizingRef.current = true;
+
     setIsSubmitting(true);
 
     try {
@@ -280,7 +287,7 @@ export default function Layer1ManualChallenge({
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [attemptId, userId, isCompleted]);
 
   // Advance to next question after feedback
   const advanceQuestion = () => {

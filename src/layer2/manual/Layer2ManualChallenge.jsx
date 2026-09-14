@@ -34,6 +34,10 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
   }, [onBack]);
 
   const stateStorageKey = `cma_l2_manual_state_${userId || 'guest'}`;
+  // Submission guard key — prevents duplicate auto-submit from background monitor and timer racing
+  const submittedKey = `cma_l2_manual_submitted_${userId || 'guest'}`;
+  // 30-minute authoritative deadline
+  const LAYER2_MANUAL_DURATION_MS = 30 * 60 * 1000;
 
   // State
   const [hasStarted, setHasStarted] = useState(false);
@@ -50,27 +54,155 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Refs that always hold the latest values — used to avoid stale closures in timer callbacks
+  const isFinalizingRef = useRef(false);       // Race-condition guard (synchronous)
+  const questionStatesRef = useRef({});
+  const questionsRef = useRef([]);
+  const handleFinalizeRef = useRef(null);      // Points to latest handleFinalize invocation
+
+  // Keep refs in sync with state
+  useEffect(() => { questionStatesRef.current = questionStates; }, [questionStates]);
+  useEffect(() => { questionsRef.current = questions; }, [questions]);
+
   // Initial Load from LocalStorage or Supabase
   useEffect(() => {
     const checkExistingAttempt = async () => {
       if (!userId) { setIsLoading(false); return; }
       
       try {
-        // First check DB
+        // First check DB (source of truth for completion status and authoritative started_at)
         const { data } = await adminService.fetchLayer2ManualAttemptForUser(userId);
+
         if (data) {
           if (data.status === 'completed') {
+            // Attempt already finalized — show result immediately
             setIsCompleted(true);
             setFinalResult({ marks: data.final_marks });
             setIsLoading(false);
             return;
-          } else {
-            // Restore from DB if available and in_progress (fallback)
-            // But we primarily rely on localStorage for high-frequency state
+          }
+
+          if (data.status === 'in_progress' && data.started_at) {
+            // Use DB started_at as the authoritative timer origin
+            const dbStartTime = new Date(data.started_at).getTime();
+            const elapsed = Date.now() - dbStartTime;
+
+            if (elapsed >= LAYER2_MANUAL_DURATION_MS) {
+              // Deadline has already passed — auto-finalize with whatever is saved
+              const savedQs = data.questions_pool || [];
+              const savedQStates = data.question_states || {};
+
+              // Prefer localStorage states (more up-to-date) over DB snapshot
+              let mergedStates = savedQStates;
+              try {
+                const lsSaved = JSON.parse(localStorage.getItem(stateStorageKey) || '{}');
+                if (lsSaved.questionStates && Object.keys(lsSaved.questionStates).length > 0) {
+                  mergedStates = lsSaved.questionStates;
+                }
+              } catch (e) {}
+
+              // Pending → 0 marks (auto-expired)
+              const processedStates = {};
+              savedQs.forEach(q => {
+                const qs = mergedStates[q.id] || { attempts: 0, marks: 0, status: 'pending', history: [] };
+                if (qs.status === 'pending') {
+                  processedStates[q.id] = { ...qs, status: 'auto_expired', marks: 0 };
+                } else {
+                  processedStates[q.id] = qs;
+                }
+              });
+              const totalScore = Object.values(processedStates).reduce((sum, s) => sum + (s.marks || 0), 0);
+
+              try { localStorage.setItem(submittedKey, 'true'); } catch (e) {}
+              await adminService.submitLayer2ManualAttempt({
+                userId,
+                username: participant?.name || data.username || 'Participant',
+                rollNumber: rollNumber || data.roll_number || '',
+                year: data.year || (batchYear === '26' ? '1st Year' : '2nd Year'),
+                language: data.language || '',
+                questionsPool: savedQs,
+                questionStates: processedStates,
+                automaticMarks: totalScore,
+                status: 'completed'
+              });
+              try { localStorage.removeItem(stateStorageKey); } catch (e) {}
+
+              setIsCompleted(true);
+              setFinalResult({ marks: totalScore });
+              setIsLoading(false);
+              return;
+            }
+
+            // In-progress and within deadline — restore from DB + localStorage
+            const savedQs = data.questions_pool || [];
+            const savedQStates = data.question_states || {};
+
+            if (savedQs.length > 0) {
+              // Prefer localStorage question states (higher-frequency updates) if they exist
+              let mergedStates = savedQStates;
+              let mergedIndex = 0;
+              try {
+                const lsSaved = JSON.parse(localStorage.getItem(stateStorageKey) || '{}');
+                if (lsSaved.questionStates && Object.keys(lsSaved.questionStates).length > 0) {
+                  mergedStates = lsSaved.questionStates;
+                }
+                if (lsSaved.currentIndex) mergedIndex = lsSaved.currentIndex;
+              } catch (e) {}
+
+              setHasStarted(true);
+              setLanguage(data.language || null);
+              setQuestions(savedQs);
+              setCurrentIndex(mergedIndex);
+              setQuestionStates(mergedStates);
+              setStartTime(dbStartTime); // DB started_at is authoritative
+              setIsLoading(false);
+              return;
+            }
           }
         }
-        
-        // Check localStorage
+
+        // Also check if deadline already passed purely from localStorage
+        // (handles the edge case where DB write failed on first start)
+        try {
+          const lsSaved = JSON.parse(localStorage.getItem(stateStorageKey) || '{}');
+          if (lsSaved.hasStarted && lsSaved.startTime) {
+            const elapsed = Date.now() - lsSaved.startTime;
+            if (elapsed >= LAYER2_MANUAL_DURATION_MS && typeof window !== 'undefined' && localStorage.getItem(submittedKey) !== 'true') {
+              // Deadline passed — auto-finalize from localStorage
+              const savedQs = lsSaved.questions || [];
+              const savedQStates = lsSaved.questionStates || {};
+              const processedStates = {};
+              savedQs.forEach(q => {
+                const qs = savedQStates[q.id] || { attempts: 0, marks: 0, status: 'pending', history: [] };
+                if (qs.status === 'pending') {
+                  processedStates[q.id] = { ...qs, status: 'auto_expired', marks: 0 };
+                } else {
+                  processedStates[q.id] = qs;
+                }
+              });
+              const totalScore = Object.values(processedStates).reduce((sum, s) => sum + (s.marks || 0), 0);
+              try { localStorage.setItem(submittedKey, 'true'); } catch (e) {}
+              await adminService.submitLayer2ManualAttempt({
+                userId,
+                username: participant?.name || lsSaved.username || 'Participant',
+                rollNumber: rollNumber || lsSaved.rollNumber || '',
+                year: (lsSaved.batchYear === '26') ? '1st Year' : '2nd Year',
+                language: lsSaved.language || '',
+                questionsPool: savedQs,
+                questionStates: processedStates,
+                automaticMarks: totalScore,
+                status: 'completed'
+              });
+              try { localStorage.removeItem(stateStorageKey); } catch (e) {}
+              setIsCompleted(true);
+              setFinalResult({ marks: totalScore });
+              setIsLoading(false);
+              return;
+            }
+          }
+        } catch (lsErr) {}
+
+        // Restore normally from localStorage
         const saved = localStorage.getItem(stateStorageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
@@ -90,6 +222,7 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
       }
     };
     checkExistingAttempt();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, stateStorageKey]);
 
   // Persist State continuously
@@ -98,7 +231,9 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
     
     try {
       const stateToSave = {
-        hasStarted, language, batchYear, questions, currentIndex, questionStates, startTime
+        hasStarted, language, batchYear, questions, currentIndex, questionStates, startTime,
+        username: participant?.name || '',
+        rollNumber: rollNumber || ''
       };
       localStorage.setItem(stateStorageKey, JSON.stringify(stateToSave));
     } catch (e) {
@@ -131,10 +266,12 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
         };
       });
 
+      const nowMs = Date.now();
+      const startedAtIso = new Date(nowMs).toISOString();
       setQuestions(selectedQuestions);
       setQuestionStates(initStates);
       setCurrentIndex(0);
-      setStartTime(Date.now());
+      setStartTime(nowMs);
       setHasStarted(true);
       setIsLoading(false);
 
@@ -148,7 +285,8 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
         questionsPool: selectedQuestions,
         questionStates: initStates,
         automaticMarks: 0,
-        status: 'in_progress'
+        status: 'in_progress',
+        startedAt: startedAtIso
       }).catch(err => console.warn('Background DB sync notice:', err));
 
     } catch (err) {
@@ -173,23 +311,41 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
   };
 
   // Finalize Submission
-  const handleFinalize = useCallback(async (forcedStates = null) => {
-    if (isCompleted || isSubmitting) return;
+  // isAutoExpiry=true  → timer ran out; pending questions get marks=0 (unanswered)
+  // isAutoExpiry=false → participant clicked "Finalize"; pending questions get marks=1 (skip bonus)
+  const handleFinalize = useCallback(async (forcedStates = null, isAutoExpiry = false) => {
+    // Synchronous guard — prevents timer + button from both triggering submission
+    if (isFinalizingRef.current) return;
+    // Also bail if submission flag is already set (background monitor may have submitted)
+    if (typeof window !== 'undefined' && localStorage.getItem(submittedKey) === 'true') return;
+
+    isFinalizingRef.current = true;
     setIsSubmitting(true);
-    
-    const finalStates = forcedStates || questionStates;
-    
-    // Auto-skip any pending questions
-    const processedStates = { ...finalStates };
-    questions.forEach(q => {
-      if (processedStates[q.id] && processedStates[q.id].status === 'pending') {
-        processedStates[q.id].status = 'skipped';
-        processedStates[q.id].marks = 1;
+
+    // Use refs for latest values to avoid stale closures when called from timer
+    const currentQuestions = questionsRef.current.length > 0 ? questionsRef.current : questions;
+    const currentStates = forcedStates ?? questionStatesRef.current;
+
+    // Process pending questions differently based on expiry vs manual submit
+    const processedStates = {};
+    currentQuestions.forEach(q => {
+      const qs = currentStates[q.id] || { attempts: 0, marks: 0, status: 'pending', history: [] };
+      if (qs.status === 'pending') {
+        processedStates[q.id] = {
+          ...qs,
+          status: isAutoExpiry ? 'auto_expired' : 'skipped',
+          marks: isAutoExpiry ? 0 : 1   // 0 for timer expiry; 1 skip-bonus for manual finalize
+        };
+      } else {
+        processedStates[q.id] = { ...qs };
       }
     });
-    
+
     setQuestionStates(processedStates);
-    const totalScore = calculateTotalMarks(processedStates);
+    const totalScore = Object.values(processedStates).reduce((sum, s) => sum + (s.marks || 0), 0);
+
+    // Set the guard flag immediately to stop background monitor from racing
+    try { localStorage.setItem(submittedKey, 'true'); } catch (e) {}
 
     try {
       await adminService.submitLayer2ManualAttempt({
@@ -198,7 +354,7 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
         rollNumber,
         year: batchYear === '26' ? '1st Year' : '2nd Year',
         language,
-        questionsPool: questions,
+        questionsPool: currentQuestions,
         questionStates: processedStates,
         automaticMarks: totalScore,
         status: 'completed'
@@ -206,18 +362,28 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
 
       setFinalResult({ marks: totalScore });
       setIsCompleted(true);
-      
-      try {
-        localStorage.removeItem(stateStorageKey);
-      } catch (e) {}
+
+      try { localStorage.removeItem(stateStorageKey); } catch (e) {}
 
       soundEngine.playBoot();
     } catch (err) {
       console.error('Failed to submit final Layer 2 state:', err);
+      // Reset guards on failure so the participant can retry
+      isFinalizingRef.current = false;
       setIsSubmitting(false);
+      try { localStorage.removeItem(submittedKey); } catch (e) {}
       toast.error('Failed to submit attempt. Please check connection and try again.');
     }
-  }, [isCompleted, isSubmitting, questionStates, questions, userId, participant, rollNumber, batchYear, language, stateStorageKey]);
+  }, [isCompleted, questions, userId, participant, rollNumber, batchYear, language, stateStorageKey, submittedKey]);
+
+  // Keep handleFinalizeRef in sync so the stable timer callback always calls the latest version
+  handleFinalizeRef.current = () => handleFinalize(null, true);
+
+  // Stable timer-up callback (no dependency change on every state update → prevents Layer2Timer
+  // from clearing/restarting its interval on every questionStates change)
+  const handleTimerUp = useCallback(() => {
+    if (handleFinalizeRef.current) handleFinalizeRef.current();
+  }, []); // intentionally stable — reads latest via ref
 
   if (isLoading) {
     return (
@@ -402,7 +568,7 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
                     })}
                   </div>
                   
-                  <Layer2Timer startTime={startTime} onTimeUp={() => handleFinalize(questionStates)} />
+                  <Layer2Timer startTime={startTime} onTimeUp={handleTimerUp} />
                 </div>
               </div>
 
@@ -453,7 +619,7 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
                 ) : (
                   <button
                     className="cyber-btn"
-                    onClick={() => handleFinalize(questionStates)}
+                    onClick={() => handleFinalize(null, false)}
                     disabled={isSubmitting}
                     style={{ padding: '10px 30px', background: 'rgba(57,255,20,0.15)', borderColor: 'var(--lime-accent)', color: 'var(--lime-accent)', fontWeight: 'bold' }}
                   >
