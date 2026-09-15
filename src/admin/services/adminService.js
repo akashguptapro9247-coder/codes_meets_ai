@@ -2056,19 +2056,19 @@ export const adminService = {
         }
       }
 
-      // 2. Eliminate non-promoted Layer 2 participants
+      // 2. Mark non-promoted Layer 2 participants as NOT promoted to Layer 3.
+      //    Do NOT set is_removed — they remain visible in Layer 2 All Rank.
       if (nonPromotedIds.length > 0) {
         const { error: npErr } = await supabase
           .from('users')
           .update({
             promoted_to_layer3: false,
-            is_removed: true,
             updated_at: new Date().toISOString()
           })
           .in('user_id', nonPromotedIds);
 
         if (npErr) {
-          console.error('[Supabase::saveLayer2Promotions] Error eliminating non-promoted Layer 2 users:', npErr);
+          console.error('[Supabase::saveLayer2Promotions] Error updating non-promoted Layer 2 users:', npErr);
           return { error: npErr };
         }
       }
