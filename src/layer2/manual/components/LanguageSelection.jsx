@@ -161,7 +161,7 @@ export default function LanguageSelection({ onSelect, onBack, participant, batch
                 fontFamily: 'var(--font-mono)'
               }}
             >
-              ROLL: {participant?.rollNumber || participant?.roll_number || '23-XXX'}
+              ROLL: {participant?.rollNumber || participant?.roll_number || 'N/A'}
             </span>
           </div>
         </div>

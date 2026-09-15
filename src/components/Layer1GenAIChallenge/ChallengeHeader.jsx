@@ -123,7 +123,7 @@ export default function ChallengeHeader({ participant, _onBack = null, isComplet
           </span>
           <span style={{ color: 'rgba(0, 243, 255, 0.4)' }}>|</span>
           <span style={{ color: 'var(--cyan-glow)' }}>
-            ROLL: {participant?.rollNumber || participant?.roll_number || '23-XXX'}
+            ROLL: {participant?.rollNumber || participant?.roll_number || 'N/A'}
           </span>
         </div>
 

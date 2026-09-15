@@ -116,7 +116,7 @@ export default function ManualHeader({ participant, batchInfo, currentQuestion, 
               fontFamily: 'var(--font-mono)'
             }}
           >
-            ROLL: {participant?.rollNumber || participant?.roll_number || '23-XXX'}
+            ROLL: {participant?.rollNumber || participant?.roll_number || 'N/A'}
           </span>
         </div>
 

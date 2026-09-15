@@ -263,7 +263,7 @@ class ParticipantGuard {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('user_id, is_removed, promoted_to_layer2, promoted_to_layer3')
+        .select('user_id, name, roll_number, is_removed, promoted_to_layer2, promoted_to_layer3')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -284,6 +284,9 @@ class ParticipantGuard {
           const stored = JSON.parse(raw);
           const updated = {
             ...stored,
+            name: data.name || stored.name,
+            rollNumber: data.roll_number || stored.rollNumber,
+            roll_number: data.roll_number || stored.roll_number,
             promoted_to_layer2: Boolean(data.promoted_to_layer2),
             promoted_to_layer3: Boolean(data.promoted_to_layer3),
             is_removed: Boolean(data.is_removed)

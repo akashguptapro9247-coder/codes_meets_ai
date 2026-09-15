@@ -505,7 +505,7 @@ export default function Layer2ManualChallenge({ participant, onBack }) {
               </span>
               <span style={{ color: 'rgba(0,243,255,0.4)' }}>|</span>
               <span style={{ fontSize: '0.72rem', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)' }}>
-                ROLL: {rollNumber || '23-XXX'}
+                ROLL: {rollNumber || participant?.rollNumber || participant?.roll_number || 'N/A'}
               </span>
             </div>
           </div>

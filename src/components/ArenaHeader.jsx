@@ -18,7 +18,35 @@ export default function ArenaHeader({ participant }) {
     if (!isNowMuted) soundEngine.playHover();
   };
 
+  const getDisplayRoll = () => {
+    if (participant?.rollNumber) return String(participant.rollNumber).trim();
+    if (participant?.roll_number) return String(participant.roll_number).trim();
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('cma_participant_session') || localStorage.getItem('cma_participant_session');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const val = parsed?.rollNumber || parsed?.roll_number;
+          if (val) return String(val).trim();
+        }
+      } catch (e) {}
+    }
+    return '';
+  };
 
+  const getDisplayName = () => {
+    if (participant?.name) return String(participant.name).trim();
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem('cma_participant_session') || localStorage.getItem('cma_participant_session');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.name) return String(parsed.name).trim();
+        }
+      } catch (e) {}
+    }
+    return 'PARTICIPANT';
+  };
 
   return (
     <header
@@ -111,11 +139,11 @@ export default function ArenaHeader({ participant }) {
         >
           <ShieldCheck size={14} color="var(--lime-accent)" />
           <span>
-            OPERATOR: <strong style={{ color: '#ffffff' }}>{participant?.name?.toUpperCase() || 'AKASH'}</strong>
+            OPERATOR: <strong style={{ color: '#ffffff' }}>{getDisplayName().toUpperCase()}</strong>
           </span>
           <span style={{ color: 'rgba(0, 243, 255, 0.5)' }}>|</span>
           <span style={{ color: 'var(--cyan-glow)' }}>
-            ROLL: {participant?.rollNumber || participant?.roll_number || 'N/A'}
+            ROLL: {getDisplayRoll() || 'N/A'}
           </span>
         </div>
 
