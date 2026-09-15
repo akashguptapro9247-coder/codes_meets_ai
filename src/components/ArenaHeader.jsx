@@ -18,11 +18,7 @@ export default function ArenaHeader({ participant }) {
     if (!isNowMuted) soundEngine.playHover();
   };
 
-  // Mask roll number slightly to keep it clean (e.g. 23XXXXX)
-  const formatRoll = (roll) => {
-    if (!roll) return '23XXX';
-    return roll.length > 5 ? `${roll.substring(0, 3)}XXX` : roll;
-  };
+
 
   return (
     <header
@@ -119,7 +115,7 @@ export default function ArenaHeader({ participant }) {
           </span>
           <span style={{ color: 'rgba(0, 243, 255, 0.5)' }}>|</span>
           <span style={{ color: 'var(--cyan-glow)' }}>
-            ROLL: {formatRoll(participant?.rollNumber)}
+            ROLL: {participant?.rollNumber || participant?.roll_number || 'N/A'}
           </span>
         </div>
 

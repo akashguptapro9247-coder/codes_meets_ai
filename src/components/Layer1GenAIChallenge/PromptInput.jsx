@@ -8,13 +8,13 @@ export default function PromptInput({
   onChangePrompt,
   disabled = false,
   maxLength = 5000,
-  minLength = 100
+  minLength = 0
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const textValue = value !== undefined ? value : prompt !== undefined ? prompt : '';
   const currentLength = textValue.length;
   const isNearLimit = currentLength > maxLength * 0.9;
-  const isUnderMin = currentLength > 0 && currentLength < minLength;
+  const isUnderMin = minLength > 0 && currentLength > 0 && currentLength < minLength;
 
   const handleChange = (e) => {
     const newVal = e.target.value;
@@ -77,7 +77,7 @@ export default function PromptInput({
             letterSpacing: '0.08em'
           }}
         >
-          <span>{currentLength}</span> / <span>{maxLength}</span> CHARS (MIN : 100 CHAR)
+          <span>{currentLength}</span> / <span>{maxLength}</span> CHARS
         </div>
       </div>
 
