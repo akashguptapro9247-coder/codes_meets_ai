@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ThreeBackground from './ThreeBackground';
 import DigitalParticles from './DigitalParticles';
 import ScanOverlay from './ScanOverlay';
@@ -8,6 +8,7 @@ import LayerCard from './LayerCard';
 import ProgressTicker from './ProgressTicker';
 import RoundPlaceholder from './RoundPlaceholder';
 import { eventStateService } from '../services/eventStateService';
+import { soundEngine } from '../utils/SoundEngine';
 
 export default function EventArenaScene({ participant, initialRound = null, onNavigate, onForceExit, onOpenAdmin }) {
   const [eventState, setEventState] = useState(eventStateService.getEventState());
@@ -143,6 +144,7 @@ export default function EventArenaScene({ participant, initialRound = null, onNa
         height: '100vh',
         overflow: 'hidden',
         backgroundColor: '#030712',
+        backgroundImage: 'radial-gradient(ellipse at 50% 35%, rgba(0, 243, 255, 0.05) 0%, rgba(4, 9, 22, 0.95) 60%, #030712 100%)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -223,10 +225,151 @@ export default function EventArenaScene({ participant, initialRound = null, onNa
           manualImage="/assets/layer2_manual.png"
           onSelectRound={handleSelectRound}
         />
+
+        {/* CARD 3: LAYER 03 — read-only problem viewer, no tracks */}
+        <Layer3Card
+          active={Boolean(eventState.layer3?.active)}
+          onEnter={() => { if (onNavigate) onNavigate('/layer3', null); }}
+        />
       </main>
 
       {/* SUBTLE BOTTOM EVENT PROGRESSION TICKER */}
       <ProgressTicker />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Layer3Card — simple locked / unlocked card with no GenAI/Manual track split
+// ---------------------------------------------------------------------------
+function Layer3Card({ active, onEnter }) {
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  return (
+    <motion.div
+      initial={false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: 'calc(22vh - 20px)',
+        minHeight: '100px',
+        maxHeight: '140px',
+        background: 'rgba(4, 9, 22, 0.85)',
+        backdropFilter: 'blur(16px)',
+        border: active
+          ? '1px solid var(--cyan-glow)'
+          : '1px solid rgba(0, 243, 255, 0.2)',
+        boxShadow: active
+          ? isHovered
+            ? '0 0 35px rgba(0, 243, 255, 0.4), inset 0 0 20px rgba(0, 243, 255, 0.2)'
+            : '0 0 20px rgba(0, 243, 255, 0.2)'
+          : '0 8px 30px rgba(0, 0, 0, 0.8)',
+        borderRadius: '4px',
+        overflow: 'hidden',
+        boxSizing: 'border-box',
+        transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 28px',
+        gap: '24px',
+        cursor: active ? 'pointer' : 'default'
+      }}
+      onClick={() => { if (active) onEnter(); }}
+    >
+      {/* Corner accents */}
+      <div className="hud-corner hud-top-left" style={{ width: '14px', height: '14px', zIndex: 22 }} />
+      <div className="hud-corner hud-top-right" style={{ width: '14px', height: '14px', zIndex: 22 }} />
+      <div className="hud-corner hud-bottom-left" style={{ width: '14px', height: '14px', zIndex: 22 }} />
+      <div className="hud-corner hud-bottom-right" style={{ width: '14px', height: '14px', zIndex: 22 }} />
+
+      {/* Locked blur overlay */}
+      {!active && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 10,
+            backdropFilter: 'blur(6px)',
+            background: 'rgba(3, 7, 18, 0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-title)',
+              fontSize: '1rem',
+              color: 'rgba(239, 68, 68, 0.85)',
+              letterSpacing: '0.25em',
+              textShadow: '0 0 12px rgba(239, 68, 68, 0.7)'
+            }}
+          >
+            LAYER 03 // LOCKED
+          </span>
+        </div>
+      )}
+
+      {/* Title & badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 5 }}>
+        <span
+          style={{
+            fontFamily: 'var(--font-title)',
+            fontSize: '0.9rem',
+            color: '#ffffff',
+            letterSpacing: '0.15em',
+            fontWeight: 800,
+            textShadow: '0 0 12px rgba(0, 243, 255, 0.9)'
+          }}
+        >
+          LAYER 03
+        </span>
+        <span
+          className="cyber-badge"
+          style={{
+            borderColor: active ? 'var(--cyan-glow)' : '#ef4444',
+            color: active ? 'var(--cyan-glow)' : '#ef4444'
+          }}
+        >
+          {active ? 'ACTIVE' : 'LOCKED'}
+        </span>
+      </div>
+
+      {/* Description */}
+      <div style={{ flex: 1, zIndex: 5 }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.82rem',
+            color: active ? '#d1d5db' : '#6b7280',
+            margin: 0,
+            letterSpacing: '0.05em'
+          }}
+        >
+          Build Round — Problem Statements
+        </p>
+      </div>
+
+      {/* Enter button */}
+      {active && (
+        <motion.button
+          whileHover={{ scale: 1.04, x: 4 }}
+          className="cyber-btn"
+          style={{
+            zIndex: 5,
+            padding: '8px 20px',
+            fontSize: '0.8rem',
+            letterSpacing: '0.15em',
+            pointerEvents: 'none'
+          }}
+        >
+          <span>VIEW PROBLEMS</span>
+        </motion.button>
+      )}
+    </motion.div>
   );
 }

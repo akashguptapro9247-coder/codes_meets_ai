@@ -13,6 +13,9 @@ const INITIAL_EVENT_STATE = {
   layer2: {
     active: false,
     activeTrack: null // 'gen-ai' | 'manual' | null
+  },
+  layer3: {
+    active: false
   }
 };
 
@@ -61,6 +64,7 @@ class EventStateService {
   applySettingsToState(settings) {
     const layer1Active = !settings.layer_1_locked;
     const layer2Active = !settings.layer_2_locked;
+    const layer3Active = !settings.layer_3_locked;
 
     let layer1Track = settings.layer_1_active_track;
     if (layer1Active && !layer1Track) {
@@ -82,6 +86,9 @@ class EventStateService {
       layer2: {
         active: layer2Active,
         activeTrack: layer2Active ? layer2Track : null
+      },
+      layer3: {
+        active: layer3Active
       }
     };
 
@@ -148,6 +155,8 @@ class EventStateService {
             updatePayload.layer_2_genai_active = false;
             updatePayload.layer_2_manual_active = true;
           }
+        } else if (layerKey === 'layer3') {
+          updatePayload.layer_3_locked = !active;
         }
 
         await adminService.updateEventSettings(updatePayload);
@@ -160,7 +169,8 @@ class EventStateService {
   async resetAll() {
     this.state = {
       layer1: { active: false, activeTrack: null },
-      layer2: { active: false, activeTrack: null }
+      layer2: { active: false, activeTrack: null },
+      layer3: { active: false }
     };
     this.notifyListeners();
 

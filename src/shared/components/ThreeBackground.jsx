@@ -165,7 +165,15 @@ function CameraRig({ mousePosition }) {
 // --------------------------------------------------------------------------
 export default function ThreeBackground({ mousePosition }) {
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none' }}>
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 1,
+        pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(0, 243, 255, 0.06) 0%, rgba(4, 9, 22, 0.8) 65%, transparent 100%)'
+      }}
+    >
       <Canvas
         camera={{ position: [0, 0, 8], fov: 60 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}

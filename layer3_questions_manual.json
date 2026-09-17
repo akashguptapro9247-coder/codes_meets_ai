@@ -1,0 +1,124 @@
+{
+  "problems": [
+    {
+      "id": 1,
+      "emoji": "🚑",
+      "title": "Emergency Resource Allocator",
+      "problem_statement": "Many emergency calls come in at the same time, but there are only a few ambulances, fire trucks or medical teams free. Someone has to quickly decide which emergency gets which resource first. Build a system that takes a list of emergencies (type of emergency, how serious it is, how many people are affected, and location) along with a list of available resources, and decides which resource should go to which emergency. The system should send more serious and urgent cases first, match the right type of resource to the right type of emergency, and clearly explain why each decision was made. It should also show which emergencies are still waiting because no resource is free."
+    },
+    {
+      "id": 2,
+      "emoji": "🏫",
+      "title": "Smart Classroom Conflict Resolver",
+      "problem_statement": "College timetables often have mistakes, like the same teacher scheduled in two classrooms at the same time, or two classes given the same room in the same period. Checking this by hand takes a long time. Build a system that reads a full timetable (class, subject, faculty, room, day, and time) and automatically finds every clash. For each clash found, it should suggest a free room or a free time slot that fixes the problem, without creating a new clash somewhere else. In the end, it should show a clean, conflict-free timetable."
+    },
+    {
+      "id": 3,
+      "emoji": "📦",
+      "title": "Campus Inventory Optimizer",
+      "problem_statement": "A college store keeps items like paper, chalk, lab equipment and cleaning supplies, but usually nobody notices an item is about to run out until it's already needed. Build a system that looks at the current stock of each item and how much of it was used in the past weeks, then predicts which items will finish soon. It should consider how long the supplier takes to deliver a new order, so it warns early enough to actually avoid running out. The system should clearly tell which items are safe, which need attention soon, and which need to be ordered right now, along with how much to order."
+    },
+    {
+      "id": 4,
+      "emoji": "🧠",
+      "title": "Student Weakness Analyzer",
+      "problem_statement": "A student's overall marks in a subject don't show exactly which topics they are weak in. Build a system that takes a student's topic-wise marks across subjects and finds the exact topics where they are struggling. It should consider how important each topic is for the exam, not just the marks scored, so that important weak topics are highlighted over minor ones. The system should also compare the student's performance with the class average, to check whether it is a personal weakness or a topic that is genuinely difficult for everyone. Finally, it should create a short, practical study plan focused on the weakest and most important topics first."
+    },
+    {
+      "id": 5,
+      "emoji": "🔍",
+      "title": "Duplicate Complaint Detector",
+      "problem_statement": "When many students complain about the same problem, they usually describe it in different words, so it looks like many small issues instead of one big issue. Build a system that reads a list of complaints and automatically groups the ones that are actually about the same problem, even if the wording is different. For each group, it should show how many people complained, where the problem is, and how long it has been going on. This helps the college clearly see which issues are recurring and need urgent attention, instead of treating every complaint as a separate case."
+    },
+    {
+      "id": 6,
+      "emoji": "🛠️",
+      "title": "Maintenance Priority Engine",
+      "problem_statement": "Students report broken things on campus, like fans, lights, computers and other infrastructure problems, but the maintenance team usually fixes them in the order they were reported, which isn't always the right order. Build a system that takes all reported problems and decides the correct order in which they should be fixed. It should consider how urgent and unsafe the problem is, how many people are affected by it, and how long it has already been pending. The system should give a clear final repair order along with the reason each item is placed where it is."
+    },
+    {
+      "id": 7,
+      "emoji": "📄",
+      "title": "Smart Document Action Extractor",
+      "problem_statement": "College notices and circulars are usually long paragraphs, and important details like deadlines, required documents, or who needs to do what often get missed by students. Build a system that reads an uploaded notice or document and automatically pulls out all the important information: dates, deadlines, tasks that need to be done, and who is responsible for each task. It should convert vague terms like 'within 7 days' into an actual date. The final output should be a clear, simple checklist of everything the reader needs to do, sorted with the most urgent items first."
+    },
+    {
+      "id": 8,
+      "emoji": "🧑‍💻",
+      "title": "Code Error Explainer",
+      "problem_statement": "Beginner programmers often get error messages they don't understand at all, and have no idea what part of their code caused it. Build a system where a student submits their code along with the error message they received. The system should figure out what is likely causing the error, point to the exact line responsible, and explain the mistake in very simple language, without using confusing technical terms. Finally, it should suggest the correct fix for the code so the student understands exactly what to change and why."
+    },
+    {
+      "id": 9,
+      "emoji": "🚨",
+      "title": "Cyber Safety Message Analyzer",
+      "problem_statement": "Many people fall for fake emails and messages that try to steal their money or personal information, because they don't recognise the warning signs. Build a system where a user can paste any suspicious email or message, and the system checks it for common phishing signs, such as urgent threatening language, requests for OTP or passwords, fake or shortened links, and spelling mistakes. It should give an overall risk level for the message, clearly point out which specific parts of the message are suspicious and why, and recommend what the user should do next."
+    },
+    {
+      "id": 10,
+      "emoji": "🎯",
+      "title": "Resource-to-Task Matcher",
+      "problem_statement": "In a project team, tasks are usually picked randomly by whoever speaks up first, which leaves some members overloaded with work and others doing almost nothing. Build a system that takes the list of project tasks, the skills each task needs, and the skills and available time of each team member, then assigns each task to the most suitable person. It should make sure no one is given more work than their available hours allow, and it should clearly explain why each task was given to that particular person. If a task cannot be properly assigned to anyone, the system should say so clearly instead of forcing a bad match."
+    },
+    {
+      "id": 11,
+      "emoji": "🏪",
+      "title": "Small Shop Stock Advisor",
+      "problem_statement": "Small shop owners often keep money stuck in products that don't sell well, while running out of the products that sell quickly every day. Build a system that looks at a shop's product sales data over some weeks along with the current stock, and identifies which products are selling fast, which are moving normally, and which are barely selling at all. It should calculate how many days the current stock of each product will last, and clearly tell the owner which products need urgent restocking and which ones should not be reordered at all because they are wasting money."
+    },
+    {
+      "id": 12,
+      "emoji": "🗺️",
+      "title": "Campus Navigation Assistant",
+      "problem_statement": "New students often don't know how to reach a particular office or facility on campus, and they don't know if it's even open at that time. Build a system where a student enters where they want to go and the reason for going there, and the system gives them a clear route to follow along with an estimate of how long it will take. It should check whether the destination is open right now, warn the student if it's about to close, and suggest useful stops along the way that are relevant to their purpose, such as a photocopy shop before visiting an office that needs documents."
+    },
+    {
+      "id": 13,
+      "emoji": "📊",
+      "title": "Survey Insight Generator",
+      "problem_statement": "When colleges run feedback surveys, hundreds of written responses come in, but almost nobody actually reads through all of them, so the feedback ends up being wasted. Build a system that takes a large set of open-ended survey responses and automatically identifies the main topics being talked about, such as food, faculty, labs, or cleanliness. For each topic, it should show how many people mentioned it and whether the overall opinion about it was positive or negative. Finally, it should give a clear, ranked list of the most important issues that need to be acted on first."
+    },
+    {
+      "id": 14,
+      "emoji": "🔧",
+      "title": "Machine Failure Warning System",
+      "problem_statement": "Machines like generators, pumps or lab equipment usually show small warning signs, such as rising temperature or increasing vibration, before they actually break down, but these signs often go unnoticed until the machine fails completely. Build a system that reads simple sensor readings collected over time and detects unusual patterns, such as a sudden spike, a slow steady rise, or a reading getting stuck. It should give an early warning before the machine actually crosses a dangerous limit, along with a clear message explaining what is going wrong and what action should be taken."
+    },
+    {
+      "id": 15,
+      "emoji": "📚",
+      "title": "Smart Resource Recommender",
+      "problem_statement": "When a student wants to learn a new topic and searches online, they usually get an overwhelming list of resources and end up not learning anything properly. Build a system where a student enters the topic they want to learn, their current knowledge level, and their final goal. The system should create a short, step-by-step learning path that starts from where the student currently is and builds up toward their goal, skipping things they already know. Each step should have an estimated time to complete, and the overall plan should fit within the time the student says they have available."
+    },
+    {
+      "id": 16,
+      "emoji": "💸",
+      "title": "Budget Trade-off Advisor",
+      "problem_statement": "When organising an event, the amount requested by different teams is often much more than the actual budget available, and someone has to decide what gets cut without ruining the event. Build a system that takes a fixed total budget along with a list of requirements, each with a requested amount, a priority level, and a minimum amount needed for it to actually work. The system should decide how to split the budget across all requirements in the most sensible way, making sure nothing is funded below the amount it actually needs to function. It should clearly explain the reasoning behind each amount given and what trade-off was made to afford it."
+    },
+    {
+      "id": 17,
+      "emoji": "🧩",
+      "title": "Missing Information Detector",
+      "problem_statement": "A large number of forms and applications submitted to college offices get rejected or delayed because something is missing, incorrectly filled, or doesn't match other details on the same form. Build a system that checks a filled form against the list of required fields and rules. It should identify empty fields that were required, incorrectly formatted entries like an invalid phone number or email, and details that contradict each other, such as an age that doesn't match the date of birth. The system should give one complete list of everything that needs to be corrected, so the person can fix everything in a single attempt instead of getting rejected repeatedly."
+    },
+    {
+      "id": 18,
+      "emoji": "🚗",
+      "title": "Parking Allocation Assistant",
+      "problem_statement": "Campus parking often becomes messy because vehicles park in the wrong type of spot, or in areas reserved for someone else, leading to wasted space and confusion. Build a system that takes the list of available parking slots, along with their size and any reservations, and a list of arriving vehicles with their type and category of driver. The system should assign each vehicle to a suitable slot, respecting size requirements and reservations, and make the best use of available space. If parking is full or no suitable slot is available for a vehicle, it should clearly say so and suggest an alternative."
+    },
+    {
+      "id": 19,
+      "emoji": "🌱",
+      "title": "Campus Sustainability Advisor",
+      "problem_statement": "Colleges spend a lot of money on electricity, water, and waste management, but usually have no clear idea which building or which habit is actually causing the wastage. Build a system that takes simple usage data for electricity, water, and waste across different blocks or buildings, and identifies where the real problem areas are. It should compare usage fairly between blocks by considering the number of people using each one, rather than just looking at the total usage. The system should point out the biggest sources of waste and suggest practical, specific actions to reduce them, along with an estimate of how much could be saved."
+    },
+    {
+      "id": 20,
+      "emoji": "🤝",
+      "title": "Project Risk Detector",
+      "problem_statement": "A project plan can look perfectly fine on paper, but a small delay in one task can end up delaying the entire project because other tasks depend on it. Build a system that takes a full project plan, including tasks, their durations, deadlines, assigned team members, and which tasks depend on which. It should identify tasks that are already delayed or likely to be delayed, and figure out which chain of tasks is actually deciding the final project deadline. It should also detect team members who have been given more work than they can realistically finish in time. In the end, it should clearly highlight the most serious risks and suggest what needs to be done to keep the project on track."
+    }
+  ]
+}

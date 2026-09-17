@@ -47,9 +47,9 @@ export default function LayerCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: layerNumber === '01' ? 0.1 : 0.25 }}
+      transition={{ duration: 0.3 }}
       onMouseEnter={() => {
         setIsHovered(true);
         if (active) soundEngine.playHover();

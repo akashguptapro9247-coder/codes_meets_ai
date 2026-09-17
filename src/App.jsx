@@ -7,6 +7,7 @@ import EventArenaScene from './shared/components/EventArenaScene';
 import AdminDashboard from './admin/pages/AdminDashboard';
 import Layer2ManualRoute from './layer2/manual/Layer2ManualRoute';
 import Layer2GenAIRoute from './layer2/genai/Layer2GenAIRoute';
+import Layer3QuestionsPage from './layer3/Layer3QuestionsPage';
 import { ToastContainer } from './shared/components/Toast';
 import { participantGuard } from './shared/services/participantGuard';
 import { soundEngine } from './shared/utils/SoundEngine';
@@ -58,6 +59,9 @@ function App() {
     }
     if (path === '/layer2/gen-ai' || path === '/layer2/genai' || path === '/layer/2/gen-ai' || path === '/layer-2/gen-ai') {
       return 'layer2_genai';
+    }
+    if (path === '/layer3' || path === '/layer/3' || path === '/layer-3' || hash === '#layer3') {
+      return 'layer3';
     }
     if (path.startsWith('/layer/1') || path.startsWith('/layer1') || path.startsWith('/layer-1')) {
       return 'layer1';
@@ -182,7 +186,7 @@ function App() {
 
   // 2. Strict Route Guard on Route Changes & Page Focus
   useEffect(() => {
-    const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai';
+    const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai' || currentRoute === 'layer3';
 
     if (isProtected) {
       const stored = getStoredParticipant();
@@ -212,7 +216,7 @@ function App() {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         const stored = getStoredParticipant();
-        const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai';
+        const isProtected = currentRoute === 'arena' || currentRoute === 'layer1' || currentRoute === 'layer2' || currentRoute === 'layer2_manual' || currentRoute === 'layer2_genai' || currentRoute === 'layer3';
         if (isProtected && stored) {
           participantGuard.validateParticipantExists(stored.userId || stored.user_id);
         }
@@ -459,6 +463,8 @@ function App() {
               } else {
                 navigateTo(path, 'layer2');
               }
+            } else if (path.includes('3')) {
+              navigateTo(path, 'layer3');
             }
           }}
           onForceExit={handleForceExit}
@@ -477,6 +483,13 @@ function App() {
       {currentRoute === 'layer2_genai' && (
         <Layer2GenAIRoute
           participant={participant}
+          onBack={() => navigateTo('/play', 'arena')}
+        />
+      )}
+
+      {/* 3d. DEDICATED LAYER 3 QUESTIONS ROUTE (ROUTE: /layer3) */}
+      {currentRoute === 'layer3' && (
+        <Layer3QuestionsPage
           onBack={() => navigateTo('/play', 'arena')}
         />
       )}

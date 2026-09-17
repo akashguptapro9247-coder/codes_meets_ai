@@ -453,6 +453,16 @@ export default function AdminDashboard({ onClose }) {
     showToast(`LAYER 0${layerNumber} ${newLockedState ? 'LOCKED' : 'UNLOCKED'}`);
   };
 
+  const handleToggleLayer3Lock = async () => {
+    soundEngine.playClick();
+    const newLockedState = !eventSettings.layer_3_locked;
+    const newSettings = { ...eventSettings, layer_3_locked: newLockedState };
+    setEventSettings(newSettings);
+    await eventStateService.setLayerState('layer3', !newLockedState, null);
+    showToast(`LAYER 03 ${newLockedState ? 'LOCKED' : 'UNLOCKED'}`);
+  };
+
+
   const handleToggleTrack = async (layerNumber, track) => {
     soundEngine.playHover();
     const trackKey = `layer_${layerNumber}_${track === 'gen-ai' ? 'genai' : 'manual'}_active`;
@@ -1671,9 +1681,49 @@ export default function AdminDashboard({ onClose }) {
                   </button>
                 </div>
               </div>
+
+              {/* LAYER 03 CONTROL CARD */}
+              <div className="cyber-card" style={{ padding: '20px', background: 'rgba(5, 12, 32, 0.9)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Layers size={18} color="var(--cyan-glow)" />
+                    <h3 style={{ fontFamily: 'var(--font-title)', fontSize: '1rem', margin: 0 }}>LAYER 03 LIVE STATE</h3>
+                  </div>
+                  <button
+                    onClick={handleToggleLayer3Lock}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      background: !eventSettings.layer_3_locked ? 'rgba(57, 255, 20, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      border: !eventSettings.layer_3_locked ? '1px solid var(--lime-accent)' : '1px solid #ef4444',
+                      color: !eventSettings.layer_3_locked ? 'var(--lime-accent)' : '#ef4444',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {!eventSettings.layer_3_locked ? <Unlock size={13} /> : <Lock size={13} />}
+                    <span>{!eventSettings.layer_3_locked ? 'UNLOCKED' : 'LOCKED'}</span>
+                  </button>
+                </div>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.72rem',
+                    color: '#6b7280',
+                    margin: '12px 0 0 0',
+                    letterSpacing: '0.06em'
+                  }}
+                >
+                  Build Round — Problem Statements viewer. No tracks.
+                </p>
+              </div>
             </div>
           </div>
         )}
+
 
         {/* TAB 2: USERS TABLE */}
         {activeTab === 'users' && (
