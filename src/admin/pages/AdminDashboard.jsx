@@ -148,6 +148,7 @@ export default function AdminDashboard({ onClose }) {
 
   // Create Duo form state
   const [duoForm, setDuoForm] = useState({ player1Id: '', player2Id: '' });
+  const [duoSelectedYear, setDuoSelectedYear] = useState('1'); // '1' = 1st Year, '2' = 2nd Year
   const [duoY1Search, setDuoY1Search] = useState('');
   const [duoY2Search, setDuoY2Search] = useState('');
 
@@ -680,36 +681,39 @@ export default function AdminDashboard({ onClose }) {
 
   const handleCreateDuo = async (e) => {
     if (e) e.preventDefault();
-    if (!duoForm.player1Id || !duoForm.player2Id) {
-      showToast('SELECT BOTH A 1ST-YEAR AND A 2ND-YEAR STUDENT', 'error');
+    if (!duoForm.player1Id && !duoForm.player2Id) {
+      showToast('SELECT AT LEAST ONE STUDENT TO FORM A TEAM', 'error');
       return;
     }
 
-    if (duoForm.player1Id === duoForm.player2Id) {
+    const p1Id = duoForm.player1Id || duoForm.player2Id;
+    const p2Id = duoForm.player1Id ? duoForm.player2Id : null;
+
+    if (p2Id && p1Id === p2Id) {
       showToast('CANNOT PAIR PLAYER WITH THEMSELVES', 'error');
       return;
     }
 
-    if (pairedPlayerIds.has(duoForm.player1Id) || pairedPlayerIds.has(duoForm.player2Id)) {
+    if (pairedPlayerIds.has(p1Id) || (p2Id && pairedPlayerIds.has(p2Id))) {
       showToast('ONE OR BOTH PLAYERS ARE ALREADY PAIRED IN AN EXISTING DUO', 'error');
       return;
     }
 
-    const p1 = usersList.find((u) => u.user_id === duoForm.player1Id);
-    const p2 = usersList.find((u) => u.user_id === duoForm.player2Id);
+    const p1 = usersList.find((u) => u.user_id === p1Id);
+    const p2 = p2Id ? usersList.find((u) => u.user_id === p2Id) : null;
     const y1 = getPlayerYearCode(p1?.roll_number, p1?.year);
-    const y2 = getPlayerYearCode(p2?.roll_number, p2?.year);
+    const y2 = p2 ? getPlayerYearCode(p2?.roll_number, p2?.year) : null;
 
-    if (y1 === y2) {
-      showToast('DUO MUST CONSIST OF ONE 1ST-YEAR AND ONE 2ND-YEAR STUDENT', 'error');
+    if (p2 && y1 !== y2) {
+      showToast('STUDENTS MUST BELONG TO THE SAME YEAR (1ST+1ST OR 2ND+2ND)', 'error');
       return;
     }
 
-    const { error } = await adminService.createDuo(duoForm.player1Id, duoForm.player2Id);
+    const { error } = await adminService.createDuo(p1Id, p2Id || null);
     if (error) {
       showToast(error.message || 'FAILED TO CREATE DUO', 'error');
     } else {
-      showToast('✓ DUO CREATED & COMBINED SCORE INITIALIZED');
+      showToast(p2Id ? '✓ DUO CREATED & COMBINED SCORE INITIALIZED' : '✓ SOLO TEAM CREATED & SCORE INITIALIZED');
       setIsCreateDuoOpen(false);
       setDuoForm({ player1Id: '', player2Id: '' });
       setDuoY1Search('');
@@ -1106,25 +1110,44 @@ export default function AdminDashboard({ onClose }) {
   const selectedP1 = useMemo(() => usersList.find((u) => u.user_id === duoForm.player1Id), [usersList, duoForm.player1Id]);
   const selectedP2 = useMemo(() => usersList.find((u) => u.user_id === duoForm.player2Id), [usersList, duoForm.player2Id]);
   const previewDuoDetails = useMemo(() => {
-    if (!selectedP1 || !selectedP2) return null;
-    const p1L1 = parseFloat(selectedP1.average_layer_1) || 0;
-    const p1L2 = parseFloat(selectedP1.average_layer_2) || 0;
-    const p1Combined = parseFloat((p1L1 + p1L2).toFixed(2));
+    if (!selectedP1 && !selectedP2) return null;
 
-    const p2L1 = parseFloat(selectedP2.average_layer_1) || 0;
-    const p2L2 = parseFloat(selectedP2.average_layer_2) || 0;
-    const p2Combined = parseFloat((p2L1 + p2L2).toFixed(2));
+    if (selectedP1 && selectedP2) {
+      const p1L1 = parseFloat(selectedP1.average_layer_1) || 0;
+      const p1L2 = parseFloat(selectedP1.average_layer_2) || 0;
+      const p1Combined = parseFloat((p1L1 + p1L2).toFixed(2));
 
-    const layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
-    return {
-      p1L1,
-      p1L2,
-      p1Combined,
-      p2L1,
-      p2L2,
-      p2Combined,
-      layer3Combined
-    };
+      const p2L1 = parseFloat(selectedP2.average_layer_1) || 0;
+      const p2L2 = parseFloat(selectedP2.average_layer_2) || 0;
+      const p2Combined = parseFloat((p2L1 + p2L2).toFixed(2));
+
+      const layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
+      return {
+        isSolo: false,
+        p1L1,
+        p1L2,
+        p1Combined,
+        p2L1,
+        p2L2,
+        p2Combined,
+        layer3Combined
+      };
+    } else {
+      const solo = selectedP1 || selectedP2;
+      const soloL1 = parseFloat(solo.average_layer_1) || 0;
+      const soloL2 = parseFloat(solo.average_layer_2) || 0;
+      const soloCombined = parseFloat((soloL1 + soloL2).toFixed(2));
+      return {
+        isSolo: true,
+        p1L1: soloL1,
+        p1L2: soloL2,
+        p1Combined: soloCombined,
+        p2L1: 0,
+        p2L2: 0,
+        p2Combined: 0,
+        layer3Combined: soloCombined
+      };
+    }
   }, [selectedP1, selectedP2]);
 
   // If not authenticated, render Login Gate
@@ -3220,10 +3243,16 @@ export default function AdminDashboard({ onClose }) {
                             </div>
                           </td>
                           <td style={{ padding: '12px 14px' }}>
-                            <div style={{ color: '#ffffff', fontWeight: 700 }}>{duo.player_2_name || p2?.name || 'Player 2'}</div>
-                            <div style={{ color: 'var(--cyan-glow)', fontSize: '0.7rem' }}>
-                              {p2?.roll_number} <span style={{ color: '#9ca3af' }}>({getPlayerYearLabel(p2?.roll_number, p2?.year)})</span>
-                            </div>
+                            {duo.player_2_id ? (
+                              <>
+                                <div style={{ color: '#ffffff', fontWeight: 700 }}>{duo.player_2_name || p2?.name || 'Player 2'}</div>
+                                <div style={{ color: 'var(--cyan-glow)', fontSize: '0.7rem' }}>
+                                  {p2?.roll_number} <span style={{ color: '#9ca3af' }}>({getPlayerYearLabel(p2?.roll_number, p2?.year)})</span>
+                                </div>
+                              </>
+                            ) : (
+                              <span style={{ color: '#6b7280', fontStyle: 'italic', fontSize: '0.75rem' }}>— Solo Participant —</span>
+                            )}
                           </td>
                           <td style={{ padding: '12px 14px', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)' }}>
                             {duo.combined_layer_1_average ?? '0.0'}
@@ -3438,11 +3467,11 @@ export default function AdminDashboard({ onClose }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Trophy size={20} color="var(--magenta-glow)" />
                     <h3 style={{ fontFamily: 'var(--font-title)', fontSize: '1.2rem', margin: 0, color: 'var(--magenta-glow)', letterSpacing: '0.05em' }}>
-                      CREATE DUO PAIRING — LAYER 3 LEADERBOARD
+                      CREATE DUO / SOLO TEAM — LAYER 3 & 4
                     </h3>
                   </div>
                   <p style={{ margin: '4px 0 0 0', fontSize: '0.74rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>
-                    Select ONE 1st-Year student and ONE 2nd-Year student from the promoted candidate pools.
+                    Select 1 OR 2 students from the SAME YEAR (1st-Year or 2nd-Year) to form a team.
                   </p>
                 </div>
                 <button
@@ -3468,285 +3497,273 @@ export default function AdminDashboard({ onClose }) {
                 </button>
               </div>
 
-              {/* Two Leaderboard Panels */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '16px', flex: 1, minHeight: 0, overflow: 'hidden', marginBottom: '14px' }}>
-                
-                {/* 1ST YEAR LEADERBOARD PANEL */}
-                <div
+              {/* Year Selection Tabs */}
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (duoSelectedYear !== '1') {
+                      setDuoForm({ player1Id: '', player2Id: '' });
+                      setDuoSelectedYear('1');
+                    }
+                  }}
                   style={{
+                    flex: 1,
+                    padding: '9px 14px',
                     display: 'flex',
-                    flexDirection: 'column',
-                    background: 'rgba(2, 6, 20, 0.85)',
-                    border: '1px solid rgba(0, 243, 255, 0.3)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    background: duoSelectedYear === '1' ? 'rgba(0, 243, 255, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                    border: duoSelectedYear === '1' ? '1px solid var(--cyan-glow)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: duoSelectedYear === '1' ? 'var(--cyan-glow)' : '#9ca3af',
                     borderRadius: '4px',
-                    padding: '12px',
-                    minHeight: 0
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-title)',
+                    fontSize: '0.82rem',
+                    transition: 'all 0.2s ease',
+                    boxShadow: duoSelectedYear === '1' ? '0 0 15px rgba(0, 243, 255, 0.2)' : 'none'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontFamily: 'var(--font-title)', fontSize: '0.88rem', color: 'var(--cyan-glow)' }}>
-                        FIRST-YEAR LEADERBOARD
-                      </span>
-                      <span
-                        style={{
-                          background: 'rgba(0, 243, 255, 0.15)',
-                          color: 'var(--cyan-glow)',
-                          fontSize: '0.65rem',
-                          fontFamily: 'var(--font-mono)',
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                          border: '1px solid rgba(0, 243, 255, 0.3)'
-                        }}
-                      >
-                        {unpairedFirstYearUsers.length} AVAILABLE
-                      </span>
-                    </div>
-                    {duoForm.player1Id && (
-                      <span style={{ fontSize: '0.68rem', color: 'var(--lime-accent)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                        ✓ SELECTED
-                      </span>
-                    )}
-                  </div>
+                  <span>1ST-YEAR CANDIDATES</span>
+                  <span
+                    style={{
+                      background: duoSelectedYear === '1' ? 'var(--cyan-glow)' : 'rgba(255, 255, 255, 0.1)',
+                      color: duoSelectedYear === '1' ? '#000000' : '#ffffff',
+                      fontSize: '0.65rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '10px'
+                    }}
+                  >
+                    {unpairedFirstYearUsers.length} AVAILABLE
+                  </span>
+                </button>
 
-                  {/* Search bar */}
-                  <div style={{ position: 'relative', marginBottom: '8px' }}>
-                    <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
-                    <input
-                      type="text"
-                      placeholder="Search 1st Year (Name, Roll, Branch)..."
-                      value={duoY1Search}
-                      onChange={(e) => setDuoY1Search(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '6px 10px 6px 28px',
-                        background: 'rgba(3, 7, 24, 0.9)',
-                        border: '1px solid rgba(0, 243, 255, 0.2)',
-                        color: '#ffffff',
-                        fontSize: '0.74rem',
-                        fontFamily: 'var(--font-mono)',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  {/* Table */}
-                  <div style={{ flex: 1, minHeight: '220px', maxHeight: '310px', overflowY: 'auto', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.75rem' }}>
-                      <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: 'rgba(5, 15, 38, 0.98)' }}>
-                        <tr style={{ borderBottom: '1px solid rgba(0, 243, 255, 0.25)' }}>
-                          <th style={{ padding: '8px 10px', width: '55px', color: '#9ca3af' }}>RANK</th>
-                          <th style={{ padding: '8px 10px', color: '#9ca3af' }}>STUDENT</th>
-                          <th style={{ padding: '8px 10px', color: '#9ca3af' }}>ROLL</th>
-                          <th style={{ padding: '8px 10px', color: '#9ca3af', textAlign: 'right' }}>MARKS</th>
-                          <th style={{ padding: '8px 10px', width: '75px', textAlign: 'center', color: '#9ca3af' }}>SELECT</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {unpairedFirstYearUsers.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} style={{ padding: '28px', textAlign: 'center', color: '#6b7280', fontSize: '0.72rem' }}>
-                              NO PROMOTED 1ST-YEAR CANDIDATES AVAILABLE
-                            </td>
-                          </tr>
-                        ) : (
-                          unpairedFirstYearUsers.map((item, idx) => {
-                            const u = item.user;
-                            const isSelected = duoForm.player1Id === u.user_id;
-                            const rank = idx + 1;
-                            return (
-                              <tr
-                                key={u.user_id}
-                                onClick={() => setDuoForm(prev => ({ ...prev, player1Id: u.user_id }))}
-                                style={{
-                                  cursor: 'pointer',
-                                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                                  background: isSelected
-                                    ? 'rgba(0, 243, 255, 0.18)'
-                                    : idx % 2 === 0
-                                    ? 'rgba(255, 255, 255, 0.01)'
-                                    : 'transparent',
-                                  transition: 'background 0.15s ease'
-                                }}
-                              >
-                                <td style={{ padding: '8px 10px' }}>
-                                  <span
-                                    style={{
-                                      fontFamily: 'var(--font-mono)',
-                                      fontWeight: 800,
-                                      fontSize: '0.72rem',
-                                      color: rank === 1 ? '#fbbf24' : rank === 2 ? '#cbd5e1' : rank === 3 ? '#d97706' : '#9ca3af'
-                                    }}
-                                  >
-                                    #{rank}
-                                  </span>
-                                </td>
-                                <td style={{ padding: '8px 10px' }}>
-                                  <div style={{ fontWeight: 700, color: isSelected ? 'var(--cyan-glow)' : '#ffffff' }}>{u.name}</div>
-                                  <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{u.branch || 'CSE'}</div>
-                                </td>
-                                <td style={{ padding: '8px 10px', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                                  {u.roll_number}
-                                </td>
-                                <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--lime-accent)' }}>
-                                  {item.marks.toFixed(2)}
-                                </td>
-                                <td style={{ padding: '8px 10px', textAlign: 'center' }}>
-                                  <input
-                                    type="radio"
-                                    name="duoPlayer1"
-                                    checked={isSelected}
-                                    onChange={() => setDuoForm(prev => ({ ...prev, player1Id: u.user_id }))}
-                                    style={{ cursor: 'pointer', accentColor: 'var(--cyan-glow)' }}
-                                  />
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* 2ND YEAR LEADERBOARD PANEL */}
-                <div
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (duoSelectedYear !== '2') {
+                      setDuoForm({ player1Id: '', player2Id: '' });
+                      setDuoSelectedYear('2');
+                    }
+                  }}
                   style={{
+                    flex: 1,
+                    padding: '9px 14px',
                     display: 'flex',
-                    flexDirection: 'column',
-                    background: 'rgba(2, 6, 20, 0.85)',
-                    border: '1px solid rgba(224, 38, 255, 0.3)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    background: duoSelectedYear === '2' ? 'rgba(224, 38, 255, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                    border: duoSelectedYear === '2' ? '1px solid var(--magenta-glow)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: duoSelectedYear === '2' ? 'var(--magenta-glow)' : '#9ca3af',
                     borderRadius: '4px',
-                    padding: '12px',
-                    minHeight: 0
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-title)',
+                    fontSize: '0.82rem',
+                    transition: 'all 0.2s ease',
+                    boxShadow: duoSelectedYear === '2' ? '0 0 15px rgba(224, 38, 255, 0.2)' : 'none'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontFamily: 'var(--font-title)', fontSize: '0.88rem', color: 'var(--magenta-glow)' }}>
-                        SECOND-YEAR LEADERBOARD
-                      </span>
-                      <span
-                        style={{
-                          background: 'rgba(224, 38, 255, 0.15)',
-                          color: 'var(--magenta-glow)',
-                          fontSize: '0.65rem',
-                          fontFamily: 'var(--font-mono)',
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                          border: '1px solid rgba(224, 38, 255, 0.3)'
-                        }}
-                      >
-                        {unpairedSecondYearUsers.length} AVAILABLE
-                      </span>
-                    </div>
-                    {duoForm.player2Id && (
-                      <span style={{ fontSize: '0.68rem', color: 'var(--lime-accent)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                        ✓ SELECTED
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Search bar */}
-                  <div style={{ position: 'relative', marginBottom: '8px' }}>
-                    <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
-                    <input
-                      type="text"
-                      placeholder="Search 2nd Year (Name, Roll, Branch)..."
-                      value={duoY2Search}
-                      onChange={(e) => setDuoY2Search(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '6px 10px 6px 28px',
-                        background: 'rgba(3, 7, 24, 0.9)',
-                        border: '1px solid rgba(224, 38, 255, 0.2)',
-                        color: '#ffffff',
-                        fontSize: '0.74rem',
-                        fontFamily: 'var(--font-mono)',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  {/* Table */}
-                  <div style={{ flex: 1, minHeight: '220px', maxHeight: '310px', overflowY: 'auto', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.75rem' }}>
-                      <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: 'rgba(28, 5, 34, 0.98)' }}>
-                        <tr style={{ borderBottom: '1px solid rgba(224, 38, 255, 0.25)' }}>
-                          <th style={{ padding: '8px 10px', width: '55px', color: '#9ca3af' }}>RANK</th>
-                          <th style={{ padding: '8px 10px', color: '#9ca3af' }}>STUDENT</th>
-                          <th style={{ padding: '8px 10px', color: '#9ca3af' }}>ROLL</th>
-                          <th style={{ padding: '8px 10px', color: '#9ca3af', textAlign: 'right' }}>MARKS</th>
-                          <th style={{ padding: '8px 10px', width: '75px', textAlign: 'center', color: '#9ca3af' }}>SELECT</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {unpairedSecondYearUsers.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} style={{ padding: '28px', textAlign: 'center', color: '#6b7280', fontSize: '0.72rem' }}>
-                              NO PROMOTED 2ND-YEAR CANDIDATES AVAILABLE
-                            </td>
-                          </tr>
-                        ) : (
-                          unpairedSecondYearUsers.map((item, idx) => {
-                            const u = item.user;
-                            const isSelected = duoForm.player2Id === u.user_id;
-                            const rank = idx + 1;
-                            return (
-                              <tr
-                                key={u.user_id}
-                                onClick={() => setDuoForm(prev => ({ ...prev, player2Id: u.user_id }))}
-                                style={{
-                                  cursor: 'pointer',
-                                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                                  background: isSelected
-                                    ? 'rgba(224, 38, 255, 0.18)'
-                                    : idx % 2 === 0
-                                    ? 'rgba(255, 255, 255, 0.01)'
-                                    : 'transparent',
-                                  transition: 'background 0.15s ease'
-                                }}
-                              >
-                                <td style={{ padding: '8px 10px' }}>
-                                  <span
-                                    style={{
-                                      fontFamily: 'var(--font-mono)',
-                                      fontWeight: 800,
-                                      fontSize: '0.72rem',
-                                      color: rank === 1 ? '#fbbf24' : rank === 2 ? '#cbd5e1' : rank === 3 ? '#d97706' : '#9ca3af'
-                                    }}
-                                  >
-                                    #{rank}
-                                  </span>
-                                </td>
-                                <td style={{ padding: '8px 10px' }}>
-                                  <div style={{ fontWeight: 700, color: isSelected ? 'var(--magenta-glow)' : '#ffffff' }}>{u.name}</div>
-                                  <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{u.branch || 'CSE'}</div>
-                                </td>
-                                <td style={{ padding: '8px 10px', color: 'var(--magenta-glow)', fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
-                                  {u.roll_number}
-                                </td>
-                                <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--lime-accent)' }}>
-                                  {item.marks.toFixed(2)}
-                                </td>
-                                <td style={{ padding: '8px 10px', textAlign: 'center' }}>
-                                  <input
-                                    type="radio"
-                                    name="duoPlayer2"
-                                    checked={isSelected}
-                                    onChange={() => setDuoForm(prev => ({ ...prev, player2Id: u.user_id }))}
-                                    style={{ cursor: 'pointer', accentColor: 'var(--magenta-glow)' }}
-                                  />
-                                </td>
-                              </tr>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                  <span>2ND-YEAR CANDIDATES</span>
+                  <span
+                    style={{
+                      background: duoSelectedYear === '2' ? 'var(--magenta-glow)' : 'rgba(255, 255, 255, 0.1)',
+                      color: duoSelectedYear === '2' ? '#000000' : '#ffffff',
+                      fontSize: '0.65rem',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '10px'
+                    }}
+                  >
+                    {unpairedSecondYearUsers.length} AVAILABLE
+                  </span>
+                </button>
               </div>
+
+              {/* CANDIDATES LEADERBOARD PANEL */}
+              {(() => {
+                const isY1 = duoSelectedYear === '1';
+                const currentList = isY1 ? unpairedFirstYearUsers : unpairedSecondYearUsers;
+                const currentSearch = isY1 ? duoY1Search : duoY2Search;
+                const setCurrentSearch = isY1 ? setDuoY1Search : setDuoY2Search;
+                const accentColor = isY1 ? 'var(--cyan-glow)' : 'var(--magenta-glow)';
+
+                const handleToggleStudent = (uId) => {
+                  if (duoForm.player1Id === uId) {
+                    setDuoForm(prev => ({
+                      player1Id: prev.player2Id || '',
+                      player2Id: ''
+                    }));
+                  } else if (duoForm.player2Id === uId) {
+                    setDuoForm(prev => ({ ...prev, player2Id: '' }));
+                  } else {
+                    if (!duoForm.player1Id) {
+                      setDuoForm(prev => ({ ...prev, player1Id: uId }));
+                    } else if (!duoForm.player2Id) {
+                      setDuoForm(prev => ({ ...prev, player2Id: uId }));
+                    } else {
+                      showToast('MAXIMUM 2 STUDENTS PER TEAM. DESELECT ONE FIRST.', 'error');
+                    }
+                  }
+                };
+
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      background: 'rgba(2, 6, 20, 0.85)',
+                      border: `1px solid ${isY1 ? 'rgba(0, 243, 255, 0.3)' : 'rgba(224, 38, 255, 0.3)'}`,
+                      borderRadius: '4px',
+                      padding: '12px',
+                      marginBottom: '12px',
+                      flex: 1,
+                      minHeight: 0
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontFamily: 'var(--font-title)', fontSize: '0.84rem', color: accentColor }}>
+                        {isY1 ? 'FIRST-YEAR PROMOTED CANDIDATES' : 'SECOND-YEAR PROMOTED CANDIDATES'} (CLICK TO SELECT 1 OR 2)
+                      </span>
+                      <span style={{ fontSize: '0.68rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>
+                        {duoForm.player1Id && duoForm.player2Id
+                          ? '✓ 2 STUDENTS SELECTED (DUO)'
+                          : duoForm.player1Id || duoForm.player2Id
+                          ? '✓ 1 STUDENT SELECTED (SOLO)'
+                          : 'CLICK ROWS TO SELECT CANDIDATES'}
+                      </span>
+                    </div>
+
+                    {/* Search bar */}
+                    <div style={{ position: 'relative', marginBottom: '8px' }}>
+                      <Search size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280' }} />
+                      <input
+                        type="text"
+                        placeholder={`Search ${isY1 ? '1st Year' : '2nd Year'} (Name, Roll, Branch)...`}
+                        value={currentSearch}
+                        onChange={(e) => setCurrentSearch(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '6px 10px 6px 28px',
+                          background: 'rgba(3, 7, 24, 0.9)',
+                          border: `1px solid ${isY1 ? 'rgba(0, 243, 255, 0.2)' : 'rgba(224, 38, 255, 0.2)'}`,
+                          color: '#ffffff',
+                          fontSize: '0.74rem',
+                          fontFamily: 'var(--font-mono)',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    {/* Table */}
+                    <div style={{ flex: 1, minHeight: '180px', maxHeight: '250px', overflowY: 'auto', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.75rem' }}>
+                        <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: isY1 ? 'rgba(5, 15, 38, 0.98)' : 'rgba(28, 5, 34, 0.98)' }}>
+                          <tr style={{ borderBottom: `1px solid ${isY1 ? 'rgba(0, 243, 255, 0.25)' : 'rgba(224, 38, 255, 0.25)'}` }}>
+                            <th style={{ padding: '8px 10px', width: '55px', color: '#9ca3af' }}>RANK</th>
+                            <th style={{ padding: '8px 10px', color: '#9ca3af' }}>STUDENT</th>
+                            <th style={{ padding: '8px 10px', color: '#9ca3af' }}>ROLL</th>
+                            <th style={{ padding: '8px 10px', color: '#9ca3af', textAlign: 'right' }}>MARKS</th>
+                            <th style={{ padding: '8px 10px', width: '90px', textAlign: 'center', color: '#9ca3af' }}>STATUS</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentList.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: '#6b7280', fontSize: '0.72rem' }}>
+                                NO PROMOTED CANDIDATES AVAILABLE IN THIS CATEGORY
+                              </td>
+                            </tr>
+                          ) : (
+                            currentList.map((item, idx) => {
+                              const u = item.user;
+                              const isP1 = duoForm.player1Id === u.user_id;
+                              const isP2 = duoForm.player2Id === u.user_id;
+                              const isSelected = isP1 || isP2;
+                              const rank = idx + 1;
+
+                              return (
+                                <tr
+                                  key={u.user_id}
+                                  onClick={() => handleToggleStudent(u.user_id)}
+                                  style={{
+                                    cursor: 'pointer',
+                                    borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                                    background: isP1
+                                      ? 'rgba(0, 243, 255, 0.18)'
+                                      : isP2
+                                      ? 'rgba(224, 38, 255, 0.18)'
+                                      : idx % 2 === 0
+                                      ? 'rgba(255, 255, 255, 0.01)'
+                                      : 'transparent',
+                                    transition: 'background 0.15s ease'
+                                  }}
+                                >
+                                  <td style={{ padding: '8px 10px' }}>
+                                    <span
+                                      style={{
+                                        fontFamily: 'var(--font-mono)',
+                                        fontWeight: 800,
+                                        fontSize: '0.72rem',
+                                        color: rank === 1 ? '#fbbf24' : rank === 2 ? '#cbd5e1' : rank === 3 ? '#d97706' : '#9ca3af'
+                                      }}
+                                    >
+                                      #{rank}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '8px 10px' }}>
+                                    <div style={{ fontWeight: 700, color: isSelected ? accentColor : '#ffffff' }}>{u.name}</div>
+                                    <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>{u.branch || 'CSE'}</div>
+                                  </td>
+                                  <td style={{ padding: '8px 10px', color: accentColor, fontFamily: 'var(--font-mono)', fontSize: '0.72rem' }}>
+                                    {u.roll_number}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--lime-accent)' }}>
+                                    {item.marks.toFixed(2)}
+                                  </td>
+                                  <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                                    <span
+                                      style={{
+                                        display: 'inline-block',
+                                        padding: '2px 8px',
+                                        borderRadius: '3px',
+                                        fontSize: '0.65rem',
+                                        fontWeight: 800,
+                                        fontFamily: 'var(--font-mono)',
+                                        background: isP1
+                                          ? 'rgba(0, 243, 255, 0.25)'
+                                          : isP2
+                                          ? 'rgba(224, 38, 255, 0.25)'
+                                          : 'rgba(255, 255, 255, 0.05)',
+                                        border: isP1
+                                          ? '1px solid var(--cyan-glow)'
+                                          : isP2
+                                          ? '1px solid var(--magenta-glow)'
+                                          : '1px solid rgba(255, 255, 255, 0.15)',
+                                        color: isP1
+                                          ? 'var(--cyan-glow)'
+                                          : isP2
+                                          ? 'var(--magenta-glow)'
+                                          : '#6b7280'
+                                      }}
+                                    >
+                                      {isP1 ? 'PLAYER 1' : isP2 ? 'PLAYER 2' : '+ SELECT'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* SELECTED PAIR PREVIEW & FORMULA BREAKDOWN */}
               <div
@@ -3758,23 +3775,57 @@ export default function AdminDashboard({ onClose }) {
                   marginBottom: '12px'
                 }}
               >
-                <div style={{ fontSize: '0.68rem', color: '#9ca3af', letterSpacing: '0.08em', marginBottom: '8px', fontFamily: 'var(--font-mono)' }}>
-                  SELECTED DUO PREVIEW:
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#9ca3af', letterSpacing: '0.08em', fontFamily: 'var(--font-mono)' }}>
+                    TEAM PREVIEW ({selectedP1 && selectedP2 ? 'DUO — 2 STUDENTS' : selectedP1 || selectedP2 ? 'SOLO — 1 STUDENT' : 'NO STUDENTS SELECTED'}):
+                  </span>
+                  {(selectedP1 || selectedP2) && (
+                    <button
+                      type="button"
+                      onClick={() => setDuoForm({ player1Id: '', player2Id: '' })}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ef4444',
+                        fontSize: '0.68rem',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      CLEAR SELECTION
+                    </button>
+                  )}
                 </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', alignItems: 'center' }}>
-                  {/* P1 Card */}
+                  {/* Candidate 1 Card */}
                   <div style={{ padding: '8px 12px', background: 'rgba(0, 243, 255, 0.08)', border: '1px solid rgba(0, 243, 255, 0.3)', borderRadius: '3px' }}>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>
-                      1ST YEAR CANDIDATE:
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '0.66rem', color: 'var(--cyan-glow)', fontFamily: 'var(--font-mono)' }}>
+                        STUDENT 1 (PRIMARY):
+                      </span>
+                      {selectedP1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDuoForm(prev => ({ player1Id: prev.player2Id || '', player2Id: '' }));
+                          }}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
                     </div>
                     {selectedP1 ? (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.82rem' }}>{selectedP1.name}</div>
-                          <div style={{ fontSize: '0.68rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>{selectedP1.roll_number}</div>
+                          <div style={{ fontSize: '0.68rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>
+                            {selectedP1.roll_number} • {getPlayerYearLabel(selectedP1.roll_number, selectedP1.year)}
+                          </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>MARKS</div>
+                          <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>L1+L2 MARKS</div>
                           <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--cyan-glow)', fontSize: '0.85rem' }}>
                             {previewDuoDetails?.p1Combined ?? '0.0'}
                           </div>
@@ -3782,24 +3833,37 @@ export default function AdminDashboard({ onClose }) {
                       </div>
                     ) : (
                       <div style={{ fontSize: '0.72rem', color: '#6b7280', fontStyle: 'italic' }}>
-                        No 1st-year student selected
+                        Click any student in the table above to select
                       </div>
                     )}
                   </div>
 
-                  {/* P2 Card */}
+                  {/* Candidate 2 Card */}
                   <div style={{ padding: '8px 12px', background: 'rgba(224, 38, 255, 0.08)', border: '1px solid rgba(224, 38, 255, 0.3)', borderRadius: '3px' }}>
-                    <div style={{ fontSize: '0.66rem', color: 'var(--magenta-glow)', fontFamily: 'var(--font-mono)', marginBottom: '2px' }}>
-                      2ND YEAR CANDIDATE:
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '0.66rem', color: 'var(--magenta-glow)', fontFamily: 'var(--font-mono)' }}>
+                        STUDENT 2 (PARTNER — OPTIONAL):
+                      </span>
+                      {selectedP2 && (
+                        <button
+                          type="button"
+                          onClick={() => setDuoForm(prev => ({ ...prev, player2Id: '' }))}
+                          style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
                     </div>
                     {selectedP2 ? (
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.82rem' }}>{selectedP2.name}</div>
-                          <div style={{ fontSize: '0.68rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>{selectedP2.roll_number}</div>
+                          <div style={{ fontSize: '0.68rem', color: '#9ca3af', fontFamily: 'var(--font-mono)' }}>
+                            {selectedP2.roll_number} • {getPlayerYearLabel(selectedP2.roll_number, selectedP2.year)}
+                          </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>MARKS</div>
+                          <div style={{ fontSize: '0.65rem', color: '#9ca3af' }}>L1+L2 MARKS</div>
                           <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--magenta-glow)', fontSize: '0.85rem' }}>
                             {previewDuoDetails?.p2Combined ?? '0.0'}
                           </div>
@@ -3807,7 +3871,7 @@ export default function AdminDashboard({ onClose }) {
                       </div>
                     ) : (
                       <div style={{ fontSize: '0.72rem', color: '#6b7280', fontStyle: 'italic' }}>
-                        No 2nd-year student selected
+                        {selectedP1 ? 'Optional: Click another student to pair, or proceed with Solo team.' : 'Select Student 1 first'}
                       </div>
                     )}
                   </div>
@@ -3816,7 +3880,9 @@ export default function AdminDashboard({ onClose }) {
                 {previewDuoDetails && (
                   <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <span style={{ fontSize: '0.72rem', color: 'var(--lime-accent)', fontFamily: 'var(--font-mono)' }}>
-                      L3 Combined Formula: ({previewDuoDetails.p1Combined} + {previewDuoDetails.p2Combined}) / 2
+                      {previewDuoDetails.isSolo
+                        ? `L3 Score Formula: ${previewDuoDetails.layer3Combined} (Solo 100%)`
+                        : `L3 Combined Formula: (${previewDuoDetails.p1Combined} + ${previewDuoDetails.p2Combined}) / 2`}
                     </span>
                     <span style={{ fontFamily: 'var(--font-title)', fontSize: '1.05rem', color: 'var(--lime-accent)' }}>
                       INITIAL L3 SCORE = {previewDuoDetails.layer3Combined}
@@ -3851,18 +3917,22 @@ export default function AdminDashboard({ onClose }) {
                 <button
                   type="button"
                   onClick={handleCreateDuo}
-                  disabled={!duoForm.player1Id || !duoForm.player2Id}
+                  disabled={!duoForm.player1Id && !duoForm.player2Id}
                   className="cyber-btn"
                   style={{
                     padding: '8px 24px',
-                    borderColor: (!duoForm.player1Id || !duoForm.player2Id) ? 'rgba(255, 255, 255, 0.2)' : 'var(--magenta-glow)',
-                    color: (!duoForm.player1Id || !duoForm.player2Id) ? '#6b7280' : '#ffffff',
-                    cursor: (!duoForm.player1Id || !duoForm.player2Id) ? 'not-allowed' : 'pointer',
+                    borderColor: (!duoForm.player1Id && !duoForm.player2Id) ? 'rgba(255, 255, 255, 0.2)' : 'var(--magenta-glow)',
+                    color: (!duoForm.player1Id && !duoForm.player2Id) ? '#6b7280' : '#ffffff',
+                    cursor: (!duoForm.player1Id && !duoForm.player2Id) ? 'not-allowed' : 'pointer',
                     fontSize: '0.8rem',
                     fontWeight: 700
                   }}
                 >
-                  CREATE DUO
+                  {selectedP1 && selectedP2
+                    ? 'CREATE DUO (2 STUDENTS)'
+                    : selectedP1 || selectedP2
+                    ? 'CREATE DUO (1 STUDENT - SOLO)'
+                    : 'SELECT STUDENT(S)'}
                 </button>
               </div>
             </motion.div>

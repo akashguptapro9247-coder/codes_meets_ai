@@ -1376,11 +1376,17 @@ export const adminService = {
 
       for (const duo of userDuos) {
         const { data: p1 } = await supabase.from('users').select('average_layer_1, average_layer_2').eq('user_id', duo.player_1_id).single();
-        const { data: p2 } = await supabase.from('users').select('average_layer_1, average_layer_2').eq('user_id', duo.player_2_id).single();
-
         const p1Combined = (parseFloat(p1?.average_layer_1) || 0) + (parseFloat(p1?.average_layer_2) || 0);
-        const p2Combined = (parseFloat(p2?.average_layer_1) || 0) + (parseFloat(p2?.average_layer_2) || 0);
-        const layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
+
+        let layer3Combined;
+        if (duo.player_2_id) {
+          const { data: p2 } = await supabase.from('users').select('average_layer_1, average_layer_2').eq('user_id', duo.player_2_id).single();
+          const p2Combined = (parseFloat(p2?.average_layer_1) || 0) + (parseFloat(p2?.average_layer_2) || 0);
+          layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
+        } else {
+          // Solo duo — use player 1 score directly
+          layer3Combined = parseFloat(p1Combined.toFixed(2));
+        }
 
         const l3 = duo.layer_3_marks !== null ? parseFloat(duo.layer_3_marks) : 0;
         const l4 = duo.layer_4_marks !== null ? parseFloat(duo.layer_4_marks) : 0;
@@ -1427,88 +1433,114 @@ export const adminService = {
       return { error: { message: 'Supabase not configured' } };
     }
 
-    if (!player1Id || !player2Id) {
-      return { error: { message: 'Both Player 1 and Player 2 are required.' } };
+    if (!player1Id) {
+      return { error: { message: 'Player 1 is required.' } };
     }
 
-    if (player1Id === player2Id) {
+    // player2Id is optional (null = solo duo)
+    const isSolo = !player2Id;
+
+    if (!isSolo && player1Id === player2Id) {
       return { error: { message: 'A player cannot be paired with themselves.' } };
     }
 
     try {
-      // Check if this pair already exists (either order)
-      const { data: exactPairExists } = await supabase
-        .from('duos')
-        .select('duo_id')
-        .or(
-          `and(player_1_id.eq.${player1Id},player_2_id.eq.${player2Id}),and(player_1_id.eq.${player2Id},player_2_id.eq.${player1Id})`
-        )
-        .maybeSingle();
-
-      if (exactPairExists) {
-        return { error: { message: 'These two players are already paired as a Duo.' } };
-      }
-
       // Check if Player 1 is already in ANY existing duo
       const { data: p1AlreadyPaired } = await supabase
         .from('duos')
-        .select('duo_id, player_1_name, player_2_name')
+        .select('duo_id')
         .or(`player_1_id.eq.${player1Id},player_2_id.eq.${player1Id}`)
         .maybeSingle();
 
       if (p1AlreadyPaired) {
-        return { error: { message: `Player 1 is already paired in an existing Duo. Delete that Duo first to make them available again.` } };
+        return { error: { message: 'Player 1 is already in an existing Duo. Delete that Duo first.' } };
       }
 
-      // Check if Player 2 is already in ANY existing duo
-      const { data: p2AlreadyPaired } = await supabase
-        .from('duos')
-        .select('duo_id, player_1_name, player_2_name')
-        .or(`player_1_id.eq.${player2Id},player_2_id.eq.${player2Id}`)
-        .maybeSingle();
+      if (!isSolo) {
+        // Check if this pair already exists (either order)
+        const { data: exactPairExists } = await supabase
+          .from('duos')
+          .select('duo_id')
+          .or(
+            `and(player_1_id.eq.${player1Id},player_2_id.eq.${player2Id}),and(player_1_id.eq.${player2Id},player_2_id.eq.${player1Id})`
+          )
+          .maybeSingle();
 
-      if (p2AlreadyPaired) {
-        return { error: { message: `Player 2 is already paired in an existing Duo. Delete that Duo first to make them available again.` } };
+        if (exactPairExists) {
+          return { error: { message: 'These two players are already paired as a Duo.' } };
+        }
+
+        // Check if Player 2 is already in ANY existing duo
+        const { data: p2AlreadyPaired } = await supabase
+          .from('duos')
+          .select('duo_id')
+          .or(`player_1_id.eq.${player2Id},player_2_id.eq.${player2Id}`)
+          .maybeSingle();
+
+        if (p2AlreadyPaired) {
+          return { error: { message: 'Player 2 is already in an existing Duo. Delete that Duo first.' } };
+        }
       }
 
-      // Fetch both users to get names + current Layer 1 & Layer 2 averages
+      // Fetch Player 1
       const { data: p1 } = await supabase.from('users').select('*').eq('user_id', player1Id).single();
-      const { data: p2 } = await supabase.from('users').select('*').eq('user_id', player2Id).single();
-
-      if (!p1 || !p2) {
-        return { error: { message: 'Could not fetch player data. Please try again.' } };
+      if (!p1) {
+        return { error: { message: 'Could not fetch Player 1 data. Please try again.' } };
+      }
+      if (!p1.promoted_to_layer2 || !p1.promoted_to_layer3 || p1.is_removed) {
+        return { error: { message: 'Player 1 must be actively qualified and promoted from Layer 1 and Layer 2.' } };
       }
 
-      if (!p1.promoted_to_layer2 || !p2.promoted_to_layer2 || !p1.promoted_to_layer3 || !p2.promoted_to_layer3 || p1.is_removed || p2.is_removed) {
-        return { error: { message: 'Both participants must be actively qualified and promoted from Layer 1 and Layer 2 before they can be formed into a Duo team.' } };
-      }
-
-      // Layer 3 Combined = ((P1_L1_Avg + P1_L2_Avg) + (P2_L1_Avg + P2_L2_Avg)) / 2
+      // Score calculation
       const p1Combined = (parseFloat(p1.average_layer_1) || 0) + (parseFloat(p1.average_layer_2) || 0);
-      const p2Combined = (parseFloat(p2.average_layer_1) || 0) + (parseFloat(p2.average_layer_2) || 0);
-      const layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
+
+      let insertPayload;
+      if (isSolo) {
+        // Solo duo — no player 2
+        const layer3Combined = parseFloat(p1Combined.toFixed(2));
+        insertPayload = {
+          player_1_id: player1Id,
+          player_2_id: null,
+          player_1_name: p1.name || 'Player 1',
+          player_2_name: null,
+          combined_layer_1_average: layer3Combined,
+          layer_3_marks: null,
+          layer_4_marks: null,
+          total_marks: layer3Combined
+        };
+      } else {
+        // Duo — fetch and validate player 2
+        const { data: p2 } = await supabase.from('users').select('*').eq('user_id', player2Id).single();
+        if (!p2) {
+          return { error: { message: 'Could not fetch Player 2 data. Please try again.' } };
+        }
+        if (!p2.promoted_to_layer2 || !p2.promoted_to_layer3 || p2.is_removed) {
+          return { error: { message: 'Player 2 must be actively qualified and promoted from Layer 1 and Layer 2.' } };
+        }
+        const p2Combined = (parseFloat(p2.average_layer_1) || 0) + (parseFloat(p2.average_layer_2) || 0);
+        const layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
+        insertPayload = {
+          player_1_id: player1Id,
+          player_2_id: player2Id,
+          player_1_name: p1.name || 'Player 1',
+          player_2_name: p2.name || 'Player 2',
+          combined_layer_1_average: layer3Combined,
+          layer_3_marks: null,
+          layer_4_marks: null,
+          total_marks: layer3Combined
+        };
+      }
 
       const { data, error } = await supabase
         .from('duos')
-        .insert([
-          {
-            player_1_id: player1Id,
-            player_2_id: player2Id,
-            player_1_name: p1.name || 'Player 1',
-            player_2_name: p2.name || 'Player 2',
-            combined_layer_1_average: layer3Combined,
-            layer_3_marks: null,
-            layer_4_marks: null,
-            total_marks: layer3Combined
-          }
-        ])
+        .insert([insertPayload])
         .select()
         .single();
 
       if (error) {
         console.error('[Supabase::createDuo] Insert error:', error);
         if (error.code === '23514') {
-          return { data: null, error: { message: `Database constraint error: the combined score value is out of the allowed range. Please run the latest fix_rls_policies.sql in Supabase to remove the old 0–10 cap constraint.` } };
+          return { data: null, error: { message: 'Database constraint error: the combined score value is out of the allowed range. Please run the latest fix_rls_policies.sql in Supabase to remove the old 0–10 cap constraint.' } };
         }
         if (error.code === '23505') {
           return { data: null, error: { message: 'These two players are already paired as a Duo.' } };
@@ -1539,13 +1571,18 @@ export const adminService = {
         return { error: { message: 'Duo record not found' } };
       }
 
-      // Re-fetch both players' latest Layer 1 and Layer 2 averages for 100% precision
+      // Re-fetch players' latest Layer 1 and Layer 2 averages for 100% precision
       const { data: p1 } = await supabase.from('users').select('average_layer_1, average_layer_2').eq('user_id', currentDuo.player_1_id).single();
-      const { data: p2 } = await supabase.from('users').select('average_layer_1, average_layer_2').eq('user_id', currentDuo.player_2_id).single();
-
       const p1Combined = (parseFloat(p1?.average_layer_1) || 0) + (parseFloat(p1?.average_layer_2) || 0);
-      const p2Combined = (parseFloat(p2?.average_layer_1) || 0) + (parseFloat(p2?.average_layer_2) || 0);
-      const layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
+
+      let layer3Combined;
+      if (currentDuo.player_2_id) {
+        const { data: p2 } = await supabase.from('users').select('average_layer_1, average_layer_2').eq('user_id', currentDuo.player_2_id).single();
+        const p2Combined = (parseFloat(p2?.average_layer_1) || 0) + (parseFloat(p2?.average_layer_2) || 0);
+        layer3Combined = parseFloat(((p1Combined + p2Combined) / 2.0).toFixed(2));
+      } else {
+        layer3Combined = parseFloat(p1Combined.toFixed(2));
+      }
 
       const updatePayload = {
         combined_layer_1_average: layer3Combined
