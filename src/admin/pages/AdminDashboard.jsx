@@ -32,12 +32,14 @@ import {
   ChevronRight,
   Image as ImageIcon,
   FileText,
-  Terminal
+  Terminal,
+  Download
 } from 'lucide-react';
 import { adminService } from '../services/adminService';
 import { eventStateService } from '../../shared/services/eventStateService';
 import { checkSupabaseConnection } from '../../shared/services/supabaseClient';
 import { soundEngine } from '../../shared/utils/SoundEngine';
+import { exportToCsv } from '../../shared/utils/csvExporter';
 import AdminLoginGate from '../components/AdminLoginGate';
 
 export default function AdminDashboard({ onClose }) {
@@ -1150,6 +1152,450 @@ export default function AdminDashboard({ onClose }) {
     }
   }, [selectedP1, selectedP2]);
 
+  // --------------------------------------------------------------------------
+  // REPORT DOWNLOAD / EXPORT HANDLERS (READ-ONLY)
+  // --------------------------------------------------------------------------
+  const handleExportLayer1Rank = () => {
+    if (!rankedLayer1Results || rankedLayer1Results.length === 0) {
+      showToast('No students available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Rank',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'GenAI Marks',
+      'Manual Marks',
+      'Average Marks',
+      'Promoted to Layer 2'
+    ];
+    const rows = rankedLayer1Results.map((item, idx) => [
+      idx + 1,
+      item.user?.name || 'Unknown',
+      item.user?.roll_number || 'N/A',
+      getPlayerYearLabel(item.user?.roll_number, item.user?.year),
+      item.user?.branch || 'CSE',
+      item.user?.section || 'A',
+      item.genAi,
+      item.manual,
+      item.average,
+      item.user?.promoted_to_layer2 ? 'YES' : 'NO'
+    ]);
+    const success = exportToCsv('CODE_MEETS_AI_Layer1_Rank.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 1 RANK REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer1GenAI = () => {
+    if (!layer1SubmissionsList || layer1SubmissionsList.length === 0) {
+      showToast('No students available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Sl No',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'GenAI Marks',
+      'Status',
+      'Time Taken (sec)',
+      'Prompt',
+      'Submitted At'
+    ];
+    const rows = layer1SubmissionsList.map((sub, idx) => {
+      const u = usersList.find((usr) => usr.user_id === sub.user_id);
+      return [
+        idx + 1,
+        sub.username || u?.name || 'Unknown',
+        sub.roll_number || u?.roll_number || 'N/A',
+        getPlayerYearLabel(sub.roll_number || u?.roll_number, u?.year),
+        u?.branch || 'CSE',
+        u?.section || 'N/A',
+        sub.marks !== null && sub.marks !== undefined ? sub.marks : 'PENDING',
+        (sub.status || 'pending').toUpperCase(),
+        sub.time_taken_seconds ?? 'N/A',
+        sub.prompt || '',
+        sub.created_at ? new Date(sub.created_at).toLocaleString() : 'N/A'
+      ];
+    });
+    const success = exportToCsv('CODE_MEETS_AI_Layer1_GenAI.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 1 GENAI REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer1Manual = () => {
+    if (!usersList || usersList.length === 0) {
+      showToast('No students available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Sl No',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'Manual Marks (0-150)',
+      'Status',
+      'Language'
+    ];
+    const rows = usersList.map((u, idx) => {
+      const attempt = layer1ManualAttemptsList.find((a) => a.user_id === u.user_id);
+      const l1Record = layer1List.find((r) => r.user_id === u.user_id) || {};
+      const marksVal = attempt?.score ?? l1Record.layer_1_manual_marks ?? 'N/A';
+      const statusVal = attempt
+        ? (attempt.status || 'completed').toUpperCase()
+        : l1Record.layer_1_manual_marks !== undefined
+        ? 'RECORDED'
+        : 'NOT STARTED';
+      return [
+        idx + 1,
+        u.name,
+        u.roll_number || 'N/A',
+        getPlayerYearLabel(u.roll_number, u.year),
+        u.branch || 'CSE',
+        u.section || 'A',
+        marksVal,
+        statusVal,
+        attempt?.language || 'N/A'
+      ];
+    });
+    const success = exportToCsv('CODE_MEETS_AI_Layer1_Manual.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 1 MANUAL REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer2Rank = () => {
+    if (!rankedLayer2Results || rankedLayer2Results.length === 0) {
+      showToast('No students available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Rank',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'GenAI Marks',
+      'Manual Marks',
+      'Average Marks',
+      'Promoted to Layer 3'
+    ];
+    const rows = rankedLayer2Results.map((item, idx) => [
+      idx + 1,
+      item.user?.name || 'Unknown',
+      item.user?.roll_number || 'N/A',
+      getPlayerYearLabel(item.user?.roll_number, item.user?.year),
+      item.user?.branch || 'CSE',
+      item.user?.section || 'A',
+      item.genAi,
+      item.manual,
+      item.average,
+      item.user?.promoted_to_layer3 ? 'YES' : 'NO'
+    ]);
+    const success = exportToCsv('CODE_MEETS_AI_Layer2_Rank.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 2 RANK REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer2GenAI = () => {
+    if (!layer2GenAiSubmissionsList || layer2GenAiSubmissionsList.length === 0) {
+      showToast('No students available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Sl No',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'Question ID',
+      'Admin Marks',
+      'Status',
+      'Admin Remarks',
+      'Explanation'
+    ];
+    const rows = layer2GenAiSubmissionsList.map((sub, idx) => {
+      const u = usersList.find((usr) => usr.user_id === sub.user_id);
+      return [
+        idx + 1,
+        sub.username || u?.name || 'Unknown',
+        sub.roll_number || u?.roll_number || 'N/A',
+        getPlayerYearLabel(sub.roll_number || u?.roll_number, u?.year),
+        u?.branch || 'CSE',
+        u?.section || 'N/A',
+        sub.question_id || 'N/A',
+        sub.admin_marks !== null && sub.admin_marks !== undefined ? sub.admin_marks : 'PENDING',
+        (sub.status || 'in_progress').toUpperCase(),
+        sub.admin_remarks || '',
+        sub.explanation || ''
+      ];
+    });
+    const success = exportToCsv('CODE_MEETS_AI_Layer2_GenAI.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 2 GENAI REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer2Manual = () => {
+    if (!layer2ManualAttemptsList || layer2ManualAttemptsList.length === 0) {
+      showToast('No students available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Sl No',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'Language',
+      'Attempted Count',
+      'Correct Count',
+      'Wrong Count',
+      'Automatic Marks',
+      'Admin Override Marks',
+      'Final Marks',
+      'Status'
+    ];
+    const rows = layer2ManualAttemptsList.map((attempt, idx) => {
+      const u = usersList.find((usr) => usr.user_id === attempt.user_id);
+      const states = attempt.question_states || {};
+      const attemptedCount = Object.keys(states).length;
+      const correctCount = Object.values(states).filter((s) => s.status === 'correct').length;
+      const wrongCount = Object.values(states).filter((s) => s.status === 'exhausted' || s.status === 'skipped').length;
+      const finalMarks = attempt.admin_override_marks ?? attempt.automatic_marks ?? attempt.score ?? '0';
+
+      return [
+        idx + 1,
+        attempt.username || attempt.name || u?.name || 'Unknown',
+        attempt.roll_number || u?.roll_number || 'N/A',
+        getPlayerYearLabel(attempt.roll_number || u?.roll_number, u?.year),
+        u?.branch || 'CSE',
+        u?.section || 'N/A',
+        attempt.language || 'N/A',
+        attemptedCount,
+        correctCount,
+        wrongCount,
+        attempt.automatic_marks ?? attempt.score ?? 'N/A',
+        attempt.admin_override_marks ?? 'N/A',
+        finalMarks,
+        (attempt.status || 'pending').toUpperCase()
+      ];
+    });
+    const success = exportToCsv('CODE_MEETS_AI_Layer2_Manual.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 2 MANUAL REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer3Duos = () => {
+    if (!filteredDuos || filteredDuos.length === 0) {
+      showToast('No Duos available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Rank',
+      'Duo #',
+      'Team Type',
+      'Student 1 Name',
+      'Student 1 Roll Number',
+      'Student 1 Year',
+      'Student 1 Branch',
+      'Student 1 Marks (L1+L2)',
+      'Student 2 Name',
+      'Student 2 Roll Number',
+      'Student 2 Year',
+      'Student 2 Branch',
+      'Student 2 Marks (L1+L2)',
+      'Combined L1+L2 Average',
+      'Layer 3 Marks (0-10)',
+      'Total Marks',
+      'Participation Status'
+    ];
+    const rows = filteredDuos.map((item, idx) => {
+      const duo = item.duo;
+      const p1 = item.p1;
+      const p2 = item.p2;
+      const p1Marks = p1 ? (parseFloat(p1.average_layer_1 || 0) + parseFloat(p1.average_layer_2 || 0)).toFixed(2) : 'N/A';
+      const p2Marks = p2 ? (parseFloat(p2.average_layer_1 || 0) + parseFloat(p2.average_layer_2 || 0)).toFixed(2) : '';
+
+      return [
+        idx + 1,
+        `#${duo.serial_number || duo.duo_serial_number || idx + 1}`,
+        duo.player_2_id ? 'Duo (2 Students)' : 'Solo (1 Student)',
+        duo.player_1_name || p1?.name || 'Player 1',
+        p1?.roll_number || 'N/A',
+        p1 ? getPlayerYearLabel(p1.roll_number, p1.year) : 'N/A',
+        p1?.branch || 'CSE',
+        p1Marks,
+        duo.player_2_id ? (duo.player_2_name || p2?.name || 'Player 2') : '',
+        p2?.roll_number || '',
+        p2 ? getPlayerYearLabel(p2.roll_number, p2.year) : '',
+        p2?.branch || '',
+        p2Marks,
+        duo.combined_layer_1_average ?? '0.0',
+        duo.layer_3_marks !== null && duo.layer_3_marks !== undefined ? duo.layer_3_marks : 'PENDING',
+        duo.total_marks ?? '0.0',
+        'Participated'
+      ];
+    });
+    const success = exportToCsv('CODE_MEETS_AI_Layer3_Duos.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 3 DUOS REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer3Unassigned = () => {
+    if (!unpairedUsers || unpairedUsers.length === 0) {
+      showToast('No unassigned students for Layer 3.', 'error');
+      return;
+    }
+    const headers = [
+      'Sl No',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'Layer 1 Average',
+      'Layer 2 Average',
+      'Combined Marks',
+      'Layer 3 Participation Status'
+    ];
+    const rows = unpairedUsers.map((u, idx) => [
+      idx + 1,
+      u.name,
+      u.roll_number || 'N/A',
+      getPlayerYearLabel(u.roll_number, u.year),
+      u.branch || 'CSE',
+      u.section || 'A',
+      u.average_layer_1 ?? '0.0',
+      u.average_layer_2 ?? '0.0',
+      getEligibleCandidateMarks(u),
+      'Not Assigned / Did Not Participate'
+    ]);
+    const success = exportToCsv('CODE_MEETS_AI_Layer3_Not_Assigned.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 3 UNASSIGNED STUDENTS REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer4Duos = () => {
+    if (!filteredDuos || filteredDuos.length === 0) {
+      showToast('No Duos available for this download.', 'error');
+      return;
+    }
+    const headers = [
+      'Rank',
+      'Duo #',
+      'Team Type',
+      'Student 1 Name',
+      'Student 1 Roll Number',
+      'Student 1 Year',
+      'Student 1 Branch',
+      'Student 1 Marks (L1+L2)',
+      'Student 2 Name',
+      'Student 2 Roll Number',
+      'Student 2 Year',
+      'Student 2 Branch',
+      'Student 2 Marks (L1+L2)',
+      'Combined L1+L2 Average',
+      'Layer 3 Marks',
+      'Layer 4 Marks (0-10)',
+      'Total Marks',
+      'Participation Status'
+    ];
+    const rows = filteredDuos.map((item, idx) => {
+      const duo = item.duo;
+      const p1 = item.p1;
+      const p2 = item.p2;
+      const p1Marks = p1 ? (parseFloat(p1.average_layer_1 || 0) + parseFloat(p1.average_layer_2 || 0)).toFixed(2) : 'N/A';
+      const p2Marks = p2 ? (parseFloat(p2.average_layer_1 || 0) + parseFloat(p2.average_layer_2 || 0)).toFixed(2) : '';
+
+      return [
+        idx + 1,
+        `#${duo.serial_number || duo.duo_serial_number || idx + 1}`,
+        duo.player_2_id ? 'Duo (2 Students)' : 'Solo (1 Student)',
+        duo.player_1_name || p1?.name || 'Player 1',
+        p1?.roll_number || 'N/A',
+        p1 ? getPlayerYearLabel(p1.roll_number, p1.year) : 'N/A',
+        p1?.branch || 'CSE',
+        p1Marks,
+        duo.player_2_id ? (duo.player_2_name || p2?.name || 'Player 2') : '',
+        p2?.roll_number || '',
+        p2 ? getPlayerYearLabel(p2.roll_number, p2.year) : '',
+        p2?.branch || '',
+        p2Marks,
+        duo.combined_layer_1_average ?? '0.0',
+        duo.layer_3_marks !== null && duo.layer_3_marks !== undefined ? duo.layer_3_marks : 'PENDING',
+        duo.layer_4_marks !== null && duo.layer_4_marks !== undefined ? duo.layer_4_marks : 'PENDING',
+        duo.total_marks ?? '0.0',
+        'Participated'
+      ];
+    });
+    const success = exportToCsv('CODE_MEETS_AI_Layer4_Duos.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 4 DUOS REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
+  const handleExportLayer4Unassigned = () => {
+    if (!unpairedUsers || unpairedUsers.length === 0) {
+      showToast('No unassigned students for Layer 4.', 'error');
+      return;
+    }
+    const headers = [
+      'Sl No',
+      'Student Name',
+      'Roll Number',
+      'Year / Batch',
+      'Branch',
+      'Section',
+      'Layer 1 Average',
+      'Layer 2 Average',
+      'Combined Marks',
+      'Layer 4 Participation Status'
+    ];
+    const rows = unpairedUsers.map((u, idx) => [
+      idx + 1,
+      u.name,
+      u.roll_number || 'N/A',
+      getPlayerYearLabel(u.roll_number, u.year),
+      u.branch || 'CSE',
+      u.section || 'A',
+      u.average_layer_1 ?? '0.0',
+      u.average_layer_2 ?? '0.0',
+      getEligibleCandidateMarks(u),
+      'Not Assigned / Did Not Participate'
+    ]);
+    const success = exportToCsv('CODE_MEETS_AI_Layer4_Not_Assigned.csv', headers, rows);
+    if (success) {
+      showToast('✓ LAYER 4 UNASSIGNED STUDENTS REPORT DOWNLOADED');
+      soundEngine.playClick();
+    }
+  };
+
   // If not authenticated, render Login Gate
   if (!isAuthenticated) {
     return <AdminLoginGate onLoginSuccess={() => setIsAuthenticated(true)} onCancel={onClose} />;
@@ -1970,6 +2416,67 @@ export default function AdminDashboard({ onClose }) {
                 <Code2 size={14} color="var(--magenta-glow)" />
                 <span>⚙ MANUAL CODING ATTEMPTS ({layer1ManualAttemptsList.length})</span>
               </button>
+
+              {/* LAYER 1 REPORT DOWNLOAD BUTTONS */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', marginRight: '2px' }}>
+                  EXPORTS:
+                </span>
+                <button
+                  onClick={handleExportLayer1Rank}
+                  className="cyber-btn"
+                  title="Download Layer 1 Overall Ranking Report (CSV)"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: 'var(--lime-accent)',
+                    color: 'var(--lime-accent)',
+                    background: 'rgba(57, 255, 20, 0.08)'
+                  }}
+                >
+                  <Download size={12} />
+                  <span>Download Rank</span>
+                </button>
+                <button
+                  onClick={handleExportLayer1GenAI}
+                  className="cyber-btn"
+                  title="Download Layer 1 GenAI Submissions Report (CSV)"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: 'var(--cyan-glow)',
+                    color: 'var(--cyan-glow)',
+                    background: 'rgba(0, 243, 255, 0.08)'
+                  }}
+                >
+                  <Download size={12} />
+                  <span>Download GenAI</span>
+                </button>
+                <button
+                  onClick={handleExportLayer1Manual}
+                  className="cyber-btn"
+                  title="Download Layer 1 Manual Coding Report (CSV)"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: 'var(--magenta-glow)',
+                    color: 'var(--magenta-glow)',
+                    background: 'rgba(224, 38, 255, 0.08)'
+                  }}
+                >
+                  <Download size={12} />
+                  <span>Download Manual</span>
+                </button>
+              </div>
             </div>
 
             {/* 0. SUB-VIEW: LAYER 1 RANKED RESULTS TABLE */}
@@ -2812,7 +3319,7 @@ export default function AdminDashboard({ onClose }) {
         {activeTab === 'layer2' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* ── SUB-NAV ── */}
-            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
               <button onClick={() => setLayer2ActiveSubTab('results')} style={{ padding: '8px 16px', background: layer2ActiveSubTab === 'results' ? 'rgba(0,243,255,0.2)' : 'transparent', border: '1px solid', borderColor: layer2ActiveSubTab === 'results' ? 'var(--cyan-glow)' : 'rgba(255,255,255,0.15)', color: layer2ActiveSubTab === 'results' ? 'var(--cyan-glow)' : '#9ca3af', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Trophy size={14} /> RANKED RESULTS ({rankedLayer2Results.length})
               </button>
@@ -2822,6 +3329,67 @@ export default function AdminDashboard({ onClose }) {
               <button onClick={() => setLayer2ActiveSubTab('manual')} style={{ padding: '8px 16px', background: layer2ActiveSubTab === 'manual' ? 'rgba(245,158,11,0.2)' : 'transparent', border: '1px solid', borderColor: layer2ActiveSubTab === 'manual' ? '#f59e0b' : 'rgba(255,255,255,0.15)', color: layer2ActiveSubTab === 'manual' ? '#f59e0b' : '#9ca3af', fontFamily: 'var(--font-mono)', fontSize: '0.8rem', cursor: 'pointer', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Code2 size={14} /> MANUAL ATTEMPTS ({layer2ManualAttemptsList.length})
               </button>
+
+              {/* LAYER 2 REPORT DOWNLOAD BUTTONS */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.7rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', marginRight: '2px' }}>
+                  EXPORTS:
+                </span>
+                <button
+                  onClick={handleExportLayer2Rank}
+                  className="cyber-btn"
+                  title="Download Layer 2 Overall Ranking Report (CSV)"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: 'var(--cyan-glow)',
+                    color: 'var(--cyan-glow)',
+                    background: 'rgba(0, 243, 255, 0.08)'
+                  }}
+                >
+                  <Download size={12} />
+                  <span>Download Rank</span>
+                </button>
+                <button
+                  onClick={handleExportLayer2GenAI}
+                  className="cyber-btn"
+                  title="Download Layer 2 GenAI Submissions Report (CSV)"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: 'var(--cyan-glow)',
+                    color: 'var(--cyan-glow)',
+                    background: 'rgba(0, 243, 255, 0.08)'
+                  }}
+                >
+                  <Download size={12} />
+                  <span>Download GenAI</span>
+                </button>
+                <button
+                  onClick={handleExportLayer2Manual}
+                  className="cyber-btn"
+                  title="Download Layer 2 Manual Coding Report (CSV)"
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: '0.72rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    borderColor: '#f59e0b',
+                    color: '#f59e0b',
+                    background: 'rgba(245, 158, 11, 0.08)'
+                  }}
+                >
+                  <Download size={12} />
+                  <span>Download Manual</span>
+                </button>
+              </div>
             </div>
 
             {/* ── RESULTS ── */}
@@ -3189,6 +3757,39 @@ export default function AdminDashboard({ onClose }) {
               >
                 <Plus size={14} /> CREATE NEW DUO
               </button>
+
+              {/* ── DUO ARENA REPORT DOWNLOAD BUTTONS ── */}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.08)', width: '100%' }}>
+                <span style={{ fontSize: '0.68rem', color: '#9ca3af', fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>EXPORTS:</span>
+                <button
+                  onClick={() => { soundEngine.playClick(); handleExportLayer3Duos(); }}
+                  className="cyber-btn"
+                  style={{ padding: '5px 12px', fontSize: '0.72rem', borderColor: 'var(--magenta-glow)', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <Download size={12} /> L3 Duos
+                </button>
+                <button
+                  onClick={() => { soundEngine.playClick(); handleExportLayer3Unassigned(); }}
+                  className="cyber-btn"
+                  style={{ padding: '5px 12px', fontSize: '0.72rem', borderColor: '#f59e0b', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <Download size={12} /> L3 Not Assigned
+                </button>
+                <button
+                  onClick={() => { soundEngine.playClick(); handleExportLayer4Duos(); }}
+                  className="cyber-btn"
+                  style={{ padding: '5px 12px', fontSize: '0.72rem', borderColor: 'var(--magenta-glow)', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <Download size={12} /> L4 Duos
+                </button>
+                <button
+                  onClick={() => { soundEngine.playClick(); handleExportLayer4Unassigned(); }}
+                  className="cyber-btn"
+                  style={{ padding: '5px 12px', fontSize: '0.72rem', borderColor: '#f59e0b', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  <Download size={12} /> L4 Not Assigned
+                </button>
+              </div>
             </div>
 
             <div className="cyber-card" style={{ padding: 0, overflowX: 'auto', background: 'rgba(3, 7, 20, 0.9)' }}>
